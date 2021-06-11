@@ -38,7 +38,7 @@ func New() (*game_socket, error) {
 		Proxy: http.ProxyURL(&url.URL{
 			Scheme: "http",
 			Host:   "zproxy.lum-superproxy.io:22225",
-			User:   url.UserPassword("lum-customer-c_07f044e7-zone-static", "yg3h8lqi3noq"),
+			User:   url.UserPassword("lum-customer-c_07f044e7-zone-static", "yg3h8lqi3noq87"),
 		}),
 		HandshakeTimeout: (time.Second * 60),
 	}
