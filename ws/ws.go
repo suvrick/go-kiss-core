@@ -13,11 +13,13 @@ import (
 	"github.com/suvrick/go-kiss-core/packets"
 )
 
+type D map[string]interface{}
+
 // GameSock ...
 type game_socket struct {
 	client    *websocket.Conn
 	msgID     uint32
-	Bot       map[string]interface{}
+	Bot       D
 	waitBonus bool
 }
 
@@ -38,7 +40,7 @@ func New() (*game_socket, error) {
 		Proxy: http.ProxyURL(&url.URL{
 			Scheme: "http",
 			Host:   "zproxy.lum-superproxy.io:22225",
-			User:   url.UserPassword("lum-customer-c_07f044e7-zone-static", "yg3h8lqi3noq87"),
+			User:   url.UserPassword("lum-customer-c_07f044e7-zone-static", "yg3h8lqi3noq"),
 		}),
 		HandshakeTimeout: (time.Second * 60),
 	}
@@ -68,8 +70,6 @@ func (gs *game_socket) Go(login map[string]interface{}) {
 	data := packets.NewLoginPacketClient(login)
 	gs.send(data)
 	gs.read()
-
-	return
 }
 
 func (gs *game_socket) read() {
@@ -97,62 +97,6 @@ func (gs *game_socket) read() {
 
 		log.Printf("Recv >> msgType: %d,msgID: %d, msgLen: %d\n", msgType, msgID, msgLen)
 
-		switch msgType {
-		case 4:
-			data := packets.NewLoginServerPacket(reader)
-
-			status := packets.SERVER_AUTH_RESULT(data["status"].(uint32))
-			gs.log(INFO, fmt.Sprintf("Update auth status %v", status.ToString()))
-			gs.Bot["status"] = status.ToString()
-
-			switch status {
-			case packets.LOGIN_SUCCESS:
-				gs.Bot["inner_id"] = data["inner_id"]
-				gs.Bot["balance"] = data["balance"]
-				break
-			default:
-				log.Println(gs.Bot)
-				return
-			}
-		case 5:
-			data := packets.NewInfoServerPacket(reader)
-
-			gs.log(INFO, fmt.Sprintf("Update info by bot"))
-
-			gs.Bot["name"] = data["name"]
-			gs.Bot["photo"] = data["photo"]
-			gs.Bot["profile"] = data["profile"]
-		case 7:
-			data := packets.NewBalanceServerPacket(reader)
-			gs.log(INFO, fmt.Sprintf("Update balance %v > %v", gs.Bot["balance"], data["bottles"]))
-			gs.Bot["balance"] = data["bottles"]
-		case 13:
-			data := packets.NewGameRewardsServerPacket(reader)
-
-			if data["count"].(uint32) != 0 {
-
-				gs.Bot["box"] = append(gs.Bot["box"].([]string), data["json"].(string))
-
-				gs.send(packets.NewGameRewardsGetPacketClient(data["id"]))
-
-				gs.waitBonus = false
-			}
-		case 17:
-			data := packets.NewBonusServerPacket(reader)
-
-			gs.Bot = gs.merge(gs.Bot, data)
-
-			if data["can_collect"].(uint32) != 0 {
-				gs.send(packets.NewBonusPacketClient())
-				gs.waitBonus = true
-			}
-		case 9:
-			if !gs.waitBonus {
-				gs.log(INFO, "Close connetion")
-				gs.client.Close()
-				return
-			}
-		}
 	}
 
 }
