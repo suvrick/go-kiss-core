@@ -80,7 +80,11 @@ func (gs *GameSocket) Send(t uint64, data []interface{}) {
 		return
 	}
 
-	buf := p.GetBuffer(gs.msgID)
+	buf, err := p.GetBuffer(gs.msgID)
+	if err != nil {
+		gs.onError(err)
+		return
+	}
 
 	atomic.AddInt64(&gs.msgID, 1)
 

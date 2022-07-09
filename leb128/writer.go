@@ -1,54 +1,55 @@
 package leb128
 
 import (
-	"reflect"
+	"fmt"
+
+	"github.com/suvrick/go-kiss-core/until"
 )
 
-func Append(result []byte, value interface{}) []byte {
-
-	if result == nil {
-		result = make([]byte, 0)
-	}
-
-	switch value.(type) {
+func Compress(value interface{}) ([]byte, error) {
+	buffer := make([]byte, 0)
+	switch t := value.(type) {
 	case int8, int16, int, int32, int64:
-		result = append(result, appendInt(result, toInt64(value))...)
-	case uint8, uint16, uint, uint32, uint64, float32, float64:
-		result = append(result, appendUint(result, toUInt64(value))...)
+		i64, err := until.ToInt64(value)
+		if err != nil {
+			return buffer, fmt.Errorf("leb128 error. {%s}", err)
+		}
+		buffer = appendInt(buffer, i64)
+	case uint8, uint16, uint, uint32, uint64:
+		ui64, err := until.ToUInt64(value)
+		if err != nil {
+			return buffer, fmt.Errorf("leb128 error. {%s}", err)
+		}
+		buffer = appendUint(buffer, ui64)
+	case float32, float64:
+		f64, err := until.ToFloat64(value)
+		if err != nil {
+			return buffer, fmt.Errorf("leb128 error. {%s}", err)
+		}
+		buffer = appendInt(buffer, int64(f64))
 	case string:
-		result = append(result, writeString(value.(string))...)
+		str, err := writeString(value)
+		if err != nil {
+			return buffer, fmt.Errorf("leb128 error. {%s}", err)
+		}
+		buffer = append(buffer, str...)
+	default:
+		return buffer, fmt.Errorf("leb128 error. unsupported type %t", t)
 	}
-
-	return result
+	return buffer, nil
 }
 
-func toUInt64(number interface{}) uint64 {
-	v := reflect.ValueOf(number)
-
-	if v.CanUint() {
-		return v.Uint()
+func writeString(value interface{}) ([]byte, error) {
+	s, err := until.ToString(value)
+	if err != nil {
+		return nil, err
 	}
-
-	return 0
-}
-
-func toInt64(number interface{}) int64 {
-	v := reflect.ValueOf(number)
-
-	if v.CanInt() {
-		return v.Int()
-	}
-
-	return 0
-}
-
-func writeString(str string) []byte {
-	bytes := []byte(str)
+	bytes := []byte(s)
 	length := len(bytes)
 	result := make([]byte, 0)
 	result = append(result, appendInt(result, int64(length))...)
 	result = append(result, bytes...)
-	return result
+	return result, nil
 }
 
 // AppendUleb128 appends v to b using unsigned LEB128 encoding.

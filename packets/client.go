@@ -1,6 +1,8 @@
 package packets
 
 import (
+	"fmt"
+
 	"github.com/suvrick/go-kiss-core/leb128"
 )
 
@@ -30,38 +32,60 @@ func CreateClientPacket(p_type uint64, params ...interface{}) Packet {
 	p.Params = params
 
 	p.Buffer = make([]byte, 0)
-	p.Buffer, p.Error = leb128.Append(p.Buffer, p_type) // packet type
-	p.Buffer, p.Error = leb128.Append(p.Buffer, 4)      // device type
-
-	if p.Error != nil {
+	data, err := leb128.Compress(p_type) // packet type
+	if err != nil {
+		p.Error = err
 		return p
 	}
 
+	p.Buffer = append(p.Buffer, data...)
+
+	data, err = leb128.Compress(4) // device type
+	if err != nil {
+		p.Error = err
+		return p
+	}
+
+	p.Buffer = append(p.Buffer, data...)
+
+	// FIX ME
 	if p.Type == 8 {
 		p.Format = "[I]I,I"
 	}
 
-	arr := load([]byte(p.Format), params)
-	p.Buffer = append(p.Buffer, arr...)
+	data, err = load([]byte(p.Format), params)
+	if err != nil {
+		p.Error = err
+		return p
+	}
 
+	p.Buffer = append(p.Buffer, data...)
 	return p
 }
 
-func (p *Packet) GetBuffer(msgID int64) []byte {
+func (p *Packet) GetBuffer(msgID int64) ([]byte, error) {
 
-	a := leb128.Write(msgID)
+	a, err := leb128.Compress(msgID)
+	if err != nil {
+		return nil, err
+	}
+
 	b := len(p.Buffer) + len(a)
-	c := leb128.Write(b)
+
+	c, err := leb128.Compress(b)
+	if err != nil {
+		return nil, err
+	}
 
 	data := make([]byte, 0)
 	data = append(data, c...)        // итоговая длина пакета
 	data = append(data, a...)        // ID сообщения
 	data = append(data, p.Buffer...) // данные
-	return data
+	return data, nil
 
 }
 
-func load(format []byte, params []interface{}) []byte {
+func load(format []byte, params []interface{}) ([]byte, error) {
 
 	next := nextParam(params)
 	current := []byte{}
@@ -82,7 +106,11 @@ func load(format []byte, params []interface{}) []byte {
 		}
 
 		if char == '[' {
-			value := setValue(1, 'B')
+			value, err := setValue(1, 'B')
+			if err != nil {
+				return current, err
+			}
+
 			current = append(current, value...)
 			continue
 		}
@@ -91,11 +119,15 @@ func load(format []byte, params []interface{}) []byte {
 			continue
 		}
 
-		value := setValue(next(), char)
+		value, err := setValue(next(), char)
+		if err != nil {
+			return current, err
+		}
+
 		current = append(current, value...)
 	}
 
-	return current
+	return current, nil
 }
 
 func nextParam(params []interface{}) func() interface{} {
@@ -111,12 +143,11 @@ func nextParam(params []interface{}) func() interface{} {
 	}
 }
 
-func setValue(v interface{}, code byte) []byte {
-
+func setValue(v interface{}, code byte) ([]byte, error) {
 	switch code {
 	case 'B', 'I', 'L', 'F', 'S':
-		return leb128.Write(v)
+		return leb128.Compress(v)
+	default:
+		return nil, fmt.Errorf("unsupported code %v", code)
 	}
-
-	return nil
 }
