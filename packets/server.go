@@ -3,7 +3,6 @@ package packets
 import (
 	"container/list"
 	"io"
-	"log"
 
 	"github.com/suvrick/go-kiss-core/leb128"
 )
@@ -32,9 +31,9 @@ func CreateServerPacket(r io.Reader) *Packet {
 
 	p := Packet{}
 
-	p.Len, p.Error = leb128.ReadUint(r, 32)
-	p.ID, p.Error = leb128.ReadInt(r, 32)
-	p.Type, p.Error = leb128.ReadUint(r, 16)
+	p.Len, p.Error = leb128.ReadUint64(r)
+	p.ID, p.Error = leb128.ReadInt64(r)
+	p.Type, p.Error = leb128.ReadUint64(r)
 
 	if p.Error != nil {
 		return &p
@@ -94,7 +93,7 @@ func parse(reader io.Reader, format []byte) ([]interface{}, error) {
 		}
 
 		if char == '[' {
-			l, err := leb128.ReadUint(reader, 32)
+			l, err := leb128.ReadInt(reader)
 			if err != nil {
 				return current, err
 			}
@@ -120,7 +119,7 @@ func parse(reader io.Reader, format []byte) ([]interface{}, error) {
 	return current, nil
 }
 
-func getGroup(format_array []byte, index int, count uint64) []byte {
+func getGroup(format_array []byte, index int, count int) []byte {
 
 	result := make([]byte, 0)
 	summater := make([]byte, 0)
@@ -174,24 +173,13 @@ func getValue(reader io.Reader, r byte) (interface{}, error) {
 
 	switch r {
 	case 'B':
-		value, err = leb128.ReadInt(reader, 8)
+		value, err = leb128.ReadInt8(reader)
 	case 'I':
-		value, err = leb128.ReadInt(reader, 64)
+		value, err = leb128.ReadInt64(reader)
 	case 'S':
-		var str_len uint64
-		str_len, err = leb128.ReadUint(reader, 16)
-		if err != nil {
-			return nil, ErrBadSignaturePacket
-		}
-		str := make([]byte, str_len)
-		_, err = reader.Read(str)
-		value = string(str)
-		if err != nil {
-			return nil, ErrBadSignaturePacket
-		}
+		value, err = leb128.ReadString(reader)
 	case 'A':
-		str_len, _ := leb128.ReadUint(reader, 16)
-		log.Println(str_len)
+		_, err = leb128.ReadInt16(reader)
 	default:
 		return nil, ErrBadSignaturePacket
 	}

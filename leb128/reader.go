@@ -2,10 +2,104 @@ package leb128
 
 import (
 	"errors"
+	"fmt"
 	"io"
 )
 
-func ReadUint(r io.Reader, n uint) (uint64, error) {
+func ReadInt8(r io.Reader) (int8, error) {
+	value, err := readInt(r, 8)
+	if err != nil {
+		return 0, fmt.Errorf("leb128 error. Can`t read int8")
+	}
+	return int8(value), nil
+}
+
+func ReadInt16(r io.Reader) (int16, error) {
+	value, err := readInt(r, 16)
+	if err != nil {
+		return 0, fmt.Errorf("leb128 error. Can`t read int16")
+	}
+	return int16(value), nil
+}
+
+func ReadInt(r io.Reader) (int, error) {
+	value, err := readInt(r, 32)
+	if err != nil {
+		return 0, fmt.Errorf("leb128 error. Can`t read int")
+	}
+	return int(value), nil
+}
+
+func ReadInt32(r io.Reader) (int32, error) {
+	value, err := readInt(r, 32)
+	if err != nil {
+		return 0, fmt.Errorf("leb128 error. Can`t read int32")
+	}
+	return int32(value), nil
+}
+
+func ReadInt64(r io.Reader) (int64, error) {
+	value, err := readInt(r, 64)
+	if err != nil {
+		return 0, fmt.Errorf("leb128 error. Can`t read int64")
+	}
+	return value, nil
+}
+
+func ReadUint8(r io.Reader) (uint8, error) {
+	value, err := readUint(r, 8)
+	if err != nil {
+		return 0, fmt.Errorf("leb128 error. Can`t read uin8")
+	}
+	return uint8(value), nil
+}
+
+func ReadUint16(r io.Reader) (uint16, error) {
+	value, err := readUint(r, 16)
+	if err != nil {
+		return 0, fmt.Errorf("leb128 error. Can`t read uin16")
+	}
+	return uint16(value), nil
+}
+
+func ReadUint(r io.Reader) (uint, error) {
+	value, err := readUint(r, 32)
+	if err != nil {
+		return 0, fmt.Errorf("leb128 error. Can`t read uint")
+	}
+	return uint(value), nil
+}
+
+func ReadUint32(r io.Reader) (uint32, error) {
+	value, err := readUint(r, 32)
+	if err != nil {
+		return 0, fmt.Errorf("leb128 error. Can`t read uint32")
+	}
+	return uint32(value), nil
+}
+
+func ReadUint64(r io.Reader) (uint64, error) {
+	value, err := readUint(r, 64)
+	if err != nil {
+		return 0, fmt.Errorf("leb128 error. Can`t read uint64")
+	}
+	return value, nil
+}
+
+func ReadString(r io.Reader) (string, error) {
+	length, err := ReadUint16(r)
+	if err != nil {
+		return "", fmt.Errorf("leb128 error. Can`t read string")
+	}
+	data := make([]byte, length)
+	_, err = r.Read(data)
+	if err != nil {
+		return "", fmt.Errorf("leb128 error. Can`t read string")
+	}
+	return string(data), nil
+}
+
+func readUint(r io.Reader, n uint) (uint64, error) {
 	if n > 64 {
 		panic(errors.New("leb128: n must <= 64"))
 	}
@@ -32,7 +126,7 @@ func ReadUint(r io.Reader, n uint) (uint64, error) {
 	}
 }
 
-func ReadInt(r io.Reader, n uint) (int64, error) {
+func readInt(r io.Reader, n uint) (int64, error) {
 	if n > 64 {
 		panic(errors.New("leb128: n must <= 64"))
 	}
