@@ -5,12 +5,6 @@ import (
 	"io"
 )
 
-type Number interface {
-	int8 | int16 | int | int32 | int64 | uint8 | uint16 | uint | uint32 | uint64 | float32 | float64
-}
-
-// readVarUint reads an unsigned integer of size n defined in https://webassembly.github.io/spec/core/binary/values.html#binary-int
-// readVarUint panics if n>64.
 func ReadUint(r io.Reader, n uint) (uint64, error) {
 	if n > 64 {
 		panic(errors.New("leb128: n must <= 64"))

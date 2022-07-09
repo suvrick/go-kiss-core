@@ -1,103 +1,59 @@
 package leb128
 
 import (
-	"errors"
+	"reflect"
 )
 
-func Write(value interface{}) []byte {
+func Append(result []byte, value interface{}) []byte {
 
-	b := make([]byte, 0)
-
-	// default return for nil argument
-	if value == nil {
-		b = append(b, 0)
-		return b
+	if result == nil {
+		result = make([]byte, 0)
 	}
 
-	switch v := value.(type) {
-	case int8:
-		b = AppendInt(b, int64(value.(int8)))
-	case uint8:
-		b = AppendUint(b, uint64(value.(uint8)))
-	case int16:
-		b = AppendInt(b, int64(value.(int16)))
-	case uint16:
-		b = AppendUint(b, uint64(value.(uint16)))
-	case int:
-		b = AppendInt(b, int64(value.(int)))
-	case uint:
-		b = AppendUint(b, uint64(value.(uint)))
-	case int32:
-		b = AppendInt(b, int64(value.(int32)))
-	case uint32:
-		b = AppendUint(b, uint64(value.(uint32)))
-	case int64:
-		b = AppendInt(b, int64(value.(int64)))
-	case uint64:
-		b = AppendUint(b, uint64(value.(uint64)))
-	case float32:
-		b = AppendInt(b, int64(value.(float32)))
-	case float64:
-		b = AppendUint(b, uint64(value.(float64)))
+	switch value.(type) {
+	case int8, int16, int, int32, int64:
+		result = append(result, appendInt(result, toInt64(value))...)
+	case uint8, uint16, uint, uint32, uint64, float32, float64:
+		result = append(result, appendUint(result, toUInt64(value))...)
 	case string:
-		str := value.(string)
-		str_len := int64(len(str))
-		b = AppendInt(b, str_len)
-
-		if str_len != 0 {
-			b = append(b, []byte(str)...)
-		}
-
-	default:
-		_ = v
-		return b
+		result = append(result, writeString(value.(string))...)
 	}
 
-	return b
+	return result
 }
 
-func Append(b []byte, value interface{}) ([]byte, error) {
-	switch v := value.(type) {
-	case int8:
-		b = AppendInt(b, int64(value.(int8)))
-	case uint8:
-		b = AppendUint(b, uint64(value.(uint8)))
-	case int16:
-		b = AppendInt(b, int64(value.(int16)))
-	case uint16:
-		b = AppendUint(b, uint64(value.(uint16)))
-	case int:
-		b = AppendInt(b, int64(value.(int)))
-	case uint:
-		b = AppendUint(b, uint64(value.(uint)))
-	case int32:
-		b = AppendInt(b, int64(value.(int32)))
-	case uint32:
-		b = AppendUint(b, uint64(value.(uint32)))
-	case int64:
-		b = AppendInt(b, int64(value.(int64)))
-	case uint64:
-		b = AppendUint(b, uint64(value.(uint64)))
-	case float32:
-		b = AppendInt(b, int64(value.(float32)))
-	case float64:
-		b = AppendUint(b, uint64(value.(float64)))
-	case string:
-		str := value.(string)
-		b = AppendInt(b, int64(len(str)))
-		if len(str) != 0 {
-			b = append(b, []byte(str)...)
-		}
-	default:
-		_ = v
-		return b, errors.New("bad signature")
+func toUInt64(number interface{}) uint64 {
+	v := reflect.ValueOf(number)
+
+	if v.CanUint() {
+		return v.Uint()
 	}
 
-	return b, nil
+	return 0
+}
+
+func toInt64(number interface{}) int64 {
+	v := reflect.ValueOf(number)
+
+	if v.CanInt() {
+		return v.Int()
+	}
+
+	return 0
+}
+
+func writeString(str string) []byte {
+	bytes := []byte(str)
+	length := len(bytes)
+	result := make([]byte, 0)
+	result = append(result, appendInt(result, int64(length))...)
+	result = append(result, bytes...)
+	return result
 }
 
 // AppendUleb128 appends v to b using unsigned LEB128 encoding.
-func AppendUint(b []byte, v uint64) []byte {
+func appendUint(b []byte, v uint64) []byte {
+
 	for {
 		//берём 7 бит
 		// 	13 -> 0 0 0 0  1 1 0 1
@@ -118,7 +74,7 @@ func AppendUint(b []byte, v uint64) []byte {
 }
 
 // AppendSleb128 appends v to b using signed LEB128 encoding.
-func AppendInt(b []byte, v int64) []byte {
+func appendInt(b []byte, v int64) []byte {
 	for {
 		c := uint8(v & 0x7f) // берем первых 7 бит
 		s := uint8(v & 0x40)
