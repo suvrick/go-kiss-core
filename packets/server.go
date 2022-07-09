@@ -1,164 +1,200 @@
 package packets
 
 import (
+	"container/list"
 	"io"
-	"strings"
+	"log"
 
-	"github.com/go-interpreter/wagon/wasm/leb128"
+	"github.com/suvrick/go-kiss-core/leb128"
 )
 
-type ServerPacketType uint16
+var s_packets map[uint64]Packet
 
-const (
-	//"status:B, inner_id:I, balance:I"
-	LOGIN_SERVER ServerPacketType = 4
-	//"skip:I, skip:I, skip:I, net:I, type:B, name:S, sex:B, tag:B, referrer:I, bday:I, photo:S, photo_byte:B, profile:S"
-	INFO_SERVER ServerPacketType = 5
-	//"bottles:I, reason:B"
-	BALANCE_SERVER ServerPacketType = 7
-	//"skip:I, id:I, count:I, json:S"
-	GAME_REWARDS_SERVER ServerPacketType = 13
-	//"can_collect:B, day:B"
-	BONUS_SERVER ServerPacketType = 62
-	// [skip:I, rewardId:I]
-	ROULETTE ServerPacketType = 262
-)
-
-var s_format = map[ServerPacketType]string{
-	LOGIN_SERVER:        "status:B, inner_id:I, balance:I",
-	INFO_SERVER:         "skip:I, skip:I, skip:I, net:L, type:B, name:S, sex:B, tag:B, referrer:I, bday:I, photo:S, photo_byte:B, profile:S",
-	BALANCE_SERVER:      "bottles:I, reason:B",
-	GAME_REWARDS_SERVER: "skip:I, id:I, count:I, json:S",
-	BONUS_SERVER:        "can_collect:B, day:B",
-	ROULETTE:            "skip:I, rewardId:I",
+func SetServerPacket(p *map[uint64]Packet) {
+	s_packets = *p
 }
 
-func getServerFormat(t ServerPacketType) string {
+func GetServerPacket(id uint64) (Packet, bool) {
+	p, ok := s_packets[id]
+	return p, ok
+}
 
-	line, ok := s_format[t]
-
+func GetMeta(id uint64) (name string, format string, err error) {
+	p, ok := s_packets[id]
 	if !ok {
-		return ""
+		return "", "", ErrNotFoundPacket
 	}
 
-	return line
+	return p.Name, p.Format, nil
 }
 
-func CreateServerPacket(t ServerPacketType, format string, r io.Reader) map[string]interface{} {
+func CreateServerPacket(r io.Reader) *Packet {
 
-	var _ ServerPacketType = t
+	p := Packet{}
 
-	format = strings.ReplaceAll(format, " ", "")
-	words := strings.Split(format, ",")
+	p.Len, p.Error = leb128.ReadUint(r, 32)
+	p.ID, p.Error = leb128.ReadInt(r, 32)
+	p.Type, p.Error = leb128.ReadUint(r, 16)
 
-	if words == nil {
+	if p.Error != nil {
+		return &p
+	}
+
+	p.Name, p.Format, p.Error = GetMeta(p.Type)
+
+	if p.Error != nil {
+		return &p
+	}
+
+	// if p_type == 5 {
+	// 	p.Format = "IIISBSBBIBIBIIBBIII"
+	// }
+
+	p.Params, p.Error = parse(r, []byte(p.Format))
+
+	return &p
+}
+
+// Где обработка ошибок ???
+func parse(reader io.Reader, format []byte) ([]interface{}, error) {
+
+	q := list.New()
+	current := []interface{}{}
+
+	up := func() {
+		q.PushBack(current)
+		current = []interface{}{}
+	}
+
+	down := func() {
+		t := current
+		el := q.Back()
+		q.Remove(el)
+		current = el.Value.([]interface{})
+		current = append(current, t)
+	}
+
+	// [read] -> TIMEOUTS(173) "[BI]" PARAMS: [[[32 1655133163]]] ERROR: ""
+	for i := 0; i < len(format); i++ {
+
+		char := format[i]
+
+		if char == ',' {
+			continue
+		}
+
+		if char == '{' {
+			up()
+			continue
+		}
+
+		if char == '}' {
+			down()
+			continue
+		}
+
+		if char == '[' {
+			l, err := leb128.ReadUint(reader, 32)
+			if err != nil {
+				return current, err
+			}
+			format = getGroup(format, i, l)
+			up()
+			continue
+		}
+
+		if char == ']' {
+			down()
+			continue
+		}
+
+		value, err := getValue(reader, char)
+		if err != nil {
+			return current, err
+		}
+
+		current = append(current, value)
+
+	}
+
+	return current, nil
+}
+
+func getGroup(format_array []byte, index int, count uint64) []byte {
+
+	result := make([]byte, 0)
+	summater := make([]byte, 0)
+	fragment := make([]byte, 0)
+
+	if len(format_array) < index {
 		return nil
 	}
 
-	result := make(map[string]interface{}, 0)
-	for _, word := range words {
+	arr1 := format_array[:index+1]
+	arr2 := format_array[index+1:]
 
-		word = strings.ReplaceAll(word, "[", "")
-		word = strings.ReplaceAll(word, "]", "")
+	deep := 0
+	end := 0
 
-		s := strings.Split(word, ":")
+	for i, v := range arr2 {
 
-		if len(s) != 2 {
-			continue
+		if v == '[' {
+			deep++
 		}
 
-		name := s[0]
-		code := s[1]
-
-		if name == "skip" {
-			leb128.ReadVarUint32(r)
-			continue
+		if v == ']' {
+			if deep == 0 {
+				end = i
+				break
+			}
+			deep--
 		}
 
-		switch code {
-		case "B", "I":
-			value, _ := leb128.ReadVarUint32(r)
-			result[name] = value
-			break
-		case "L":
-			value, _ := leb128.ReadVarint64(r)
-			result[name] = value
-			break
-		case "S":
-			len, _ := leb128.ReadVarUint32(r)
-			str := make([]byte, len)
-			r.Read(str)
-
-			result[name] = string(str)
-			break
-		}
+		fragment = append(fragment, v)
 	}
+
+	for count != 0 {
+		summater = append(summater, '{')
+		summater = append(summater, fragment...)
+		summater = append(summater, '}')
+		count--
+	}
+
+	result = append(result, arr1...)
+	result = append(result, summater...)
+	result = append(result, arr2[end:]...)
 	return result
 }
 
-// LOGIN_SERVER:
-// "status:B, inner_id:I, balance:I",
-func NewLoginServerPacket(r io.Reader) map[string]interface{} {
-	f := getServerFormat(LOGIN_SERVER)
-	return CreateServerPacket(LOGIN_SERVER, f, r)
-}
+// Что с обработкой ошибок?
+func getValue(reader io.Reader, r byte) (interface{}, error) {
 
-// INFO_SERVER:
-// "skip:I, skip:I, skip:I, net:L, type:B, name:S, sex:B, tag:B, referrer:I, bday:I, photo:S, photo_byte:B, profile:S",
-func NewInfoServerPacket(r io.Reader) map[string]interface{} {
-	f := getServerFormat(INFO_SERVER)
-	return CreateServerPacket(INFO_SERVER, f, r)
-}
+	var value interface{}
+	var err error
 
-// BALANCE_SERVER:
-// "bottles:I, reason:B",
-func NewBalanceServerPacket(r io.Reader) map[string]interface{} {
-	f := getServerFormat(BALANCE_SERVER)
-	return CreateServerPacket(BALANCE_SERVER, f, r)
-}
-
-// GAME_REWARDS_SERVER:
-// "skip:I, id:I, count:I, json:S",
-func NewGameRewardsServerPacket(r io.Reader) map[string]interface{} {
-	f := getServerFormat(GAME_REWARDS_SERVER)
-	return CreateServerPacket(GAME_REWARDS_SERVER, f, r)
-}
-
-// BONUS_SERVER:
-// "can_collect:B, day:B",
-func NewBonusServerPacket(r io.Reader) map[string]interface{} {
-	f := getServerFormat(BONUS_SERVER)
-	return CreateServerPacket(BONUS_SERVER, f, r)
-}
-
-type SERVER_AUTH_RESULT byte
-
-const (
-	LOGIN_SUCCESS       SERVER_AUTH_RESULT = 0x00
-	LOGIN_FAILED        SERVER_AUTH_RESULT = 0x01
-	LOGIN_EXIST         SERVER_AUTH_RESULT = 0x02
-	LOGIN_BLOCKED       SERVER_AUTH_RESULT = 0x03
-	LOGIN_WRONG_VERSION SERVER_AUTH_RESULT = 0x04
-	LOGIN_NO_SEX        SERVER_AUTH_RESULT = 0x05
-	LOGIN_CAPTCHA       SERVER_AUTH_RESULT = 0x06
-
-	LOGIN_WAIT_AUTHORIZATION SERVER_AUTH_RESULT = 0xfc
-	LOGIN_ERROR              SERVER_AUTH_RESULT = 0xff
-)
-
-func (s SERVER_AUTH_RESULT) ToString() string {
-	switch s {
-	case LOGIN_SUCCESS:
-		return "SUCCESS"
-	case LOGIN_EXIST:
-		return "EXIST"
-	case LOGIN_BLOCKED:
-		return "BLOCKED"
-	case LOGIN_FAILED:
-		return "FAILED"
-	case LOGIN_CAPTCHA:
-		return "CAPTCHA"
+	switch r {
+	case 'B':
+		value, err = leb128.ReadInt(reader, 8)
+	case 'I':
+		value, err = leb128.ReadInt(reader, 64)
+	case 'S':
+		var str_len uint64
+		str_len, err = leb128.ReadUint(reader, 16)
+		if err != nil {
+			return nil, ErrBadSignaturePacket
+		}
+		str := make([]byte, str_len)
+		_, err = reader.Read(str)
+		value = string(str)
+		if err != nil {
+			return nil, ErrBadSignaturePacket
+		}
+	case 'A':
+		str_len, _ := leb128.ReadUint(reader, 16)
+		log.Println(str_len)
 	default:
-		return "XZ"
+		return nil, ErrBadSignaturePacket
 	}
+
+	return value, err
 }
