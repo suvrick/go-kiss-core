@@ -1,190 +1,122 @@
 package packets
 
 import (
-	"strings"
-
-	"github.com/go-interpreter/wagon/wasm/leb128"
+	"github.com/suvrick/go-kiss-core/leb128"
 )
 
-type ClientPacketType uint16
+var c_packets map[uint64]Packet
 
-const (
-	// net_id:I, type:B, device:B, auth_key:S, oauth:B, session_key:S, referrer:I, tag:I, appicationID:B, timestamp:S, language:B, utm_source:S, sex:B, captcha:S
-	LOGIN ClientPacketType = 4
-	// good_id:I, cost:I, target_id:I, data:I, price_type:B, count:I, hash:S, params: S
-	BUY ClientPacketType = 6
-	// reward_id:I
-	GAME_REWARDS_GET ClientPacketType = 11
-	// inner_id:I
-	VIEW ClientPacketType = 17
-	// ""
-	BONUS ClientPacketType = 61
-	// ""
-	GET_BDAY_REWARD ClientPacketType = 163
-	// type:B
-	PROFILE_REWARD_GET ClientPacketType = 170
-	// ""
-	ROULETTE_ROLL ClientPacketType = 252
-	// player_id:I
-	GET_ADMIRE_BONUS ClientPacketType = 266
-	// type:I, data:I, count:I
-	COUNT ClientPacketType = 20
-)
-
-var c_format = map[ClientPacketType]string{
-	LOGIN:              "net_id:I, type:B, device:B, auth_key:S, oauth:B, session_key:S, referrer:I, tag:I, appicationID:B, timestamp:S, language:B, utm_source:S, sex:B",
-	BUY:                "good_id:I, cost:I, target_id:I, data:I, price_type:B, count:I, hash:S, params: S",
-	GAME_REWARDS_GET:   "reward_id:I",
-	VIEW:               " inner_id:I",
-	BONUS:              "",
-	GET_BDAY_REWARD:    "",
-	PROFILE_REWARD_GET: "type:B",
-	ROULETTE_ROLL:      "",
-	GET_ADMIRE_BONUS:   "player_id:I",
-	COUNT:              "type:I, data:I, count:I",
+func SetClientPakets(p *map[uint64]Packet) {
+	c_packets = *p
 }
 
-func getClientFormat(t ClientPacketType) string {
+func GetClientPacket(id uint64) (Packet, bool) {
+	p, ok := c_packets[id]
+	return p, ok
+}
 
-	line, ok := c_format[t]
+func CreateClientPacket(p_type uint64, params ...interface{}) Packet {
 
+	p, ok := GetClientPacket(p_type)
 	if !ok {
-		return ""
+		p = Packet{
+			Type:   p_type,
+			Params: params,
+			Error:  ErrNotFoundPacket,
+		}
+		return p
 	}
 
-	return line
+	p.Params = params
+
+	p.Buffer = make([]byte, 0)
+	p.Buffer, p.Error = leb128.Append(p.Buffer, p_type) // packet type
+	p.Buffer, p.Error = leb128.Append(p.Buffer, 4)      // device type
+
+	if p.Error != nil {
+		return p
+	}
+
+	if p.Type == 8 {
+		p.Format = "[I]I,I"
+	}
+
+	arr := load([]byte(p.Format), params)
+	p.Buffer = append(p.Buffer, arr...)
+
+	return p
 }
 
-func CreateClientPacket(t ClientPacketType, format string, data map[string]interface{}) []byte {
+func (p *Packet) GetBuffer(msgID int64) []byte {
 
-	result := make([]byte, 0)
+	a := leb128.Write(msgID)
+	b := len(p.Buffer) + len(a)
+	c := leb128.Write(b)
 
-	result = leb128.AppendUleb128(result, uint64(t)) // packet type
-	result = leb128.AppendSleb128(result, int64(4))  // device type
+	data := make([]byte, 0)
+	data = append(data, c...)        // итоговая длина пакета
+	data = append(data, a...)        // ID сообщения
+	data = append(data, p.Buffer...) // данные
+	return data
 
-	format = strings.ReplaceAll(format, " ", "")
-	words := strings.Split(format, ",")
+}
 
-	if words == nil {
-		return result
-	}
+func load(format []byte, params []interface{}) []byte {
 
-	for _, word := range words {
+	next := nextParam(params)
+	current := []byte{}
 
-		s := strings.Split(word, ":")
+	for i := 0; i < len(format); i++ {
+		char := format[i]
 
-		if len(s) != 2 {
+		if char == ',' {
 			continue
 		}
 
-		name := s[0]
-		code := s[1]
-
-		value := data[name]
-
-		if value == nil {
-			result = append(result, 0)
+		if char == '{' {
 			continue
 		}
 
-		switch code {
-		case "B", "I", "L":
-
-			switch value.(type) {
-			case uint8:
-				result = leb128.AppendUleb128(result, uint64(value.(uint8)))
-				break
-			case int16:
-				result = leb128.AppendUleb128(result, uint64(value.(int16)))
-				break
-			case int:
-				result = leb128.AppendUleb128(result, uint64(value.(int)))
-				break
-			case int32:
-				result = leb128.AppendUleb128(result, uint64(value.(int32)))
-				break
-			case uint32:
-				result = leb128.AppendUleb128(result, uint64(value.(uint32)))
-				break
-			case uint64:
-				result = leb128.AppendUleb128(result, value.(uint64))
-				break
-			}
-			break
-		case "S":
-
-			v, ok := value.(string)
-
-			if !ok {
-				result = append(result, 0)
-				continue
-			}
-
-			if len(v) == 0 {
-				result = append(result, 0)
-				continue
-			}
-
-			result = leb128.AppendUleb128(result, uint64(len(v)))
-			result = append(result, []byte(v)...)
-			break
+		if char == '}' {
+			continue
 		}
+
+		if char == '[' {
+			value := setValue(1, 'B')
+			current = append(current, value...)
+			continue
+		}
+
+		if char == ']' {
+			continue
+		}
+
+		value := setValue(next(), char)
+		current = append(current, value...)
 	}
 
-	return result
+	return current
 }
 
-// LOGIN
-// "net_id:L, type:B, device:B, auth_key:S, oauth:B, session_key:S
-func NewLoginPacketClient(lp map[string]interface{}) []byte {
-	f := getClientFormat(LOGIN)
-	return CreateClientPacket(LOGIN, f, lp)
+func nextParam(params []interface{}) func() interface{} {
+	i := -1
+	return func() interface{} {
+		i++
+
+		if i > len(params)-1 {
+			return nil
+		}
+
+		return params[i]
+	}
 }
 
-// BUY
-// "good_id:I, cost:I, target_id:I, data:I, price_type:B, count:I, hash:S, params: S"
-func NewBuyPacketClient(good_id, cost, target_id, data int, price_type byte, count int, hash, params string) []byte {
-	f := getClientFormat(BUY)
-	return CreateClientPacket(BUY, f, map[string]interface{}{
-		"good_id":    good_id,
-		"cost":       cost,
-		"target_id":  target_id,
-		"data":       data,
-		"price_type": price_type,
-		"count":      count,
-		"hash":       hash,
-		"params":     params,
-	})
-}
+func setValue(v interface{}, code byte) []byte {
 
-// GAME_REWARDS_GET
-// "reward_id:I"
-func NewGameRewardsGetPacketClient(reward_id interface{}) []byte {
-	f := getClientFormat(GAME_REWARDS_GET)
-	return CreateClientPacket(GAME_REWARDS_GET, f, map[string]interface{}{
-		"reward_id": reward_id,
-	})
-}
+	switch code {
+	case 'B', 'I', 'L', 'F', 'S':
+		return leb128.Write(v)
+	}
 
-// VIEW
-// "inner_id:I",
-func NewViewPacketClient(inner_id int) []byte {
-	f := getClientFormat(VIEW)
-	return CreateClientPacket(VIEW, f, map[string]interface{}{
-		"inner_id": inner_id,
-	})
-}
-
-// BONUS
-// ""
-func NewBonusPacketClient() []byte {
-	f := getClientFormat(BONUS)
-	return CreateClientPacket(BONUS, f, nil)
-}
-
-// GET_BDAY_REWARD
-// ""
-func NewGetBDayRewardPacketClient() []byte {
-	f := getClientFormat(GET_BDAY_REWARD)
-	return CreateClientPacket(GET_BDAY_REWARD, f, nil)
+	return nil
 }
