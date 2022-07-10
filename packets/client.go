@@ -9,16 +9,17 @@ import (
 
 func CreateClientPacket(p_type int, params ...interface{}) Packet {
 
-	id, name, format, ok := meta.GetClientMeta(p_type)
+	name, format, ok := meta.GetClientMeta(p_type)
+
+	p := Packet{
+		Type:   p_type,
+		Name:   name,
+		Format: format,
+		Params: params,
+	}
 
 	if !ok {
-		p = Packet{
-			Type:   id,
-			Name:   name,
-			Format: format,
-			Params: params,
-			Error:  ErrNotFoundPacket,
-		}
+		p.Error = ErrNotFoundPacket
 		return p
 	}
 
@@ -54,28 +55,6 @@ func CreateClientPacket(p_type int, params ...interface{}) Packet {
 
 	p.Buffer = append(p.Buffer, data...)
 	return p
-}
-
-func (p *Packet) GetBuffer(msgID int64) ([]byte, error) {
-
-	a, err := leb128.Compress(msgID)
-	if err != nil {
-		return nil, err
-	}
-
-	b := len(p.Buffer) + len(a)
-
-	c, err := leb128.Compress(b)
-	if err != nil {
-		return nil, err
-	}
-
-	data := make([]byte, 0)
-	data = append(data, c...)        // итоговая длина пакета
-	data = append(data, a...)        // ID сообщения
-	data = append(data, p.Buffer...) // данные
-	return data, nil
-
 }
 
 func load(format []byte, params []interface{}) ([]byte, error) {

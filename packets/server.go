@@ -5,51 +5,35 @@ import (
 	"io"
 
 	"github.com/suvrick/go-kiss-core/leb128"
+	"github.com/suvrick/go-kiss-core/packets/meta"
 )
-
-var s_packets map[uint64]Packet
-
-func SetServerPacket(p *map[uint64]Packet) {
-	s_packets = *p
-}
-
-func GetServerPacket(id uint64) (Packet, bool) {
-	p, ok := s_packets[id]
-	return p, ok
-}
-
-func GetMeta(id uint64) (name string, format string, err error) {
-	p, ok := s_packets[id]
-	if !ok {
-		return "", "", ErrNotFoundPacket
-	}
-
-	return p.Name, p.Format, nil
-}
 
 func CreateServerPacket(r io.Reader) *Packet {
 
 	p := Packet{}
-
-	p.Len, p.Error = leb128.ReadUint64(r)
-	p.ID, p.Error = leb128.ReadInt64(r)
-	p.Type, p.Error = leb128.ReadUint64(r)
-
-	if p.Error != nil {
-		return &p
-	}
-
-	p.Name, p.Format, p.Error = GetMeta(p.Type)
+	p.Len, p.Error = leb128.ReadInt(r)
+	p.ID, p.Error = leb128.ReadInt(r)
+	p.Type, p.Error = leb128.ReadInt(r)
 
 	if p.Error != nil {
 		return &p
 	}
+
+	name, format, ok := meta.GetServerMeta(p.Type)
+
+	if !ok {
+		p.Error = ErrNotFoundPacket
+		return &p
+	}
+
+	p.Name = name
+	p.Format = format
 
 	// if p_type == 5 {
 	// 	p.Format = "IIISBSBBIBIBIIBBIII"
 	// }
 
-	p.Params, p.Error = parse(r, []byte(p.Format))
+	p.Params, p.Error = parse(r, []byte(format))
 
 	return &p
 }

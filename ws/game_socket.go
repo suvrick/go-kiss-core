@@ -71,7 +71,7 @@ func (gs *GameSocket) GameOver() {
 	gs.socket.Close()
 }
 
-func (gs *GameSocket) Send(t uint64, data []interface{}) {
+func (gs *GameSocket) Send(t int, data []interface{}) {
 
 	p := packets.CreateClientPacket(t, data...)
 

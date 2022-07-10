@@ -63,32 +63,32 @@ func (p *Meta) initialize() {
 	p.parseBody(body)
 }
 
-// return id, name, format, ok
-func GetClientMeta(id int) (int, string, string, bool) {
+// return name, format, ok
+func GetClientMeta(typeID int) (string, string, bool) {
 
 	if instance == nil {
 		NewMeta()
 	}
 
-	r, ok := instance.clients[id]
+	r, ok := instance.clients[typeID]
 	if !ok {
-		return id, "", "", false
+		return "", "", false
 	}
-	return id, r[0], r[1], true
+	return r[0], r[1], true
 }
 
-// return id, name, format, ok
-func GetServerMeta(id int) (int, string, string, bool) {
+// return name, format, ok
+func GetServerMeta(typeID int) (string, string, bool) {
 
 	if instance == nil {
 		NewMeta()
 	}
 
-	r, ok := instance.servers[id]
+	r, ok := instance.servers[typeID]
 	if !ok {
-		return id, "", "", false
+		return "", "", false
 	}
-	return id, r[0], r[1], true
+	return r[0], r[1], true
 }
 
 func (meta *Meta) parseBody(body []byte) {

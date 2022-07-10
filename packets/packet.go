@@ -1,9 +1,11 @@
 package packets
 
+import "github.com/suvrick/go-kiss-core/leb128"
+
 type Packet struct {
-	Len    uint64
+	Len    int
 	ID     int
-	Type   uint64
+	Type   int
 	Format string
 	Name   string
 	Error  error
@@ -30,7 +32,7 @@ type Bot struct {
 }
 
 type Mask struct {
-	PacketID uint64
+	PacketID int
 	Index    int
 	Type     string
 	Name     string
@@ -138,4 +140,25 @@ func (p *Packet) Fill(bot *Bot) {
 			}
 		}
 	}
+}
+
+func (p *Packet) GetBuffer(msgID int64) ([]byte, error) {
+
+	a, err := leb128.Compress(msgID)
+	if err != nil {
+		return nil, err
+	}
+
+	b := len(p.Buffer) + len(a)
+
+	c, err := leb128.Compress(b)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]byte, 0)
+	data = append(data, c...)        // итоговая длина пакета
+	data = append(data, a...)        // ID сообщения
+	data = append(data, p.Buffer...) // данные
+	return data, nil
 }

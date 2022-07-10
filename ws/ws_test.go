@@ -10,7 +10,7 @@ import (
 
 func TestGameSocket(t *testing.T) {
 
-	meta := meta.NewMeta(nil)
+	meta := meta.NewMeta()
 	if meta.Error != nil {
 		log.Fatalln(meta.Error.Error())
 	}
