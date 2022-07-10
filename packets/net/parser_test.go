@@ -9,8 +9,7 @@ import (
 )
 
 func TestDebug(t *testing.T) {
-	p := NewParser()
-	p.Initialize()
+	p := NewParser(nil)
 	if p.Error != nil {
 		fmt.Println(p.Error)
 	}

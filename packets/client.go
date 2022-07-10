@@ -20,6 +20,7 @@ func GetClientPacket(id uint64) (Packet, bool) {
 func CreateClientPacket(p_type uint64, params ...interface{}) Packet {
 
 	p, ok := GetClientPacket(p_type)
+
 	if !ok {
 		p = Packet{
 			Type:   p_type,

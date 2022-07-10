@@ -8,25 +8,37 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"sync"
 )
 
-var (
-	clients map[int][2]string = map[int][2]string{}
-	servers map[int][2]string = map[int][2]string{}
-)
+var instance *Parser
+var once sync.Once
 
 type Parser struct {
 	ParserConfig
 	Error error
+
+	clients map[int][2]string
+	servers map[int][2]string
 }
 
-func NewParser() *Parser {
-	return &Parser{
-		ParserConfig: *GetDefaultParserConfig(),
+func NewParser(config *ParserConfig) *Parser {
+
+	if config == nil {
+		config = GetDefaultParserConfig()
 	}
+
+	if instance == nil {
+		instance = &Parser{
+			ParserConfig: *config,
+		}
+		once.Do(instance.initialize)
+	}
+
+	return instance
 }
 
-func (p *Parser) Initialize() {
+func (p *Parser) initialize() {
 
 	p.getVersion()
 	if p.Error != nil {
@@ -45,12 +57,12 @@ func (p *Parser) Initialize() {
 	p.parseBody(body)
 }
 
-func GetClientsMeta() map[int][2]string {
-	return clients
+func (parser *Parser) GetClientsMeta() map[int][2]string {
+	return parser.clients
 }
 
-func GetServersMeta() map[int][2]string {
-	return servers
+func (parser *Parser) GetServersMeta() map[int][2]string {
+	return parser.servers
 }
 
 func (parser *Parser) parseBody(body []byte) {
@@ -84,19 +96,19 @@ func (parser *Parser) parseBody(body []byte) {
 
 	/* GENERATE */
 
-	servers = parser.generateData(server_formats, server_types)
-	if len(servers) == 0 {
+	parser.servers = parser.generateData(server_formats, server_types)
+	if len(parser.servers) == 0 {
 		parser.Error = fmt.Errorf("[net.generateData] generateData by server return zero length. formats len: %d, types len: %d", len(server_formats), len(server_types))
 		return
 	}
 
-	clients = parser.generateData(client_formats, client_types)
-	if len(clients) == 0 {
+	parser.clients = parser.generateData(client_formats, client_types)
+	if len(parser.clients) == 0 {
 		parser.Error = fmt.Errorf("[net.generateData] generateData by client return zero length. formats len: %d, types len: %d", len(client_formats), len(client_types))
 		return
 	}
 
-	fmt.Printf("parse success! servers: %d, clients: %d\n", len(servers), len(clients))
+	fmt.Printf("parse success! servers: %d, clients: %d\n", len(parser.servers), len(parser.clients))
 }
 
 func (parser *Parser) generateData(formats []string, types map[int]string) map[int][2]string {
