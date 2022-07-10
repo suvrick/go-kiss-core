@@ -2,16 +2,18 @@ package net
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 	"testing"
 )
 
 func TestDebug(t *testing.T) {
-
 	p := NewParser()
-
 	p.Initialize()
+	if p.Error != nil {
+		fmt.Println(p.Error)
+	}
 }
 
 var jsons = `{

@@ -3,66 +3,17 @@ package net
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 var (
-	ErrEmptyParams = errors.New("empty params")
-	ErrEmptyResult = errors.New("empty result")
-	ErrBadRequest  = errors.New("bad request")
+	clients map[int][2]string = map[int][2]string{}
+	servers map[int][2]string = map[int][2]string{}
 )
-
-type RegConfig struct {
-	Start   []byte
-	End     []byte
-	Pattern []byte
-}
-
-type ParserConfig struct {
-	HostPath    string
-	VersionPath string
-	ScriptPath  string
-	Version     string
-
-	ClientFormats RegConfig
-	ServerFormats RegConfig
-	ServerTypes   RegConfig
-	ClientTypes   RegConfig
-}
-
-func GetDefaultParserConfig() *ParserConfig {
-	return &ParserConfig{
-		HostPath:    "https://inspin.me/",
-		VersionPath: "version.json",
-		ScriptPath:  "workers/connection_worker.js",
-		ClientFormats: RegConfig{
-			Start:   []byte("PacketServer=o,o.FORMATS=["),
-			End:     []byte("}"),
-			Pattern: []byte(`"[A-Z,\[\]]*"`),
-		},
-		ServerFormats: RegConfig{
-			Start:   []byte("PacketServer=o,o.FORMATS=["),
-			End:     []byte("}"),
-			Pattern: []byte(`"[A-Z,\[\]]*"`),
-		},
-		ClientTypes: RegConfig{
-			Start:   []byte(".ClientPacketType=void"),
-			End:     []byte("}"),
-			Pattern: []byte(`.([A-Z_]*)=([0-9]*)`),
-		},
-		ServerTypes: RegConfig{
-			Start:   []byte(".ServerPacketType=void"),
-			End:     []byte("}"),
-			Pattern: []byte(`.([A-Z_]*)=([0-9]*)`),
-		},
-	}
-}
 
 type Parser struct {
 	ParserConfig
@@ -79,7 +30,6 @@ func (p *Parser) Initialize() {
 
 	p.getVersion()
 	if p.Error != nil {
-		fmt.Printf("%v\n", p.Error)
 		return
 	}
 
@@ -87,36 +37,66 @@ func (p *Parser) Initialize() {
 
 	body := p.getBody()
 	if p.Error != nil {
-		fmt.Printf("%v\n", p.Error)
 		return
 	}
 
-	fmt.Printf("body length: %d\n", len(body))
+	//fmt.Printf("body length: %d\n", len(body))
 
+	p.parseBody(body)
+}
+
+func GetClientsMeta() map[int][2]string {
+	return clients
+}
+
+func GetServersMeta() map[int][2]string {
+	return servers
+}
+
+func (parser *Parser) parseBody(body []byte) {
 	/* FORMATS */
 
-	server_formats := p.getFormats(body, p.ServerFormats.Start, p.ServerFormats.End, p.ServerFormats.Pattern)
-	fmt.Printf("get server formats length: %d\n", len(server_formats))
+	server_formats := parser.getFormats(body, parser.ServerFormats.Start, parser.ServerFormats.End, parser.ServerFormats.Pattern)
+	if len(server_formats) == 0 {
+		parser.Error = fmt.Errorf("[net.getFormats] getFormats by server return zero len length. start: %#v, end: %#v, pattern: %#v", string(parser.ServerFormats.Start), string(parser.ServerFormats.End), string(parser.ServerFormats.Pattern))
+		return
+	}
 
-	client_formats := p.getFormats(body, p.ClientFormats.Start, p.ClientFormats.End, p.ClientFormats.Pattern)
-	fmt.Printf("get client formats length: %d\n", len(client_formats))
+	client_formats := parser.getFormats(body, parser.ClientFormats.Start, parser.ClientFormats.End, parser.ClientFormats.Pattern)
+	if len(client_formats) == 0 {
+		parser.Error = fmt.Errorf("[net.getFormats] getFormats by client return zero length. start %s, end: %s, pattern: %s", parser.ClientFormats.Start, parser.ClientFormats.End, parser.ClientFormats.Pattern)
+		return
+	}
 
 	/* TYPES */
 
-	server_types := p.getTypes(body, p.ServerTypes.Start, p.ServerTypes.End, p.ServerTypes.Pattern)
-	fmt.Printf("get server types length: %d\n", len(server_types))
+	server_types := parser.getTypes(body, parser.ServerTypes.Start, parser.ServerTypes.End, parser.ServerTypes.Pattern)
+	if len(server_types) == 0 {
+		parser.Error = fmt.Errorf("[net.getTypes] getTypes by server return zero length. start %s, end: %s, pattern: %s", parser.ServerTypes.Start, parser.ServerTypes.End, parser.ServerTypes.Pattern)
+		return
+	}
 
-	client_types := p.getTypes(body, p.ClientTypes.Start, p.ClientTypes.End, p.ClientTypes.Pattern)
-	fmt.Printf("get client types length: %d\n", len(client_types))
+	client_types := parser.getTypes(body, parser.ClientTypes.Start, parser.ClientTypes.End, parser.ClientTypes.Pattern)
+	if len(client_types) == 0 {
+		parser.Error = fmt.Errorf("[net.getTypes] getTypes by client return zero length. start %s, end: %s, pattern: %s", parser.ClientTypes.Start, parser.ClientTypes.End, parser.ClientTypes.Pattern)
+		return
+	}
 
 	/* GENERATE */
 
-	servers := p.generateData(server_formats, server_types)
-	fmt.Printf("generate servers: %d\n", len(servers))
+	servers = parser.generateData(server_formats, server_types)
+	if len(servers) == 0 {
+		parser.Error = fmt.Errorf("[net.generateData] generateData by server return zero length. formats len: %d, types len: %d", len(server_formats), len(server_types))
+		return
+	}
 
-	clients := p.generateData(client_formats, client_types)
-	fmt.Printf("generate clients: %d\n", len(clients))
+	clients = parser.generateData(client_formats, client_types)
+	if len(clients) == 0 {
+		parser.Error = fmt.Errorf("[net.generateData] generateData by client return zero length. formats len: %d, types len: %d", len(client_formats), len(client_types))
+		return
+	}
 
+	fmt.Printf("parse success! servers: %d, clients: %d\n", len(servers), len(clients))
 }
 
 func (parser *Parser) generateData(formats []string, types map[int]string) map[int][2]string {
@@ -148,12 +128,14 @@ func (parser *Parser) getFormats(body []byte, start []byte, end []byte, pattern 
 		return nil
 	}
 
-	finded := reg.FindAll(body, -1)
+	finded := reg.FindAllSubmatch(body, -1)
 
 	result := make([]string, 0)
 
 	for _, v := range finded {
-		result = append(result, string(v))
+		if len(v) == 2 {
+			result = append(result, string(v[1]))
+		}
 	}
 
 	return result
@@ -197,7 +179,7 @@ func (parser *Parser) getBody() []byte {
 	url := fmt.Sprintf("%s%s%s", parser.HostPath, parser.Version, parser.ScriptPath)
 	body, err := parser.request(url)
 	if err != nil {
-		parser.Error = err
+		parser.Error = fmt.Errorf("[net.getBody] fail get body. %s", err)
 		return nil
 	}
 	return body
@@ -209,7 +191,7 @@ func (parser *Parser) getVersion() {
 
 	body, err := parser.request(url)
 	if err != nil {
-		parser.Error = err
+		parser.Error = fmt.Errorf("[net.getVersion] fail get version. %s", err)
 		return
 	}
 
@@ -220,12 +202,12 @@ func (parser *Parser) getVersion() {
 	v := version{}
 	err = json.Unmarshal(body, &v)
 	if err != nil {
-		parser.Error = err
+		parser.Error = fmt.Errorf("[net.getVersion] fail get version. %s", err)
 		return
 	}
 
 	if len(v.V) == 0 {
-		parser.Error = ErrEmptyResult
+		parser.Error = fmt.Errorf("[net.getVersion] fail get version. %s", ErrEmptyResult)
 		return
 	}
 
@@ -242,7 +224,7 @@ func (parser *Parser) request(url string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, ErrBadRequest
+		return nil, fmt.Errorf("%s. request url: %s", ErrBadRequest, url)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -251,7 +233,7 @@ func (parser *Parser) request(url string) ([]byte, error) {
 	}
 
 	if len(body) == 0 {
-		return nil, ErrEmptyResult
+		return nil, fmt.Errorf("%s. request url: %s", ErrEmptyResult, url)
 	}
 
 	// delete spacial symbol
@@ -278,69 +260,7 @@ func (parser *Parser) split(body []byte, start []byte, end []byte) []byte {
 
 	index_end = index_start + index_end
 
-	fmt.Printf("index_start: %d, index_end %d\n", index_start, index_end)
+	//fmt.Printf("index_start: %d, index_end %d\n", index_start, index_end)
 
 	return body[index_start:index_end]
-}
-
-var rewards []string
-
-type Caption struct {
-	Ru string `json:"ru"`
-	En string `json:"en"`
-}
-
-type Obj struct {
-	ID       uint64  `json:"id"`
-	Captions Caption `json:"captions"`
-}
-
-func GetReward(rewardID uint64) string {
-	pattern := fmt.Sprintf("\"id\": %d,", rewardID)
-	for _, r := range rewards {
-		if strings.Index(r, pattern) > 0 {
-			return r
-		}
-	}
-
-	return ""
-}
-
-func init_rewards() error {
-
-	resp, err := http.Get("https://bottleconf.realcdn.ru/rewards.json")
-
-	if err != nil {
-		return err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return ErrBadRequest
-	}
-
-	body, err := io.ReadAll(resp.Body)
-
-	if err != nil {
-		return err
-	}
-
-	jsons := strings.ReplaceAll(string(body), "\t", "")
-	lines := strings.Split(jsons, "\n")
-
-	rewards = make([]string, 0)
-
-	for _, line := range lines {
-		if strings.Index(line, "id") > 0 && strings.Index(line, "captions") > 0 && strings.Index(line, "content") > 0 {
-
-			if line[len(line)-1] == ',' {
-				line = line[:len(line)-1]
-			}
-
-			rewards = append(rewards, line)
-		}
-	}
-
-	return nil
 }
