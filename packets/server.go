@@ -13,7 +13,7 @@ func CreateServerPacket(r io.Reader) *Packet {
 	p := Packet{}
 	p.Len, p.Error = leb128.ReadInt(r)
 	p.ID, p.Error = leb128.ReadInt(r)
-	p.Type, p.Error = leb128.ReadInt(r)
+	p.Type, p.Error = leb128.ReadUint16(r)
 
 	if p.Error != nil {
 		return &p

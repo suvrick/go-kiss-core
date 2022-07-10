@@ -19,8 +19,8 @@ type Meta struct {
 	MetaConfig
 	Error error
 
-	clients map[int][2]string
-	servers map[int][2]string
+	clients map[uint16][2]string
+	servers map[uint16][2]string
 }
 
 func NewMeta() *Meta {
@@ -64,7 +64,7 @@ func (p *Meta) initialize() {
 }
 
 // return name, format, ok
-func GetClientMeta(typeID int) (string, string, bool) {
+func GetClientMeta(typeID uint16) (string, string, bool) {
 
 	if instance == nil {
 		NewMeta()
@@ -78,7 +78,7 @@ func GetClientMeta(typeID int) (string, string, bool) {
 }
 
 // return name, format, ok
-func GetServerMeta(typeID int) (string, string, bool) {
+func GetServerMeta(typeID uint16) (string, string, bool) {
 
 	if instance == nil {
 		NewMeta()
@@ -137,12 +137,12 @@ func (meta *Meta) parseBody(body []byte) {
 	fmt.Printf("meta parse success! servers: %d, clients: %d\n", len(meta.servers), len(meta.clients))
 }
 
-func (meta *Meta) generateData(formats []string, types map[int]string) map[int][2]string {
-	result := make(map[int][2]string)
+func (meta *Meta) generateData(formats []string, types map[uint16]string) map[uint16][2]string {
+	result := make(map[uint16][2]string)
 	for id, format := range formats {
-		name, ok := types[id]
+		name, ok := types[uint16(id)]
 		if ok {
-			result[id] = [2]string{
+			result[uint16(id)] = [2]string{
 				name,
 				format,
 			}
@@ -179,7 +179,7 @@ func (meta *Meta) getFormats(body []byte, start []byte, end []byte, pattern []by
 	return result
 }
 
-func (meta *Meta) getTypes(body []byte, start []byte, end []byte, pattern []byte) map[int]string {
+func (meta *Meta) getTypes(body []byte, start []byte, end []byte, pattern []byte) map[uint16]string {
 	body = meta.split(body, start, end)
 	if len(body) == 0 {
 		return nil
@@ -194,7 +194,7 @@ func (meta *Meta) getTypes(body []byte, start []byte, end []byte, pattern []byte
 
 	finded := reg.FindAllSubmatch(body, -1)
 
-	result := make(map[int]string, len(finded))
+	result := make(map[uint16]string, len(finded))
 
 	for _, v := range finded {
 
@@ -206,7 +206,7 @@ func (meta *Meta) getTypes(body []byte, start []byte, end []byte, pattern []byte
 		value := v[1]
 		id, err := strconv.Atoi(string(key))
 		if err == nil {
-			result[id] = string(value)
+			result[uint16(id)] = string(value)
 		}
 	}
 

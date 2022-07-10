@@ -1,11 +1,15 @@
 package packets
 
-import "github.com/suvrick/go-kiss-core/leb128"
+import (
+	"fmt"
+
+	"github.com/suvrick/go-kiss-core/leb128"
+)
 
 type Packet struct {
 	Len    int
 	ID     int
-	Type   int
+	Type   uint16
 	Format string
 	Name   string
 	Error  error
@@ -32,7 +36,7 @@ type Bot struct {
 }
 
 type Mask struct {
-	PacketID int
+	PacketID uint16
 	Index    int
 	Type     string
 	Name     string
@@ -160,5 +164,8 @@ func (p *Packet) GetBuffer(msgID int64) ([]byte, error) {
 	data = append(data, c...)        // итоговая длина пакета
 	data = append(data, a...)        // ID сообщения
 	data = append(data, p.Buffer...) // данные
+
+	fmt.Println(data)
+
 	return data, nil
 }

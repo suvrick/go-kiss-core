@@ -7,7 +7,7 @@ import (
 	"github.com/suvrick/go-kiss-core/packets/meta"
 )
 
-func CreateClientPacket(p_type int, params ...interface{}) Packet {
+func CreateClientPacket(p_type uint16, params ...interface{}) Packet {
 
 	name, format, ok := meta.GetClientMeta(p_type)
 
@@ -62,10 +62,13 @@ func load(format []byte, params []interface{}) ([]byte, error) {
 	next := nextParam(params)
 	current := []byte{}
 
+	skip := false
+
 	for i := 0; i < len(format); i++ {
 		char := format[i]
 
 		if char == ',' {
+			skip = true
 			continue
 		}
 
@@ -93,6 +96,9 @@ func load(format []byte, params []interface{}) ([]byte, error) {
 
 		value, err := setValue(next(), char)
 		if err != nil {
+			if skip {
+				return current, nil
+			}
 			return current, err
 		}
 

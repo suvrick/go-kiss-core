@@ -9,6 +9,8 @@ import (
 func Compress(value interface{}) ([]byte, error) {
 	buffer := make([]byte, 0)
 	switch t := value.(type) {
+	// case nil:
+	// 	buffer = appendUint(buffer, 0)
 	case int8, int16, int, int32, int64:
 		i64, err := until.ToInt64(value)
 		if err != nil {
