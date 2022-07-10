@@ -4,16 +4,15 @@ import (
 	"log"
 	"testing"
 
-	"github.com/suvrick/go-kiss-core/packets/net"
+	"github.com/suvrick/go-kiss-core/packets/meta"
 	"github.com/suvrick/go-kiss-core/ws"
 )
 
 func TestGameSocket(t *testing.T) {
 
-	parser := net.NewParser()
-	parser.Initialize()
-	if parser.Error != nil {
-		log.Fatalln(parser.Error.Error())
+	meta := meta.NewMeta(nil)
+	if meta.Error != nil {
+		log.Fatalln(meta.Error.Error())
 	}
 
 	config := ws.GetDefaultGameSocketConfig()

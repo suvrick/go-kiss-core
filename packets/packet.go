@@ -2,7 +2,7 @@ package packets
 
 type Packet struct {
 	Len    uint64
-	ID     int64
+	ID     int
 	Type   uint64
 	Format string
 	Name   string

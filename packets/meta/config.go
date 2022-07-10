@@ -1,4 +1,4 @@
-package net
+package meta
 
 type RegConfig struct {
 	Start   []byte
@@ -6,7 +6,7 @@ type RegConfig struct {
 	Pattern []byte
 }
 
-type ParserConfig struct {
+type MetaConfig struct {
 	HostPath    string
 	VersionPath string
 	ScriptPath  string
@@ -18,8 +18,8 @@ type ParserConfig struct {
 	ClientTypes   RegConfig
 }
 
-func GetDefaultParserConfig() *ParserConfig {
-	return &ParserConfig{
+func GetDefaultMetaConfig() *MetaConfig {
+	return &MetaConfig{
 		HostPath:    "https://inspin.me/",
 		VersionPath: "version.json",
 		ScriptPath:  "workers/connection_worker.js",

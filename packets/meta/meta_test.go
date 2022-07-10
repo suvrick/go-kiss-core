@@ -1,4 +1,4 @@
-package net
+package meta
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 )
 
 func TestDebug(t *testing.T) {
-	p := NewParser(nil)
+	p := NewMeta(nil)
 	if p.Error != nil {
 		fmt.Println(p.Error)
 	}

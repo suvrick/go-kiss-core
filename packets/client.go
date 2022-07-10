@@ -4,26 +4,18 @@ import (
 	"fmt"
 
 	"github.com/suvrick/go-kiss-core/leb128"
+	"github.com/suvrick/go-kiss-core/packets/meta"
 )
 
-var c_packets map[uint64]Packet
+func CreateClientPacket(p_type int, params ...interface{}) Packet {
 
-func SetClientPakets(p *map[uint64]Packet) {
-	c_packets = *p
-}
-
-func GetClientPacket(id uint64) (Packet, bool) {
-	p, ok := c_packets[id]
-	return p, ok
-}
-
-func CreateClientPacket(p_type uint64, params ...interface{}) Packet {
-
-	p, ok := GetClientPacket(p_type)
+	id, name, format, ok := meta.GetClientMeta(p_type)
 
 	if !ok {
 		p = Packet{
-			Type:   p_type,
+			Type:   id,
+			Name:   name,
+			Format: format,
 			Params: params,
 			Error:  ErrNotFoundPacket,
 		}
