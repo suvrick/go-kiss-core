@@ -118,7 +118,7 @@ func (gs *GameSocket) parse(p *packets.Packet) {
 		case 0:
 			gs.Send(61, []interface{}{})
 		default:
-			gs.onError(fmt.Errorf("Bad auth. Result: %d", gs.bot.Result))
+			gs.onError(fmt.Errorf("bad auth. Result: %d", gs.bot.Result))
 			gs.GameOver()
 		}
 	case 9:

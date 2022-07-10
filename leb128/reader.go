@@ -101,7 +101,7 @@ func ReadString(r io.Reader) (string, error) {
 
 func readUint(r io.Reader, n uint) (uint64, error) {
 	if n > 64 {
-		panic(errors.New("leb128: n must <= 64"))
+		return 0, errors.New("leb128: n must <= 64")
 	}
 	p := make([]byte, 1)
 	var res uint64
@@ -128,7 +128,7 @@ func readUint(r io.Reader, n uint) (uint64, error) {
 
 func readInt(r io.Reader, n uint) (int64, error) {
 	if n > 64 {
-		panic(errors.New("leb128: n must <= 64"))
+		return 0, errors.New("leb128: n must <= 64")
 	}
 	p := make([]byte, 1)
 	var res int64

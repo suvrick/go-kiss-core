@@ -6,13 +6,9 @@ import (
 	"testing"
 )
 
-type A struct {
-	int
-}
-
 func TestDebug(t *testing.T) {
 	// value := float64(35.5)
-	value := A{543}
+	value := 155
 	result, err := Compress(value)
 	fmt.Printf("%v, %v", result, err)
 }
@@ -32,8 +28,9 @@ func TestCompress(t *testing.T) {
 			args: args{
 				"aaaaaa",
 			},
-			want: []byte{6,95,95,95,95,95,95},
-		}
+			want:    []byte{6, 97, 97, 97, 97, 97, 97},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

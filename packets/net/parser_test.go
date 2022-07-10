@@ -1,14 +1,18 @@
-package net_test
+package net
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"strings"
 	"testing"
-
-	"github.com/suvrick/go-kiss-core/packets/net"
 )
+
+func TestDebug(t *testing.T) {
+
+	p := NewParser()
+
+	p.Initialize()
+}
 
 var jsons = `{
 	"training": [
@@ -1519,36 +1523,4 @@ func TestInit(t *testing.T) {
 	}
 
 	log.Println(result)
-}
-
-func TestGetVersion(t *testing.T) {
-	p := net.NewParser()
-
-	v, err := p.GetVersion()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	fmt.Printf("game version: %v\n", v)
-
-	lines, err := p.GetBoby()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	fmt.Printf("body lines: %d\n", len(lines))
-
-	client_packets := p.InitClientDict(lines)
-	if len(client_packets) == 0 {
-		t.Fatalf("client_packets count: %d\n", len(client_packets))
-	}
-
-	fmt.Printf("client_packets count: %d\n", len(client_packets))
-
-	server_packets := p.InitServerDict(lines)
-	if len(server_packets) == 0 {
-		t.Fatalf("server_packets count: %d\n", len(server_packets))
-	}
-
-	fmt.Printf("server_packets count: %d\n", len(server_packets))
 }

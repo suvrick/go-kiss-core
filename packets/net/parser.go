@@ -1,16 +1,15 @@
 package net
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
-	"unicode"
-
-	"github.com/suvrick/go-kiss-core/packets"
 )
 
 var (
@@ -19,291 +18,223 @@ var (
 	ErrBadRequest  = errors.New("bad request")
 )
 
-type Parser struct {
-	game_host           string
-	name_version_script string
-	name_game_script    string
-	name_worker_script  string
-	query_version       string
+type RegConfig struct {
+	Start   []byte
+	End     []byte
+	Pattern []byte
+}
 
+type ParserConfig struct {
+	HostPath    string
+	VersionPath string
+	ScriptPath  string
+	Version     string
+
+	ClientFormats RegConfig
+	ServerFormats RegConfig
+	ServerTypes   RegConfig
+	ClientTypes   RegConfig
+}
+
+func GetDefaultParserConfig() *ParserConfig {
+	return &ParserConfig{
+		HostPath:    "https://inspin.me/",
+		VersionPath: "version.json",
+		ScriptPath:  "workers/connection_worker.js",
+		ClientFormats: RegConfig{
+			Start:   []byte("PacketServer=o,o.FORMATS=["),
+			End:     []byte("}"),
+			Pattern: []byte(`"[A-Z,\[\]]*"`),
+		},
+		ServerFormats: RegConfig{
+			Start:   []byte("PacketServer=o,o.FORMATS=["),
+			End:     []byte("}"),
+			Pattern: []byte(`"[A-Z,\[\]]*"`),
+		},
+		ClientTypes: RegConfig{
+			Start:   []byte(".ClientPacketType=void"),
+			End:     []byte("}"),
+			Pattern: []byte(`.([A-Z_]*)=([0-9]*)`),
+		},
+		ServerTypes: RegConfig{
+			Start:   []byte(".ServerPacketType=void"),
+			End:     []byte("}"),
+			Pattern: []byte(`.([A-Z_]*)=([0-9]*)`),
+		},
+	}
+}
+
+type Parser struct {
+	ParserConfig
 	Error error
 }
 
-/*
-
-	Доделать иницилизацию с конфигом
-	NewParser(config *Config)
-
-*/
 func NewParser() *Parser {
 	return &Parser{
-		game_host:           "https://inspin.me/",
-		name_version_script: "version.json",
-		name_game_script:    "scripts/main.js",
-		name_worker_script:  "workers/connection_worker.js",
-		query_version:       "",
+		ParserConfig: *GetDefaultParserConfig(),
 	}
 }
-
-//https://inspin.me/build/v2100/workers/connection_worker.js
 
 func (p *Parser) Initialize() {
 
-	init_rewards()
-
-	version, err := getVersion(p.game_host, p.name_version_script)
-
-	if err != nil {
-		p.Error = errors.New(fmt.Sprint("error [getVersion] > ", err))
-		return
-	}
-
-	if version == p.query_version {
-		return
-	}
-
-	p.query_version = version
-
-	body_lines, err := getBody(p.game_host, p.query_version, p.name_game_script)
-	if err != nil {
-		p.Error = errors.New(fmt.Sprint("error [getBody] > ", err))
-		return
-	}
-
-	c_packets := p.InitClientDict(body_lines)
-	packets.SetClientPakets(&c_packets)
+	p.getVersion()
 	if p.Error != nil {
-		p.Error = errors.New(fmt.Sprint("error [InitClientDict] > ", err))
+		fmt.Printf("%v\n", p.Error)
 		return
 	}
 
-	s_packets := p.InitServerDict(body_lines)
-	packets.SetServerPacket(&s_packets)
+	fmt.Printf("set game version: %s\n", p.Version)
+
+	body := p.getBody()
 	if p.Error != nil {
-		p.Error = errors.New(fmt.Sprint("error [InitServerDict] > ", err))
+		fmt.Printf("%v\n", p.Error)
 		return
 	}
+
+	fmt.Printf("body length: %d\n", len(body))
+
+	/* FORMATS */
+
+	server_formats := p.getFormats(body, p.ServerFormats.Start, p.ServerFormats.End, p.ServerFormats.Pattern)
+	fmt.Printf("get server formats length: %d\n", len(server_formats))
+
+	client_formats := p.getFormats(body, p.ClientFormats.Start, p.ClientFormats.End, p.ClientFormats.Pattern)
+	fmt.Printf("get client formats length: %d\n", len(client_formats))
+
+	/* TYPES */
+
+	server_types := p.getTypes(body, p.ServerTypes.Start, p.ServerTypes.End, p.ServerTypes.Pattern)
+	fmt.Printf("get server types length: %d\n", len(server_types))
+
+	client_types := p.getTypes(body, p.ClientTypes.Start, p.ClientTypes.End, p.ClientTypes.Pattern)
+	fmt.Printf("get client types length: %d\n", len(client_types))
+
+	/* GENERATE */
+
+	servers := p.generateData(server_formats, server_types)
+	fmt.Printf("generate servers: %d\n", len(servers))
+
+	clients := p.generateData(client_formats, client_types)
+	fmt.Printf("generate clients: %d\n", len(clients))
+
 }
 
-func (p *Parser) InitClientDict(body_lines []string) map[uint64]packets.Packet {
-
-	result := make(map[uint64]packets.Packet)
-
-	c_format, err := setFormat(body_lines, "PacketClient.FORMATS=[", "];")
-	if err != nil {
-		p.Error = errors.New(fmt.Sprint("error [setFormat] > ", err))
-		return nil
-	}
-
-	c_types, err := setType(body_lines, "ClientPacketType[ClientPacketType[")
-	if err != nil {
-		p.Error = errors.New(fmt.Sprint("error [setType] > ", err))
-		return nil
-	}
-
-	//Заполнения клиенских пакетов
-	for id, name := range c_types {
-
-		if id >= uint64(len(c_format)) {
-			continue
-		}
-
-		format := c_format[id]
-		result[id] = packets.Packet{
-			Name:   name,
-			Type:   id,
-			Format: format,
+func (parser *Parser) generateData(formats []string, types map[int]string) map[int][2]string {
+	result := make(map[int][2]string)
+	for id, format := range formats {
+		name, ok := types[id]
+		if ok {
+			result[id] = [2]string{
+				name,
+				format,
+			}
 		}
 	}
 
 	return result
 }
 
-func (p *Parser) InitServerDict(body_lines []string) map[uint64]packets.Packet {
-	result := make(map[uint64]packets.Packet)
-	s_format, err := setFormat(body_lines, "PacketServer.FORMATS=[", "];")
-	if err != nil {
-		p.Error = errors.New(fmt.Sprint("error [setFormat] > ", err))
+func (parser *Parser) getFormats(body []byte, start []byte, end []byte, pattern []byte) []string {
+
+	body = parser.split(body, start, end)
+	if len(body) == 0 {
 		return nil
 	}
 
-	s_types, err := setType(body_lines, "ServerPacketType[ServerPacketType[")
+	// fmt.Printf("body: %s", body)
+
+	reg, err := regexp.Compile(string(pattern))
 	if err != nil {
-		p.Error = errors.New(fmt.Sprint("error [setType] > ", err))
 		return nil
 	}
 
-	for id, name := range s_types {
+	finded := reg.FindAll(body, -1)
 
-		if id >= uint64(len(s_format)) {
+	result := make([]string, 0)
+
+	for _, v := range finded {
+		result = append(result, string(v))
+	}
+
+	return result
+}
+
+func (parser *Parser) getTypes(body []byte, start []byte, end []byte, pattern []byte) map[int]string {
+	body = parser.split(body, start, end)
+	if len(body) == 0 {
+		return nil
+	}
+
+	//fmt.Printf("body types: %s", body)
+
+	reg, err := regexp.Compile(string(pattern))
+	if err != nil {
+		return nil
+	}
+
+	finded := reg.FindAllSubmatch(body, -1)
+
+	result := make(map[int]string, len(finded))
+
+	for _, v := range finded {
+
+		if len(v) != 3 {
 			continue
 		}
 
-		format := s_format[id]
-		result[id] = packets.Packet{
-			Name:   name,
-			Type:   id,
-			Format: format,
+		key := v[2]
+		value := v[1]
+		id, err := strconv.Atoi(string(key))
+		if err == nil {
+			result[id] = string(value)
 		}
 	}
 
 	return result
 }
 
-/*
-	setFormat
-
-	body_line - строковый массив скрипта игры
-
-	pattern_start - строка вхождения типа "PacketServer.FORMATS=[". Старт запуска внутренего цикла персинга результирующего массива
-
-	pattern_end - точка выхода, конечная граница парсинга "];"
-
-	return возращаем массив форматов [ "S", "B,IIBI[B]IIIISBBIBS" ...] и ошибку
-
-*/
-func setFormat(body_lines []string, pattern_start, pattern_end string) ([]string, error) {
-
-	isOpen := false
-	formats := make([]string, 0)
-
-	//Начинаем переберать ответ от сервера
-	for _, line := range body_lines {
-
-		// Ищим совпадения начало шаблона,
-		//выставляем флаг открытия для начало парсинга формата
-		if strings.Contains(line, pattern_start) {
-			isOpen = true
-			continue
-		}
-
-		if isOpen {
-
-			// проверяем строку на конец шаблона
-			if strings.Contains(line, pattern_end) {
-				// выходим из цикла
-				break
-			}
-
-			format := ""
-			is_add_char := false // добавить руну к локальному формату format
-
-			// ищим в строке шаблон формата "BBBSSS"
-			for _, char := range line {
-
-				if char == '"' {
-					is_add_char = !is_add_char
-
-					if !is_add_char {
-						formats = append(formats, format)
-						format = ""
-					}
-
-					continue
-				}
-
-				if is_add_char {
-					format += string(char)
-				}
-			}
-		}
+func (parser *Parser) getBody() []byte {
+	url := fmt.Sprintf("%s%s%s", parser.HostPath, parser.Version, parser.ScriptPath)
+	body, err := parser.request(url)
+	if err != nil {
+		parser.Error = err
+		return nil
 	}
-
-	if len(formats) == 0 {
-		err := fmt.Sprintf("empty result array. pattern_start: \"%s\", pattern_end: \"%s\"", pattern_start, pattern_end)
-		return formats, errors.New(err)
-	}
-
-	return formats, nil
+	return body
 }
 
-/*
-	setType
+func (parser *Parser) getVersion() {
 
-	body_line - строковый массив скрипта игры
+	url := fmt.Sprintf("%s%s", parser.HostPath, parser.VersionPath)
 
-	pattern - строка вхождения  "ClientPacketType[ClientPacketType["
-
-	return возращаем словарь вида [ {4:"LOGIN"}, {7:"BALANCE"}... ] и ошибку
-
-*/
-func setType(body_lines []string, pattern string) (map[uint64]string, error) {
-
-	result := make(map[uint64]string)
-
-	for _, line := range body_lines {
-
-		if !strings.Contains(line, pattern) {
-			continue
-		}
-
-		var name strings.Builder
-		var id strings.Builder
-
-		is_add_rune := false
-		is_add_num := false
-
-		for _, r := range line {
-
-			if r == '"' {
-				is_add_rune = !is_add_rune
-				continue
-			}
-
-			if is_add_rune {
-				name.WriteRune(r)
-				continue
-			}
-
-			if r == '=' {
-				is_add_num = true
-				continue
-			}
-
-			if is_add_num {
-				if unicode.IsDigit(r) {
-					id.WriteRune(r)
-					continue
-				}
-
-				num, _ := strconv.Atoi(id.String())
-				result[uint64(num)] = name.String()
-				break
-			}
-		}
+	body, err := parser.request(url)
+	if err != nil {
+		parser.Error = err
+		return
 	}
 
-	if len(result) == 0 {
-		err := fmt.Sprintf("empty result array. pattern: \"%s\"", pattern)
-		return result, errors.New(err)
+	type version struct {
+		V string `json:"browser"`
 	}
 
-	return result, nil
+	v := version{}
+	err = json.Unmarshal(body, &v)
+	if err != nil {
+		parser.Error = err
+		return
+	}
+
+	if len(v.V) == 0 {
+		parser.Error = ErrEmptyResult
+		return
+	}
+
+	parser.Version = v.V
 }
 
-/*
+func (parser *Parser) request(url string) ([]byte, error) {
 
-	getBody
-
-	host_url - "https://inspin.me/"
-
-	query_version - "build/v1790/"
-
-	name_script - "scripts/main.js"
-
-	return []string script game and error
-
-*/
-func getBody(host_url string, query_version string, name_script string) ([]string, error) {
-
-	if len(host_url) == 0 || len(query_version) == 0 || len(name_script) == 0 {
-		return nil, ErrEmptyParams
-	}
-
-	full_url := fmt.Sprintf("%s%s%s", host_url, query_version, name_script)
-
-	resp, err := http.Get(full_url)
-
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +246,6 @@ func getBody(host_url string, query_version string, name_script string) ([]strin
 	}
 
 	body, err := io.ReadAll(resp.Body)
-
 	if err != nil {
 		return nil, err
 	}
@@ -324,77 +254,33 @@ func getBody(host_url string, query_version string, name_script string) ([]strin
 		return nil, ErrEmptyResult
 	}
 
-	body_string := string(body)
-	body_string = strings.ReplaceAll(body_string, " ", "")
-	body_lines := strings.Split(body_string, "\n")
+	// delete spacial symbol
+	body = bytes.ReplaceAll(body, []byte{9}, []byte{})  // remove "	"
+	body = bytes.ReplaceAll(body, []byte{32}, []byte{}) // remove " "
+	body = bytes.ReplaceAll(body, []byte{10}, []byte{}) // remove "\n"
+	body = bytes.ReplaceAll(body, []byte{13}, []byte{}) // remove "\r"
 
-	return body_lines, nil
+	return body, nil
 }
 
-func (p *Parser) GetBoby() ([]string, error) {
-	lines, err := getBody(p.game_host, p.query_version, p.name_game_script)
-	return lines, err
-}
-
-/*
-
-	getVersion
-
-	url - "https://inspin.me/"
-
-	name_script - "version.json"
-
-	return string of format "build/v1774/" and error
-
-*/
-func getVersion(url string, script_name string) (string, error) {
-
-	if len(url) == 0 || len(script_name) == 0 {
-		return "", ErrEmptyParams
+func (parser *Parser) split(body []byte, start []byte, end []byte) []byte {
+	index_start := bytes.Index(body, start)
+	if index_start == -1 {
+		return nil
 	}
 
-	full_url := fmt.Sprintf("%s%s", url, script_name)
+	index_start = index_start + len(start)
 
-	resp, err := http.Get(full_url)
-
-	if err != nil {
-		return "", err
+	index_end := bytes.Index(body[index_start:], end)
+	if index_end == -1 {
+		return nil
 	}
 
-	defer resp.Body.Close()
+	index_end = index_start + index_end
 
-	if resp.StatusCode != 200 {
-		return "", ErrBadRequest
-	}
+	fmt.Printf("index_start: %d, index_end %d\n", index_start, index_end)
 
-	body, err := io.ReadAll(resp.Body)
-
-	if err != nil {
-		return "", err
-	}
-
-	type version struct {
-		Version string `json:"browser"`
-	}
-
-	v := version{}
-	err = json.Unmarshal(body, &v)
-
-	if err != nil {
-		return "", err
-	}
-
-	if len(v.Version) == 0 {
-		return "", ErrEmptyResult
-	}
-
-	return v.Version, nil
-}
-
-func (p *Parser) GetVersion() (string, error) {
-	v, err := getVersion(p.game_host, p.name_version_script)
-	p.query_version = v
-	return v, err
+	return body[index_start:index_end]
 }
 
 var rewards []string
