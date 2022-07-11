@@ -15,12 +15,12 @@ var instance *Meta
 var once sync.Once
 var configure *MetaConfig
 
+var clients map[uint16][2]string = map[uint16][2]string{}
+var servers map[uint16][2]string = map[uint16][2]string{}
+
 type Meta struct {
 	MetaConfig
 	Error error
-
-	clients map[uint16][2]string
-	servers map[uint16][2]string
 }
 
 func NewMeta() *Meta {
@@ -65,12 +65,7 @@ func (p *Meta) initialize() {
 
 // return name, format, ok
 func GetClientMeta(typeID uint16) (string, string, bool) {
-
-	if instance == nil {
-		NewMeta()
-	}
-
-	r, ok := instance.clients[typeID]
+	r, ok := clients[typeID]
 	if !ok {
 		return "", "", false
 	}
@@ -79,12 +74,7 @@ func GetClientMeta(typeID uint16) (string, string, bool) {
 
 // return name, format, ok
 func GetServerMeta(typeID uint16) (string, string, bool) {
-
-	if instance == nil {
-		NewMeta()
-	}
-
-	r, ok := instance.servers[typeID]
+	r, ok := servers[typeID]
 	if !ok {
 		return "", "", false
 	}
@@ -122,19 +112,19 @@ func (meta *Meta) parseBody(body []byte) {
 
 	/* GENERATE */
 
-	meta.servers = meta.generateData(server_formats, server_types)
-	if len(meta.servers) == 0 {
+	servers = meta.generateData(server_formats, server_types)
+	if len(servers) == 0 {
 		meta.Error = fmt.Errorf("[net.generateData] generateData by server return zero length. formats len: %d, types len: %d", len(server_formats), len(server_types))
 		return
 	}
 
-	meta.clients = meta.generateData(client_formats, client_types)
-	if len(meta.clients) == 0 {
+	clients = meta.generateData(client_formats, client_types)
+	if len(clients) == 0 {
 		meta.Error = fmt.Errorf("[net.generateData] generateData by client return zero length. formats len: %d, types len: %d", len(client_formats), len(client_types))
 		return
 	}
 
-	fmt.Printf("meta parse success! servers: %d, clients: %d\n", len(meta.servers), len(meta.clients))
+	fmt.Printf("meta parse success! servers: %d, clients: %d\n", len(servers), len(clients))
 }
 
 func (meta *Meta) generateData(formats []string, types map[uint16]string) map[uint16][2]string {

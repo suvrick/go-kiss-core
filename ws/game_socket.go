@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
+	"runtime/pprof"
 	"sync/atomic"
 
 	"github.com/suvrick/go-kiss-core/packets"
@@ -65,6 +67,12 @@ func (gs *GameSocket) onRead(reader io.Reader) {
 	p.Fill(&gs.bot)
 
 	gs.parse(p)
+
+	memprofile := "C:\\Users\\suvrick\\Desktop\\log.out"
+	f, _ := os.Create(memprofile)
+	//runtime.GC() // get up-to-date statistics
+	pprof.WriteHeapProfile(f)
+	f.Close()
 }
 
 func (gs *GameSocket) GameOver() {

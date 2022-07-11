@@ -4,6 +4,11 @@ import (
 	"log"
 	"net/http"
 	"text/template"
+
+	"github.com/suvrick/go-kiss-core/packets/meta"
+	"github.com/suvrick/go-kiss-core/ws"
+
+	_ "net/http/pprof"
 )
 
 func settingHandler(w http.ResponseWriter, r *http.Request) {
@@ -103,6 +108,18 @@ type Menu struct {
 
 func main() {
 
+	meta := meta.NewMeta()
+	if meta.Error != nil {
+		log.Fatalln(meta.Error.Error())
+	}
+
+	config := ws.GetDefaultGameSocketConfig()
+
+	gs := ws.NewGameSocket(config)
+	gs.Run()
+	login_params := []interface{}{1000015, 32, 4, "200514254f3678c2f79cb18760ba048d", 0, ""}
+	gs.Send(4, login_params)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", homeHandler)
@@ -115,6 +132,6 @@ func main() {
 
 	mux.Handle("/frontend/", http.StripPrefix("/frontend", fileServer))
 
-	http.ListenAndServe(":8080", mux)
+	http.ListenAndServe(":8080", nil)
 
 }

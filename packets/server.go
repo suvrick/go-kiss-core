@@ -43,7 +43,7 @@ func parse(reader io.Reader, format []byte) ([]interface{}, error) {
 
 	q := list.New()
 	current := []interface{}{}
-
+	skip := false
 	up := func() {
 		q.PushBack(current)
 		current = []interface{}{}
@@ -63,6 +63,7 @@ func parse(reader io.Reader, format []byte) ([]interface{}, error) {
 		char := format[i]
 
 		if char == ',' {
+			skip = true
 			continue
 		}
 
@@ -93,6 +94,9 @@ func parse(reader io.Reader, format []byte) ([]interface{}, error) {
 
 		value, err := getValue(reader, char)
 		if err != nil {
+			if skip {
+				return current, nil
+			}
 			return current, err
 		}
 
