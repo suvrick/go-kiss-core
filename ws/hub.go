@@ -13,7 +13,7 @@ func NewHub() {
 }
 
 type bot struct {
-	bot_id  string
+	bot_id  uint32
 	packets [][]interface{}
 }
 
@@ -24,7 +24,7 @@ func UpdateFromFrames(frames []string) []bot {
 
 	for _, v := range frames {
 
-		bot_id, params, err := f.GetValue(v)
+		bot_id, params, err := f.Parse2(v)
 		if err != nil {
 			log.Println(err)
 			continue

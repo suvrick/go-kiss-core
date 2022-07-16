@@ -63,12 +63,13 @@ func load(format []byte, params []interface{}) ([]byte, error) {
 	current := []byte{}
 
 	skip := false
-
+	skip_index := 0
 	for i := 0; i < len(format); i++ {
 		char := format[i]
 
 		if char == ',' {
 			skip = true
+			skip_index = len(current)
 			continue
 		}
 
@@ -97,7 +98,7 @@ func load(format []byte, params []interface{}) ([]byte, error) {
 		value, err := setValue(next(), char)
 		if err != nil {
 			if skip {
-				return current, nil
+				return current[:skip_index], nil
 			}
 			return current, err
 		}

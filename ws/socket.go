@@ -1,6 +1,8 @@
 package ws
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -10,6 +12,9 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/suvrick/go-kiss-core/proxy"
 )
+
+var balancer chan struct{}
+var once sync.Once
 
 // GameSock ...
 type Socket struct {
@@ -49,6 +54,11 @@ var closed_rules = map[byte]string{
 }
 
 func NewSocket(config *SocketConfig) *Socket {
+
+	once.Do(func() {
+		balancer = make(chan struct{}, config.Load)
+	})
+
 	return &Socket{
 		SocketConfig: config,
 		wg:           sync.WaitGroup{},
@@ -80,6 +90,9 @@ func (socket *Socket) SetProxy(p *proxy.Proxy) {
 }
 
 func (socket *Socket) Go() {
+
+	balancer <- struct{}{}
+
 	socket.connect()
 	socket.wg.Add(2)
 	go socket.read()
@@ -89,16 +102,29 @@ func (socket *Socket) Go() {
 
 func (socket *Socket) Send(packet []byte) {
 
-	socket.wg.Add(1)
-
-	go func() {
-		defer socket.wg.Done()
-		if socket.client == nil {
-			return
+	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = fmt.Errorf("catch recover from send")
+			}
+			socket.errorHandle(err)
+			socket.close_connection()
 		}
-
-		socket.send_chan <- packet
 	}()
+
+	if socket == nil {
+		return
+	}
+
+	err := socket.client.WriteMessage(websocket.BinaryMessage, packet)
+
+	if err != nil {
+		socket.setClosedRule(ERROR_SEND_CLOSE)
+		if socket.errorHandle != nil {
+			socket.errorHandle(err)
+		}
+	}
 }
 
 func (socket *Socket) Close() {
@@ -106,11 +132,22 @@ func (socket *Socket) Close() {
 	socket.close_connection()
 }
 
-func (socket *Socket) getRuleMsg() string {
+func (socket *Socket) getCloseRuleMsg() string {
 	return closed_rules[socket.rule_close]
 }
 
 func (socket *Socket) connect() {
+
+	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = fmt.Errorf("catch recover from connection")
+			}
+			socket.errorHandle(err)
+			socket.close_connection()
+		}
+	}()
 
 	dialer := websocket.Dialer{
 		HandshakeTimeout: (socket.Timeout),
@@ -166,13 +203,22 @@ func (socket *Socket) timeout() {
 func (socket *Socket) done() {
 	socket.wg.Wait()
 	if socket.closeHandle != nil {
-		socket.closeHandle(socket.rule_close, socket.getRuleMsg())
+		socket.closeHandle(socket.rule_close, socket.getCloseRuleMsg())
 	}
 	socket.close_chan()
 }
 
 func (socket *Socket) send() {
 	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = fmt.Errorf("catch recover from read")
+			}
+			socket.errorHandle(err)
+			socket.close_connection()
+		}
+
 		socket.wg.Done()
 	}()
 
@@ -183,6 +229,7 @@ func (socket *Socket) send() {
 		select {
 		case packet = <-socket.send_chan:
 		default:
+			<-time.After(time.Millisecond * 1000)
 			continue
 		}
 
@@ -202,12 +249,19 @@ func (socket *Socket) send() {
 func (socket *Socket) read() {
 
 	defer func() {
+		if r := recover(); r != nil {
+			err, ok := r.(error)
+			if !ok {
+				err = fmt.Errorf("catch recover from read")
+			}
+			socket.errorHandle(err)
+		}
 		socket.wg.Done()
 	}()
 
 	for socket.client != nil {
 
-		_, reader, err := socket.client.NextReader()
+		_, msg, err := socket.client.ReadMessage()
 
 		if err != nil {
 			socket.setClosedRule(ERROR_READ_CLOSE)
@@ -217,8 +271,14 @@ func (socket *Socket) read() {
 			break
 		}
 
+		if len(msg) > 1 {
+			if msg[0] == 3 {
+				panic("HELLO")
+			}
+		}
+
 		if socket.readHandle != nil {
-			socket.readHandle(reader)
+			socket.readHandle(bytes.NewReader(msg))
 		}
 	}
 }
@@ -228,6 +288,8 @@ func (socket *Socket) close_connection() {
 		socket.client.Close()
 		socket.client = nil
 	}
+
+	<-balancer
 }
 
 func (socket *Socket) close_chan() {

@@ -36,7 +36,7 @@ func Compress(value interface{}) ([]byte, error) {
 		}
 		buffer = append(buffer, str...)
 	default:
-		return buffer, fmt.Errorf("leb128 error. unsupported type %t", t)
+		return buffer, fmt.Errorf("leb128 error. unsupported type: %T", t)
 	}
 	return buffer, nil
 }
@@ -51,6 +51,7 @@ func writeString(value interface{}) ([]byte, error) {
 	result := make([]byte, 0)
 	result = append(result, appendInt(result, int64(length))...)
 	result = append(result, bytes...)
+	//	result = append(result, 0)
 	return result, nil
 }
 

@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
-	"runtime/pprof"
 	"sync/atomic"
 
 	"github.com/suvrick/go-kiss-core/packets"
 )
 
 type GameSocket struct {
-	socket *Socket
-	msgID  int64
-	Done   chan struct{}
-	bot    packets.Bot
+	socket     *Socket
+	msgID      int64
+	Done       chan struct{}
+	CloseEvent func()
+	botID      uint32
+	bot        packets.Bot
 }
 
 func NewGameSocket(config *GameSocketConfig) *GameSocket {
@@ -26,53 +26,71 @@ func NewGameSocket(config *GameSocketConfig) *GameSocket {
 		bot:   packets.Bot{},
 	}
 
-	sock := NewSocket(config.SocketConfig)
-	sock.SetErrorHandler(gs.onError)
-	sock.SetOpenHandler(gs.onOpen)
-	sock.SetCloseHandler(gs.onClose)
-	sock.SetReadHandler(gs.onRead)
+	socket := NewSocket(config.SocketConfig)
+	socket.SetErrorHandler(gs.ErrorHandler)
+	socket.SetOpenHandler(gs.OpenHandler)
+	socket.SetCloseHandler(gs.CloseHandler)
+	socket.SetReadHandler(gs.ReadHandler)
 
-	gs.socket = sock
+	gs.socket = socket
 
 	return &gs
 }
 
-func (gs *GameSocket) onOpen() {
-	log.Println("socket open")
+func (gs *GameSocket) SetBotID(id uint32) {
+	gs.botID = id
 }
 
-func (gs *GameSocket) onClose(rule byte, msg string) {
-	log.Printf("socket close: %s\n", msg)
-	log.Printf("%#v", gs.bot)
+func (gs *GameSocket) OpenHandler() {
+	log.Printf("[OPEN(%d)] socket open\n", gs.botID)
+}
+
+func (gs *GameSocket) CloseHandler(rule byte, msg string) {
+	log.Printf("[CLOSE(%d)] socket close: %s\n", gs.botID, msg)
+	gs.CloseEvent()
 	gs.Done <- struct{}{}
 }
 
-func (gs *GameSocket) onError(err error) {
-	log.Printf("socket error: %s\n", err.Error())
+func (gs *GameSocket) ErrorHandler(err error) {
+	log.Printf("[ERROR(%d)] socket error: %s\n", gs.botID, err.Error())
 
 	if err == ErrProxyConnectionFail {
 		//gs.reconnect()
 		return
 	}
+
+	gs.GameOver()
 }
 
-func (gs *GameSocket) onRead(reader io.Reader) {
+func (gs *GameSocket) ReadHandler(reader io.Reader) {
+
 	p := packets.CreateServerPacket(reader)
 	if p.Error != nil {
-		gs.onError(fmt.Errorf("%s. packetType: %d", p.Error.Error(), p.Type))
+		if p.Type == 306 {
+			gs.GameOver()
+			return
+		}
+
+		log.Println(fmt.Errorf("[error(%d)] %s. packetType: %d", gs.botID, p.Error.Error(), p.Type))
+		return
 	}
 
-	log.Printf("%s(%d) Format: %#v, Data: %v\n", p.Name, p.Type, p.Format, p.Params)
+	for _, t := range []uint16{4, 5, 7, 13, 17, 130, 310} {
+
+		if t != p.Type {
+			continue
+		}
+
+		log.Printf("[READ(%d)] %s(%d) Format: %#v, Data: %v\n", gs.botID, p.Name, p.Type, p.Format, p.Params)
+	}
 
 	p.Fill(&gs.bot)
 
 	gs.parse(p)
 
-	memprofile := "C:\\Users\\suvrick\\Desktop\\log.out"
-	f, _ := os.Create(memprofile)
-	//runtime.GC() // get up-to-date statistics
-	pprof.WriteHeapProfile(f)
-	f.Close()
+	p = nil
+	reader = nil
+	//runtime.GC()
 }
 
 func (gs *GameSocket) GameOver() {
@@ -84,36 +102,31 @@ func (gs *GameSocket) Send(t uint16, data []interface{}) {
 	p := packets.CreateClientPacket(t, data...)
 
 	if p.Error != nil {
-		gs.onError(p.Error)
+		gs.ErrorHandler(p.Error)
 		return
 	}
 
-	buf, err := p.GetBuffer(gs.msgID)
-	if err != nil {
-		gs.onError(err)
+	p.GetBuffer(gs.msgID)
+	if p.Error != nil {
+		gs.ErrorHandler(p.Error)
 		return
 	}
+
+	log.Printf("[SEND(%d)] %s(%d) Format: %#v, Data: %v, Buffer: %v\n",
+		gs.botID,
+		p.Name,
+		p.Type,
+		p.Format,
+		p.Params,
+		p.Buffer)
 
 	atomic.AddInt64(&gs.msgID, 1)
 
-	gs.socket.Send(buf)
+	gs.socket.Send(p.Buffer)
 }
 
 func (gs *GameSocket) Run() {
-	gs.connect()
-}
-
-func (gs *GameSocket) connect() {
-	// proxy_str := "zproxy.lum-superproxy.io:22225:lum-customer-c_07f044e7-zone-static:hcx7fnqnph27"
-	// proxy := proxy.Parse(proxy_str, ":")
-	// proxy = nil
-	//gs.socket.SetProxy(proxy)
-
 	gs.socket.Go()
-}
-
-func (gs *GameSocket) reconnect() {
-	gs.socket.connect()
 }
 
 func (gs *GameSocket) parse(p *packets.Packet) {
@@ -126,8 +139,7 @@ func (gs *GameSocket) parse(p *packets.Packet) {
 		case 0:
 			gs.Send(61, []interface{}{})
 		default:
-			gs.onError(fmt.Errorf("bad auth. Result: %d", gs.bot.Result))
-			gs.GameOver()
+			gs.ErrorHandler(fmt.Errorf("bad auth. Result: %d", gs.bot.Result))
 		}
 	case 9:
 		//gs.GameOver()

@@ -29,7 +29,7 @@ func GetDefaultMetaConfig() *MetaConfig {
 			Pattern: []byte(`"([A-Z,\[\]]*)"`),
 		},
 		ClientFormats: RegConfig{
-			Start:   []byte("PacketServer=o,o.FORMATS=["),
+			Start:   []byte("PacketClient=o,o.FORMATS=["),
 			End:     []byte("}"),
 			Pattern: []byte(`"([A-Z,\[\]]*)"`),
 		},

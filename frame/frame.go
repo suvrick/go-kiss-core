@@ -59,25 +59,27 @@ var once sync.Once
 
 // return Default FrameManager
 func NewFrameDefault() *Frame {
-	return NewFrame("config.json", &log.Logger{})
+	return NewFrame("frame/config.json", &log.Logger{})
 }
 
 // Singleton
 func NewFrame(path string, logger *log.Logger) *Frame {
 
-	once.Do(func() {
-		instance = &Frame{
-			path: path,
-			keys: make([]t_words, 0),
-			log:  logger,
-		}
+	if instance == nil {
+		once.Do(func() {
+			instance = &Frame{
+				path: path,
+				keys: make([]t_words, 0),
+				log:  logger,
+			}
 
-		if logger == nil {
-			instance.log = log.Default()
-		}
+			if logger == nil {
+				instance.log = log.Default()
+			}
 
-		instance.load_keys()
-	})
+			instance.load_keys()
+		})
+	}
 
 	return instance
 }
@@ -168,17 +170,71 @@ func (f *Frame) Parse(input string) (map[string]interface{}, error) {
 	return result, ErrFrameTypeNotFound
 }
 
-func (f *Frame) GetValue(intput string) (string, []interface{}, error) {
-	//{113594657, 32, 4, "7a2b140e7b42935768c040a54ade4cfc", 0, "8c9991f3e49ef7d20d33432d1534e378"}
-	r, e := f.Parse(intput)
-	return r["bot_id"].(string), []interface{}{
-		r["login_id"].(uint64),
-		r["frame_type"].(uint16),
-		uint16(4),
-		r["token1"].(string),
-		uint8(0),
-		r["token2"].(string),
-	}, e
+//return botID, []params, err
+func (f *Frame) Parse2(input string) (uint32, []interface{}, error) {
+
+	if len(f.keys) == 0 {
+		return 0, nil, ErrFrameParserEmptyKeys
+	}
+
+	input = strings.TrimSpace(input)
+	input = strings.Replace(input, "\r", "", -1)
+
+	if len(input) == 0 {
+		return 0, nil, ErrEmptyString
+	}
+
+	botID := getHex(input)
+
+	queries, err := url.ParseQuery(input)
+	if err != nil {
+		return botID, nil, ErrInvalidFrame
+	}
+
+	for _, p := range f.keys {
+
+		if queries.Has(p.LoginID) && queries.Has(p.Token) && queries.Has(p.Token2) {
+
+			id, err := strconv.ParseUint(queries.Get(p.LoginID), 10, 64)
+			if err != nil {
+				return botID, nil, ErrQueryParametrMiss
+			}
+
+			loginID := id
+			token := queries.Get(p.Token)
+			token2 := queries.Get(p.Token2)
+
+			frameType := p.FrameType
+
+			if strings.Index(input, "fotostrana") > 0 {
+				frameType = 30
+			}
+
+			oauth := 0
+
+			if len(token) == 0 {
+				return botID, nil, ErrQueryParametrMiss
+			}
+
+			if len(token2) > 0 {
+				oauth = 0
+			}
+
+			_ = oauth
+
+			return botID, []interface{}{
+				loginID,
+				frameType,
+				uint16(4),
+				token,
+				uint16(0),
+				token2,
+			}, nil
+		}
+	}
+
+	return 0, nil, ErrFrameTypeNotFound
+
 }
 
 // GetFrameTypeName возращает строковое представления f_type.Если не удалось определить тип frame, то "nn"

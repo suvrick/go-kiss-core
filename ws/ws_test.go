@@ -21,5 +21,12 @@ func TestGameSocket(t *testing.T) {
 	gs.Run()
 	login_params := []interface{}{1000015, 32, 4, "200514254f3678c2f79cb18760ba048d", 0, ""}
 	gs.Send(4, login_params)
+
+	gs2 := ws.NewGameSocket(config)
+	gs2.Run()
+	login_params2 := []interface{}{1000015, 32, 4, "200514254f3678c2f79cb18760ba048d", 0, ""}
+	gs2.Send(4, login_params2)
+
 	<-gs.Done
+	<-gs2.Done
 }

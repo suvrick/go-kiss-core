@@ -1,8 +1,6 @@
 package packets
 
 import (
-	"fmt"
-
 	"github.com/suvrick/go-kiss-core/leb128"
 )
 
@@ -146,18 +144,20 @@ func (p *Packet) Fill(bot *Bot) {
 	}
 }
 
-func (p *Packet) GetBuffer(msgID int64) ([]byte, error) {
+func (p *Packet) GetBuffer(msgID int64) {
 
 	a, err := leb128.Compress(msgID)
 	if err != nil {
-		return nil, err
+		p.Error = err
+		return
 	}
 
 	b := len(p.Buffer) + len(a)
 
 	c, err := leb128.Compress(b)
 	if err != nil {
-		return nil, err
+		p.Error = err
+		return
 	}
 
 	data := make([]byte, 0)
@@ -165,7 +165,7 @@ func (p *Packet) GetBuffer(msgID int64) ([]byte, error) {
 	data = append(data, a...)        // ID сообщения
 	data = append(data, p.Buffer...) // данные
 
-	fmt.Println(data)
+	p.Buffer = data
 
-	return data, nil
+	//fmt.Println(data)
 }

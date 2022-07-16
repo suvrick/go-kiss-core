@@ -18,6 +18,7 @@ type SocketConfig struct {
 	Timeout       time.Duration
 	TimeInTheGame int
 	Logger        *log.Logger
+	Load          int
 }
 
 func GetDefaultGameSocketConfig() *GameSocketConfig {
@@ -41,6 +42,7 @@ func GetDefaultSocketConfig() *SocketConfig {
 			},
 		},
 		Logger:        log.Default(),
-		TimeInTheGame: 30,
+		TimeInTheGame: 3000,
+		Load:          10,
 	}
 }

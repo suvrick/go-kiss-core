@@ -2,6 +2,7 @@ package packets
 
 import (
 	"container/list"
+	"fmt"
 	"io"
 
 	"github.com/suvrick/go-kiss-core/leb128"
@@ -14,6 +15,10 @@ func CreateServerPacket(r io.Reader) *Packet {
 	p.Len, p.Error = leb128.ReadInt(r)
 	p.ID, p.Error = leb128.ReadInt(r)
 	p.Type, p.Error = leb128.ReadUint16(r)
+
+	if p.Type == 43 {
+		fmt.Println(p.Name)
+	}
 
 	if p.Error != nil {
 		return &p
@@ -29,9 +34,9 @@ func CreateServerPacket(r io.Reader) *Packet {
 	p.Name = name
 	p.Format = format
 
-	// if p_type == 5 {
-	// 	p.Format = "IIISBSBBIBIBIIBBIII"
-	// }
+	if p.Type == 5 {
+		p.Format = "IIISBSBBIBIBIIBBIII"
+	}
 
 	p.Params, p.Error = parse(r, []byte(format))
 
@@ -57,7 +62,7 @@ func parse(reader io.Reader, format []byte) ([]interface{}, error) {
 		current = append(current, t)
 	}
 
-	// [read] -> TIMEOUTS(173) "[BI]" PARAMS: [[[32 1655133163]]] ERROR: ""
+	// // [II][II][II] [read] -> TIMEOUTS(173) "[BI]" PARAMS: [[[32 1655133163]]] ERROR: ""
 	for i := 0; i < len(format); i++ {
 
 		char := format[i]
@@ -78,7 +83,7 @@ func parse(reader io.Reader, format []byte) ([]interface{}, error) {
 		}
 
 		if char == '[' {
-			l, err := leb128.ReadInt(reader)
+			l, err := leb128.ReadUint16(reader)
 			if err != nil {
 				return current, err
 			}
@@ -107,13 +112,13 @@ func parse(reader io.Reader, format []byte) ([]interface{}, error) {
 	return current, nil
 }
 
-func getGroup(format_array []byte, index int, count int) []byte {
+func getGroup(format_array []byte, index int, count uint16) []byte {
 
 	result := make([]byte, 0)
 	summater := make([]byte, 0)
 	fragment := make([]byte, 0)
 
-	if len(format_array) < index {
+	if len(format_array) < index || count < 1 {
 		return nil
 	}
 
@@ -161,9 +166,9 @@ func getValue(reader io.Reader, r byte) (interface{}, error) {
 
 	switch r {
 	case 'B':
-		value, err = leb128.ReadInt8(reader)
+		value, err = leb128.ReadUint8(reader)
 	case 'I':
-		value, err = leb128.ReadInt64(reader)
+		value, err = leb128.ReadUint32(reader)
 	case 'S':
 		value, err = leb128.ReadString(reader)
 	case 'A':

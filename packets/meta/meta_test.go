@@ -9,7 +9,7 @@ import (
 )
 
 func TestDebug(t *testing.T) {
-	p := NewMeta(nil)
+	p := NewMeta()
 	if p.Error != nil {
 		fmt.Println(p.Error)
 	}
