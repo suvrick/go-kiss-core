@@ -75,7 +75,8 @@ func (gs *GameSocket) ReadHandler(reader io.Reader) {
 		return
 	}
 
-	for _, t := range []uint16{4, 5, 7, 13, 17, 130, 310} {
+	//4, 5, 7, 13, 17, 130, 310
+	for _, t := range []uint16{} {
 
 		if t != p.Type {
 			continue

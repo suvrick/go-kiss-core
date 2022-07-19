@@ -56,7 +56,7 @@ var closed_rules = map[byte]string{
 func NewSocket(config *SocketConfig) *Socket {
 
 	once.Do(func() {
-		balancer = make(chan struct{}, config.Load)
+		balancer = make(chan struct{}, config.Balancer)
 	})
 
 	return &Socket{
@@ -90,13 +90,10 @@ func (socket *Socket) SetProxy(p *proxy.Proxy) {
 }
 
 func (socket *Socket) Go() {
-
 	balancer <- struct{}{}
-
 	socket.connect()
-	socket.wg.Add(2)
+	socket.wg.Add(1) // for read
 	go socket.read()
-	go socket.send()
 	go socket.done()
 }
 
@@ -109,11 +106,11 @@ func (socket *Socket) Send(packet []byte) {
 				err = fmt.Errorf("catch recover from send")
 			}
 			socket.errorHandle(err)
-			socket.close_connection()
 		}
 	}()
 
-	if socket == nil {
+	if socket.client == nil {
+		socket.errorHandle(ErrConnectionFail)
 		return
 	}
 
@@ -145,7 +142,6 @@ func (socket *Socket) connect() {
 				err = fmt.Errorf("catch recover from connection")
 			}
 			socket.errorHandle(err)
-			socket.close_connection()
 		}
 	}()
 
@@ -202,47 +198,9 @@ func (socket *Socket) timeout() {
 
 func (socket *Socket) done() {
 	socket.wg.Wait()
+	socket.close_chan()
 	if socket.closeHandle != nil {
 		socket.closeHandle(socket.rule_close, socket.getCloseRuleMsg())
-	}
-	socket.close_chan()
-}
-
-func (socket *Socket) send() {
-	defer func() {
-		if r := recover(); r != nil {
-			err, ok := r.(error)
-			if !ok {
-				err = fmt.Errorf("catch recover from read")
-			}
-			socket.errorHandle(err)
-			socket.close_connection()
-		}
-
-		socket.wg.Done()
-	}()
-
-	var packet []byte
-
-	for socket.client != nil {
-
-		select {
-		case packet = <-socket.send_chan:
-		default:
-			<-time.After(time.Millisecond * 1000)
-			continue
-		}
-
-		err := socket.client.WriteMessage(websocket.BinaryMessage, packet)
-
-		if err != nil {
-			socket.setClosedRule(ERROR_SEND_CLOSE)
-			if socket.errorHandle != nil {
-				socket.errorHandle(err)
-			}
-			break
-		}
-
 	}
 }
 
@@ -271,12 +229,6 @@ func (socket *Socket) read() {
 			break
 		}
 
-		if len(msg) > 1 {
-			if msg[0] == 3 {
-				panic("HELLO")
-			}
-		}
-
 		if socket.readHandle != nil {
 			socket.readHandle(bytes.NewReader(msg))
 		}
@@ -284,6 +236,7 @@ func (socket *Socket) read() {
 }
 
 func (socket *Socket) close_connection() {
+
 	if socket.client != nil {
 		socket.client.Close()
 		socket.client = nil

@@ -2,13 +2,13 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 	"sync"
 	"text/template"
+	"time"
 
 	"github.com/suvrick/go-kiss-core/frame"
 	"github.com/suvrick/go-kiss-core/packets/meta"
@@ -112,8 +112,10 @@ type Menu struct {
 	PathName string
 }
 
-var count = flag.Int("count", 1, "set load frames")
-var path = flag.String("path", "", "set path file frames")
+var balancer = flag.Int("balancer", 1, "set balancer for max socket connections")
+var count = flag.Int("count", 1, "set count load frame for frames file")
+var path = flag.String("path", "", "set path for frame file")
+var wait = flag.Bool("wait", false, "set wait close application")
 
 var urls = []string{
 	"https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=100046693&viewerId=100046693&isAppUser=1&isAppWidgetUser=0&sessionKey=5d121ddedbef9721fc0fc02d33a2011a6938773f38a853&authKey=dd52b12107363624100e77b8b5160b02&apiSettings=743&silentBilling=1&lang=ru&fromServiceBlock=0&ls=0&pos=2&is_global=1&from_id=left.menu.service&from=left.menu.service&hasNotifications=1&_v=1&isOfferWallEnabled=0&appManage=0&connId=1563080077&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1",
@@ -147,17 +149,21 @@ func main() {
 	}
 
 	log.Printf("set load: %d\n", *count)
+	log.Printf("set balancer: %d\n", *balancer)
+	log.Printf("set wait: %v\n", *wait)
 
-	meta := meta.NewMeta()
+	meta := meta.NewMeta("meta.json")
 	if meta.Error != nil {
-		log.Fatalln(meta.Error.Error())
+		log.Fatalln(meta.Error)
 	}
 
 	config := ws.GetDefaultGameSocketConfig()
 
+	config.Balancer = *balancer
+
 	f := frame.NewFrame("frame/config.json", log.Default())
 	if f.Err != nil {
-		fmt.Println(f.Err)
+		log.Fatalln(f.Err)
 		return
 	}
 
@@ -177,13 +183,6 @@ func main() {
 		wg.Add(1)
 
 		go func() {
-
-			defer func() {
-				if r := recover(); r != nil {
-					log.Println(r)
-				}
-			}()
-
 			gs := ws.NewGameSocket(config)
 			gs.SetBotID(id)
 			gs.Run()
@@ -193,6 +192,11 @@ func main() {
 	}
 
 	wg.Wait()
+
+	if *wait {
+		<-time.After(time.Minute * 630)
+	}
+
 	// gs := ws.NewGameSocket(config)
 	// gs.Run()
 	// login_params := []interface{}{1000015, 32, 4, "200514254f3678c2f79cb18760ba048d", 0, ""}

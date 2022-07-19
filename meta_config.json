@@ -1,0 +1,26 @@
+{
+    "host_path": "https://inspin.me/",
+    "version_path": "version.json",
+    "script_path": "workers/connection_worker.js",
+    "version": "build/v2117/",
+    "client_formats": {
+        "Start": "PacketClient=o,o.FORMATS=[",
+        "End": "}",
+        "Pattern": "\"([A-Z,\\[\\]]*)\""
+    },
+    "server_formats": {
+        "Start": "PacketServer=o,o.FORMATS=[",
+        "End": "}",
+        "Pattern": "\"([A-Z,\\[\\]]*)\""
+    },
+    "server_types": {
+        "Start": ".ServerPacketType=void",
+        "End": "}",
+        "Pattern": ".([A-Z_]*)=([0-9]*)"
+    },
+    "client_types": {
+        "Start": ".ClientPacketType=void",
+        "End": "}",
+        "Pattern": ".([A-Z_]*)=([0-9]*)"
+    }
+}

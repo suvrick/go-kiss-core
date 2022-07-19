@@ -4,68 +4,98 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
+	"log"
 	"regexp"
 	"strconv"
-	"sync"
+
+	"github.com/suvrick/go-kiss-core/until"
 )
 
-var instance *Meta
-var once sync.Once
-var configure *MetaConfig
-
-var clients map[uint16][2]string = map[uint16][2]string{}
-var servers map[uint16][2]string = map[uint16][2]string{}
-
 type Meta struct {
-	MetaConfig
-	Error error
+	HostPath    string `json:"host_path"`
+	VersionPath string `json:"version_path"`
+	ScriptPath  string `json:"script_path"`
+	Version     string `json:"version"`
+
+	ClientFormats RegConfig `json:"client_formats"`
+	ServerFormats RegConfig `json:"server_formats"`
+	ServerTypes   RegConfig `json:"server_types"`
+	ClientTypes   RegConfig `json:"client_types"`
+
+	Clients map[uint16][2]string `json:"clients"`
+	Servers map[uint16][2]string `json:"servers"`
+
+	HasChangedVersion bool  `json:"-"`
+	Error             error `json:"-"`
 }
 
-func NewMeta() *Meta {
+type RegConfig struct {
+	Start   string `json:"start"`
+	End     string `json:"end"`
+	Pattern string `json:"pattern"`
+}
 
-	if instance == nil {
-		if configure == nil {
-			configure = GetDefaultMetaConfig()
-		}
+func NewMeta(path string) *Meta {
 
-		instance = &Meta{
-			MetaConfig: *configure,
-		}
-		once.Do(instance.initialize)
+	meta := &Meta{}
+	if err := until.LoadConfigFromFile(path, meta); err != nil {
+		meta.Error = err
+		return meta
 	}
 
-	return instance
+	if meta.CheckUpdateMeta() {
+		if err := until.SaveConfigToFile(path, meta); err != nil {
+			meta.Error = err
+			return meta
+		}
+	}
+
+	return meta
 }
 
-func SetConfig(config *MetaConfig) {
-	configure = config
-	instance = nil
+func (meta *Meta) CheckUpdateMeta() bool {
+
+	log.Printf("check new version...\n")
+
+	v := meta.getVersion()
+	if len(v) == 0 {
+		meta.Error = fmt.Errorf("error check new version")
+		return false
+	}
+
+	if v == meta.Version {
+		return false
+	}
+
+	log.Printf("get new version %s\n", meta.Version)
+
+	meta.Version = v
+
+	log.Printf("try install new version\n")
+
+	meta.Initialize()
+
+	return true
 }
 
-func (p *Meta) initialize() {
+func (meta *Meta) Initialize() {
 
-	p.getVersion()
-	if p.Error != nil {
+	body := meta.getBody()
+	if meta.Error != nil {
 		return
 	}
 
-	fmt.Printf("set game version: %s\n", p.Version)
-
-	body := p.getBody()
-	if p.Error != nil {
-		return
-	}
-
-	//fmt.Printf("body length: %d\n", len(body))
-
-	p.parseBody(body)
+	meta.parseBody(body)
 }
 
 // return name, format, ok
-func GetClientMeta(typeID uint16) (string, string, bool) {
-	r, ok := clients[typeID]
+func (meta *Meta) GetClientMeta(typeID uint16) (string, string, bool) {
+
+	if meta.Clients == nil {
+		return "", "", false
+	}
+
+	r, ok := meta.Clients[typeID]
 	if !ok {
 		return "", "", false
 	}
@@ -73,8 +103,13 @@ func GetClientMeta(typeID uint16) (string, string, bool) {
 }
 
 // return name, format, ok
-func GetServerMeta(typeID uint16) (string, string, bool) {
-	r, ok := servers[typeID]
+func (meta *Meta) GetServerMeta(typeID uint16) (string, string, bool) {
+
+	if meta.Servers == nil {
+		return "", "", false
+	}
+
+	r, ok := meta.Servers[typeID]
 	if !ok {
 		return "", "", false
 	}
@@ -112,19 +147,19 @@ func (meta *Meta) parseBody(body []byte) {
 
 	/* GENERATE */
 
-	servers = meta.generateData(server_formats, server_types)
-	if len(servers) == 0 {
+	meta.Servers = meta.generateData(server_formats, server_types)
+	if len(meta.Servers) == 0 {
 		meta.Error = fmt.Errorf("[net.generateData] generateData by server return zero length. formats len: %d, types len: %d", len(server_formats), len(server_types))
 		return
 	}
 
-	clients = meta.generateData(client_formats, client_types)
-	if len(clients) == 0 {
+	meta.Clients = meta.generateData(client_formats, client_types)
+	if len(meta.Clients) == 0 {
 		meta.Error = fmt.Errorf("[net.generateData] generateData by client return zero length. formats len: %d, types len: %d", len(client_formats), len(client_types))
 		return
 	}
 
-	fmt.Printf("meta parse success! servers: %d, clients: %d\n", len(servers), len(clients))
+	fmt.Printf("meta parse success! servers: %d, clients: %d\n", len(meta.Servers), len(meta.Clients))
 }
 
 func (meta *Meta) generateData(formats []string, types map[uint16]string) map[uint16][2]string {
@@ -142,9 +177,9 @@ func (meta *Meta) generateData(formats []string, types map[uint16]string) map[ui
 	return result
 }
 
-func (meta *Meta) getFormats(body []byte, start []byte, end []byte, pattern []byte) []string {
+func (meta *Meta) getFormats(body []byte, start string, end string, pattern string) []string {
 
-	body = meta.split(body, start, end)
+	body = meta.split(body, []byte(start), []byte(end))
 	if len(body) == 0 {
 		return nil
 	}
@@ -169,8 +204,8 @@ func (meta *Meta) getFormats(body []byte, start []byte, end []byte, pattern []by
 	return result
 }
 
-func (meta *Meta) getTypes(body []byte, start []byte, end []byte, pattern []byte) map[uint16]string {
-	body = meta.split(body, start, end)
+func (meta *Meta) getTypes(body []byte, start string, end string, pattern string) map[uint16]string {
+	body = meta.split(body, []byte(start), []byte(end))
 	if len(body) == 0 {
 		return nil
 	}
@@ -205,22 +240,23 @@ func (meta *Meta) getTypes(body []byte, start []byte, end []byte, pattern []byte
 
 func (meta *Meta) getBody() []byte {
 	url := fmt.Sprintf("%s%s%s", meta.HostPath, meta.Version, meta.ScriptPath)
-	body, err := meta.request(url)
+	body, err := until.Request(url)
 	if err != nil {
 		meta.Error = fmt.Errorf("[net.getBody] fail get body. %s", err)
 		return nil
 	}
-	return body
+
+	return until.RemoveSpacialSymbol(body)
 }
 
-func (meta *Meta) getVersion() {
+func (meta *Meta) getVersion() string {
 
 	url := fmt.Sprintf("%s%s", meta.HostPath, meta.VersionPath)
 
-	body, err := meta.request(url)
+	body, err := until.Request(url)
+
 	if err != nil {
-		meta.Error = fmt.Errorf("[net.getVersion] fail get version. %s", err)
-		return
+		return ""
 	}
 
 	type version struct {
@@ -230,47 +266,14 @@ func (meta *Meta) getVersion() {
 	v := version{}
 	err = json.Unmarshal(body, &v)
 	if err != nil {
-		meta.Error = fmt.Errorf("[net.getVersion] fail get version. %s", err)
-		return
+		return ""
 	}
 
 	if len(v.V) == 0 {
-		meta.Error = fmt.Errorf("[net.getVersion] fail get version. %s", ErrEmptyResult)
-		return
+		return ""
 	}
 
-	meta.Version = v.V
-}
-
-func (meta *Meta) request(url string) ([]byte, error) {
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("%s. request url: %s", ErrBadRequest, url)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(body) == 0 {
-		return nil, fmt.Errorf("%s. request url: %s", ErrEmptyResult, url)
-	}
-
-	// delete spacial symbol
-	body = bytes.ReplaceAll(body, []byte{9}, []byte{})  // remove "	"
-	body = bytes.ReplaceAll(body, []byte{32}, []byte{}) // remove " "
-	body = bytes.ReplaceAll(body, []byte{10}, []byte{}) // remove "\n"
-	body = bytes.ReplaceAll(body, []byte{13}, []byte{}) // remove "\r"
-
-	return body, nil
+	return v.V
 }
 
 func (meta *Meta) split(body []byte, start []byte, end []byte) []byte {
