@@ -24,7 +24,7 @@ func CreateServerPacket(r io.Reader) *Packet {
 		return &p
 	}
 
-	name, format, ok := meta.GetServerMeta(p.Type)
+	name, format, ok := meta.Instance.GetServerMeta(p.Type)
 
 	if !ok {
 		p.Error = ErrNotFoundPacket

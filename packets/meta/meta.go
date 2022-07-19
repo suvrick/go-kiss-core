@@ -11,6 +11,8 @@ import (
 	"github.com/suvrick/go-kiss-core/until"
 )
 
+var Instance *Meta
+
 type Meta struct {
 	HostPath    string `json:"host_path"`
 	VersionPath string `json:"version_path"`
@@ -64,10 +66,11 @@ func (meta *Meta) CheckUpdateMeta() bool {
 	}
 
 	if v == meta.Version {
+		log.Printf("install actual version %s\n", v)
 		return false
 	}
 
-	log.Printf("get new version %s\n", meta.Version)
+	log.Printf("get new version %s\n", v)
 
 	meta.Version = v
 
@@ -75,6 +78,12 @@ func (meta *Meta) CheckUpdateMeta() bool {
 
 	meta.Initialize()
 
+	if meta.Error != nil {
+		log.Printf("new version install FAIL\n")
+		return false
+	}
+
+	log.Printf("new version install OK\n")
 	return true
 }
 

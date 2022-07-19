@@ -9,7 +9,7 @@ import (
 
 func CreateClientPacket(p_type uint16, params ...interface{}) Packet {
 
-	name, format, ok := meta.GetClientMeta(p_type)
+	name, format, ok := meta.Instance.GetClientMeta(p_type)
 
 	p := Packet{
 		Type:   p_type,

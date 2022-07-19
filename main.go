@@ -152,9 +152,9 @@ func main() {
 	log.Printf("set balancer: %d\n", *balancer)
 	log.Printf("set wait: %v\n", *wait)
 
-	meta := meta.NewMeta("meta.json")
-	if meta.Error != nil {
-		log.Fatalln(meta.Error)
+	meta.Instance = meta.NewMeta("meta.json")
+	if meta.Instance.Error != nil {
+		log.Fatalln(meta.Instance.Error)
 	}
 
 	config := ws.GetDefaultGameSocketConfig()
