@@ -2,17 +2,12 @@ package meta
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"strings"
 	"testing"
 )
 
 func TestDebug(t *testing.T) {
-	p := NewMeta(GetDefaultMetaConfig())
-	if p.Error != nil {
-		fmt.Println(p.Error)
-	}
 }
 
 var jsons = `{

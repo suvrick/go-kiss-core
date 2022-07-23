@@ -126,6 +126,7 @@ func (meta *Meta) GetServerMeta(typeID uint16) (string, string, bool) {
 }
 
 func (meta *Meta) parseBody(body []byte) {
+
 	/* FORMATS */
 
 	server_formats := meta.getFormats(body, meta.ServerFormats.Start, meta.ServerFormats.End, meta.ServerFormats.Pattern)
@@ -167,8 +168,6 @@ func (meta *Meta) parseBody(body []byte) {
 		meta.Error = fmt.Errorf("[net.generateData] generateData by client return zero length. formats len: %d, types len: %d", len(client_formats), len(client_types))
 		return
 	}
-
-	fmt.Printf("meta parse success! servers: %d, clients: %d\n", len(meta.Servers), len(meta.Clients))
 }
 
 func (meta *Meta) generateData(formats []string, types map[uint16]string) map[uint16][2]string {
