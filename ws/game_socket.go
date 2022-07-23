@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 
 	"github.com/suvrick/go-kiss-core/packets"
+	"github.com/suvrick/go-kiss-core/packets/scheme"
 )
 
 type GameSocket struct {
@@ -15,7 +16,7 @@ type GameSocket struct {
 	Done       chan struct{}
 	CloseEvent func()
 	botID      uint32
-	bot        packets.Bot
+	bot        map[string]interface{}
 }
 
 func NewGameSocket(config *GameSocketConfig) *GameSocket {
@@ -23,7 +24,7 @@ func NewGameSocket(config *GameSocketConfig) *GameSocket {
 	gs := GameSocket{
 		Done:  make(chan struct{}),
 		msgID: 0,
-		bot:   packets.Bot{},
+		bot:   make(map[string]interface{}),
 	}
 
 	socket := NewSocket(config.SocketConfig)
@@ -76,22 +77,30 @@ func (gs *GameSocket) ReadHandler(reader io.Reader) {
 	}
 
 	//4, 5, 7, 13, 17, 130, 310
-	for _, t := range []uint16{} {
+	for _, t := range []uint16{4} {
 
 		if t != p.Type {
 			continue
 		}
 
 		log.Printf("[READ(%d)] %s(%d) Format: %#v, Data: %v\n", gs.botID, p.Name, p.Type, p.Format, p.Params)
+
+		scheme.Instance = scheme.NewDefaultSchemes()
+
+		gs.bot = scheme.Instance.Fill(4, gs.bot, p.Params)
+
+		switch p.Type {
+		case 4:
+			result, ok := gs.bot["result"]
+			if ok {
+				switch result {
+				case int:
+
+				}
+			}
+		}
+
 	}
-
-	p.Fill(&gs.bot)
-
-	gs.parse(p)
-
-	p = nil
-	reader = nil
-	//runtime.GC()
 }
 
 func (gs *GameSocket) GameOver() {
@@ -128,35 +137,4 @@ func (gs *GameSocket) Send(t uint16, data []interface{}) {
 
 func (gs *GameSocket) Run() {
 	gs.socket.Go()
-}
-
-func (gs *GameSocket) parse(p *packets.Packet) {
-
-	//log.Println(p)
-
-	switch p.Type {
-	case 4:
-		switch gs.bot.Result {
-		case 0:
-			gs.Send(61, []interface{}{})
-		default:
-			gs.ErrorHandler(fmt.Errorf("bad auth. Result: %d", gs.bot.Result))
-		}
-	case 9:
-		//gs.GameOver()
-	case 13:
-
-		if gs.bot.RewardsHistory == nil {
-			gs.bot.RewardsHistory = make([]packets.Reward, 0)
-		}
-
-		for _, v := range gs.bot.Rewards {
-
-			gs.Send(11, []interface{}{v.ID})
-			gs.bot.RewardsHistory = append(gs.bot.RewardsHistory, v)
-		}
-
-		gs.bot.Rewards = make([]packets.Reward, 0)
-	default:
-	}
 }
