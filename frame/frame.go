@@ -184,14 +184,14 @@ func (f *Frame) Parse(input string) (map[string]interface{}, error) {
 	return result, ErrFrameTypeNotFound
 }
 
-func (f *Frame) GetValue(intput string) (string, []interface{}, error) {
+func (f *Frame) GetValue(intput string) (uint32, []interface{}, error) {
 	//{113594657, 32, 4, "7a2b140e7b42935768c040a54ade4cfc", 0, "8c9991f3e49ef7d20d33432d1534e378"}
 	r, e := f.Parse(intput)
-	return r["bot_id"].(string), []interface{}{
+	return r["bot_id"].(uint32), []interface{}{
 		r["login_id"].(uint64),
 		r["frame_type"].(uint16),
 		uint16(4),
-		r["token1"].(string),
+		r["token"].(string),
 		uint8(0),
 		r["token2"].(string),
 	}, e
