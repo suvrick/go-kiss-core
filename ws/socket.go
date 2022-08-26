@@ -13,9 +13,6 @@ import (
 	"github.com/suvrick/go-kiss-core/proxy"
 )
 
-var balancer chan struct{}
-var once sync.Once
-
 // GameSock ...
 type Socket struct {
 	*SocketConfig
@@ -55,10 +52,6 @@ var closed_rules = map[byte]string{
 
 func NewSocket(config *SocketConfig) *Socket {
 
-	once.Do(func() {
-		balancer = make(chan struct{}, config.Balancer)
-	})
-
 	return &Socket{
 		SocketConfig: config,
 		wg:           sync.WaitGroup{},
@@ -90,7 +83,6 @@ func (socket *Socket) SetProxy(p *proxy.Proxy) {
 }
 
 func (socket *Socket) Go() {
-	balancer <- struct{}{}
 	socket.connect()
 	socket.wg.Add(1) // for read
 	go socket.read()
@@ -236,13 +228,10 @@ func (socket *Socket) read() {
 }
 
 func (socket *Socket) close_connection() {
-
 	if socket.client != nil {
 		socket.client.Close()
 		socket.client = nil
 	}
-
-	<-balancer
 }
 
 func (socket *Socket) close_chan() {

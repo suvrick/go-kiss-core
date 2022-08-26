@@ -3,30 +3,62 @@ package ws_test
 import (
 	"log"
 	"testing"
-
-	"github.com/suvrick/go-kiss-core/packets/meta"
-	"github.com/suvrick/go-kiss-core/ws"
 )
 
 func TestGameSocket(t *testing.T) {
 
-	meta := meta.NewMeta()
-	if meta.Error != nil {
-		log.Fatalln(meta.Error.Error())
+	p := Login{
+		PacketBase: PacketBase{
+			0,
+			4,
+		},
 	}
 
-	config := ws.GetDefaultGameSocketConfig()
+	p.Load([]interface{}{1, 2, 3})
 
-	gs := ws.NewGameSocket(config)
-	gs.Run()
-	login_params := []interface{}{1000015, 32, 4, "200514254f3678c2f79cb18760ba048d", 0, ""}
-	gs.Send(4, login_params)
+	p2 := Bonus{
+		PacketBase: PacketBase{
+			0,
+			61,
+		},
+	}
 
-	gs2 := ws.NewGameSocket(config)
-	gs2.Run()
-	login_params2 := []interface{}{1000015, 32, 4, "200514254f3678c2f79cb18760ba048d", 0, ""}
-	gs2.Send(4, login_params2)
+	p2.Load([]interface{}{1, 5})
 
-	<-gs.Done
-	<-gs2.Done
+}
+
+type IPacket interface {
+	Load([]interface{})
+}
+
+type PacketBase struct {
+	PacketType byte
+	PacketID   uint16
+}
+
+func (p *PacketBase) load(params []interface{}) {
+	for _, v := range params {
+		log.Println(v)
+	}
+}
+
+type Login struct {
+	PacketBase
+	Result  int
+	UserID  uint64
+	Balance int
+}
+
+func (l *Login) Load(params []interface{}) {
+	l.PacketBase.load(params)
+}
+
+type Bonus struct {
+	PacketBase
+	IsCan int
+	Day   int
+}
+
+func (l *Bonus) Load(params []interface{}) {
+	l.PacketBase.load(params)
 }

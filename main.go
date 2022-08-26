@@ -2,9 +2,11 @@ package main
 
 import (
 	"flag"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"text/template"
@@ -115,7 +117,7 @@ type Menu struct {
 var balancer = flag.Int("balancer", 1, "set balancer for max socket connections")
 var count = flag.Int("count", 1, "set count load frame for frames file")
 var path = flag.String("path", "", "set path for frame file")
-var wait = flag.Bool("wait", false, "set wait close application")
+var wait = flag.Bool("wait", true, "set wait close application")
 
 var urls = []string{
 	"https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=100046693&viewerId=100046693&isAppUser=1&isAppWidgetUser=0&sessionKey=5d121ddedbef9721fc0fc02d33a2011a6938773f38a853&authKey=dd52b12107363624100e77b8b5160b02&apiSettings=743&silentBilling=1&lang=ru&fromServiceBlock=0&ls=0&pos=2&is_global=1&from_id=left.menu.service&from=left.menu.service&hasNotifications=1&_v=1&isOfferWallEnabled=0&appManage=0&connId=1563080077&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1",
@@ -129,6 +131,15 @@ var urls = []string{
 }
 
 func main() {
+
+	file, err := os.OpenFile("log", os.O_CREATE|os.O_RDONLY, 0600)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	multyout := io.MultiWriter(file, os.Stdout)
+
+	log.SetOutput(multyout)
 
 	flag.Parse()
 
@@ -157,10 +168,6 @@ func main() {
 		log.Fatalln(meta.Instance.Error)
 	}
 
-	config := ws.GetDefaultGameSocketConfig()
-
-	config.Balancer = *balancer
-
 	f := frame.NewFrame("frame/config.json", log.Default())
 	if f.Err != nil {
 		log.Fatalln(f.Err)
@@ -168,11 +175,12 @@ func main() {
 	}
 
 	wg := sync.WaitGroup{}
-	fn := func() {
-		wg.Done()
-	}
+	semofor := make(chan struct{}, *balancer)
 
+	config := ws.GetDefaultGameSocketConfig()
 	for _, url := range urls[:*count] {
+
+		semofor <- struct{}{}
 
 		id, params, err := f.Parse2(url)
 		if err != nil {
@@ -183,11 +191,14 @@ func main() {
 		wg.Add(1)
 
 		go func() {
+			defer func() {
+				<-semofor
+				wg.Done()
+			}()
 			gs := ws.NewGameSocket(config)
 			gs.SetBotID(id)
 			gs.Run()
 			gs.Send(4, params)
-			gs.CloseEvent = fn
 		}()
 	}
 

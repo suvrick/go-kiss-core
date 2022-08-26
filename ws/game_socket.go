@@ -48,7 +48,7 @@ func (gs *GameSocket) OpenHandler() {
 
 func (gs *GameSocket) CloseHandler(rule byte, msg string) {
 	log.Printf("[CLOSE(%d)] socket close: %s\n", gs.botID, msg)
-	gs.CloseEvent()
+	//gs.CloseEvent()
 	gs.Done <- struct{}{}
 }
 
@@ -91,13 +91,12 @@ func (gs *GameSocket) ReadHandler(reader io.Reader) {
 
 		switch p.Type {
 		case 4:
-			result, ok := gs.bot["result"]
-			if ok {
-				switch result {
-				case int:
-
-				}
-			}
+			// result, ok := gs.bot["result"]
+			// if ok {
+			// 	if result.(int) == 0 {
+			// 		gs.GameOver()
+			// 	}
+			// }
 		}
 
 	}
