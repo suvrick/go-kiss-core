@@ -5,10 +5,12 @@ package frame
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"hash/fnv"
 	"log"
 	"net/url"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -59,7 +61,19 @@ var once sync.Once
 
 // return Default FrameManager
 func NewFrameDefault() *Frame {
-	return NewFrame("config.json", &log.Logger{})
+
+	ex, err := os.Executable()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	dir := path.Dir(ex)
+
+	p := path.Join(dir, "frame", "config.json")
+
+	fmt.Println(p)
+
+	return NewFrame(p, nil)
 }
 
 // Singleton
@@ -102,18 +116,20 @@ func (f *Frame) load_keys() {
 }
 
 /*
-	Функция для парсинга строки в словарь элементов.
-	Принимает на вход строку frame
-	Возращает словарь с определенными ключами
+Функция для парсинга строки в словарь элементов.
+Принимает на вход строку frame
+Возращает словарь с определенными ключами
 
-	result: [
-				"bot_id": ""
-				"frame_type": 32
-				"login_id": 114941701
-				"token": "33513e2ce85cabfd6ec59d827aa28cea"
-				"token2": "67f5e4f7a90144c5eba1b91694132904"
-			],
-	error: nil
+result: [
+
+		"bot_id": ""
+		"frame_type": 32
+		"login_id": 114941701
+		"token": "33513e2ce85cabfd6ec59d827aa28cea"
+		"token2": "67f5e4f7a90144c5eba1b91694132904"
+	],
+
+error: nil
 */
 func (f *Frame) Parse(input string) (map[string]interface{}, error) {
 

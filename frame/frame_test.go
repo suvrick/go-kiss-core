@@ -123,7 +123,9 @@ func TestParseFrame(t *testing.T) {
 
 func TestInitialize(t *testing.T) {
 
-	f := NewFrame("./config.json", nil)
+	// f := NewFrame("./config.json", nil)
+
+	f := NewFrameDefault()
 
 	if f.Err != nil {
 		t.Fatal(f.Err)
