@@ -2,6 +2,7 @@ package ws
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"reflect"
 	"sync"
@@ -10,12 +11,25 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// LOGIN(4) "IBBS,BSIIBSBSBS"
 type PCLogin struct {
-	ID      uint64
-	SocType uint16
-	Device2 byte
-	Token   string
+	ID           uint64 //I
+	NetType      uint16 //B
+	DeviceType   byte   //B
+	Key          string //S
+	OAuth        byte   //B
+	AccessToken  string //S
+	Referrer     int    //I
+	Tag          int    //I
+	FieldInt     byte   //B
+	FieldString  string //S
+	RoomLanguage byte   //B
+	FieldString2 string //S
+	Gender       byte   //B
+	Captcha      string //S
 }
+
+type PCGetBonus struct{}
 
 type PSBalance struct {
 }
@@ -37,6 +51,25 @@ type PSUserInfo struct {
 	Balance int32
 }
 
+type RewardItem struct {
+	ID    int
+	Count int
+}
+
+type PSRewards struct {
+	Rewards []RewardItem
+}
+
+type BalanceItem struct {
+	Feild1 byte
+	Feild2 int
+	Feild3 int
+}
+
+type PSBalanceItems struct {
+	Items []BalanceItem
+}
+
 // GameSock ...
 type Socket struct {
 	*SocketConfig
@@ -55,6 +88,14 @@ type Socket struct {
 	readHandle  func(PacketServerType, interface{})
 	errorHandle func(error)
 }
+
+/*
+
+   "310": [
+       "BALANCE_ITEMS",
+       "[BII]"
+   ],
+*/
 
 const (
 	NORMAL_CLOSE        = 0x00
@@ -75,10 +116,12 @@ const (
 type PacketServerType uint16
 
 const (
-	LOGIN_SERVER PacketServerType = 4
-	INFO         PacketServerType = 5
-	BALANCE      PacketServerType = 7
-	BONUS        PacketServerType = 17
+	LOGIN_SERVER  PacketServerType = 4
+	INFO          PacketServerType = 5
+	BALANCE       PacketServerType = 7
+	REWARDS       PacketServerType = 13
+	BONUS         PacketServerType = 17
+	BALANCE_ITEMS PacketServerType = 310
 )
 
 var (
@@ -147,7 +190,7 @@ func (socket *Socket) Send(packet []byte) {
 	}()
 }
 
-func (socket *Socket) SendPacket(packType uint16, payload interface{}) {
+func (socket *Socket) SendPacket(packType PacketClientType, payload interface{}) {
 
 	pack, err := Marshal(payload)
 
@@ -176,7 +219,7 @@ func (socket *Socket) SendPacket(packType uint16, payload interface{}) {
 
 	// socket.Logger.Printf("[SendPacket] >> %x\n", pack)
 
-	// socket.Logger.Printf("[SendPacket2] >> %x\n", data_len)
+	//socket.Logger.Printf("[SendPacket2] >> %x\n", data_len)
 
 	socket.Send(data_len)
 
@@ -307,7 +350,7 @@ func (socket *Socket) read() {
 
 			packetType := PacketServerType(t)
 
-			socket.Logger.Printf("server type: %d\n", packetType)
+			//socket.Logger.Printf("server type: %d\n", packetType)
 
 			switch packetType {
 			case LOGIN_SERVER:
@@ -318,6 +361,7 @@ func (socket *Socket) read() {
 					}
 				} else {
 					socket.readHandle(packetType, login)
+					socket.SendPacket(GET_BONUS, PCGetBonus{})
 				}
 
 			case BALANCE:
@@ -329,6 +373,15 @@ func (socket *Socket) read() {
 				} else {
 					socket.readHandle(packetType, balance)
 				}
+			case REWARDS:
+				rewards := PSRewards{}
+				if err := Unmarshal(reader, &rewards); err != nil {
+					if socket.errorHandle != nil {
+						socket.errorHandle(err)
+					}
+				} else {
+					socket.readHandle(packetType, rewards)
+				}
 			case BONUS:
 				bonus := PSBonus{}
 				if err := Unmarshal(reader, &bonus); err != nil {
@@ -337,6 +390,15 @@ func (socket *Socket) read() {
 					}
 				} else {
 					socket.readHandle(packetType, bonus)
+				}
+			case BALANCE_ITEMS:
+				balanceItems := PSBalanceItems{}
+				if err := Unmarshal(reader, &balanceItems); err != nil {
+					if socket.errorHandle != nil {
+						socket.errorHandle(err)
+					}
+				} else {
+					socket.readHandle(packetType, balanceItems)
 				}
 			}
 
@@ -373,6 +435,8 @@ func Unmarshal(reader io.Reader, s interface{}) error {
 	var _err error = nil
 	var _uint uint64 = 0
 	var _int int64 = 0
+
+	fmt.Printf("%v\n", reflect.TypeOf(s))
 
 	structure := reflect.ValueOf(s)
 
@@ -464,9 +528,26 @@ func Unmarshal(reader io.Reader, s interface{}) error {
 			reader.Read(str)
 
 			field.SetString(string(str))
+		case reflect.Slice:
+			length, _ := ReadInt(reader, 32)
+
+			struct_type := reflect.TypeOf(field.Interface()).Elem()
+
+			slice := reflect.MakeSlice(reflect.SliceOf(struct_type), 0, 0)
+
+			for w := 0; w < int(length); w++ {
+
+				item := reflect.New(struct_type)
+
+				Unmarshal(reader, item.Interface())
+
+				slice = reflect.Append(slice, item.Elem())
+			}
+
+			field.Set(slice)
+
 		default:
-			_err = ErrMarshalClientPacket
-			return _err
+			panic(ErrMarshalClientPacket)
 		}
 	}
 
@@ -481,6 +562,10 @@ func Marshal(s interface{}) ([]byte, error) {
 
 	structure := reflect.ValueOf(s)
 
+	if structure.IsZero() {
+		return nil, nil
+	}
+
 	numfield := reflect.ValueOf(s).Elem().NumField()
 
 	for x := 0; x < numfield; x++ {
@@ -492,6 +577,16 @@ func Marshal(s interface{}) ([]byte, error) {
 		field := structure.Elem().Field(x)
 
 		switch reflect.ValueOf(s).Elem().Field(x).Kind() {
+		case reflect.Bool:
+			if i, ok := field.Interface().(bool); ok {
+				if i {
+					result = AppendInt(result, int64(1))
+				} else {
+					result = AppendInt(result, int64(0))
+				}
+			} else {
+				err = ErrMarshalClientPacket
+			}
 		case reflect.Int8:
 			if i, ok := field.Interface().(int8); ok {
 				result = AppendInt(result, int64(i))
