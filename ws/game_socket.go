@@ -56,4 +56,5 @@ func (gs *GameSocket) ReadHandler(reader io.Reader) {
 }
 
 func (gs *GameSocket) Send(t uint16, data []interface{}) {
+
 }
