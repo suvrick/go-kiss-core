@@ -6,30 +6,13 @@ import (
 	"time"
 )
 
-type GameSocketConfig struct {
-	*SocketConfig
-	MaskInfo int
-	Logger   *log.Logger
-}
-
 type SocketConfig struct {
 	Host          string
 	Head          http.Header
 	Timeout       time.Duration
 	TimeInTheGame int
 	Logger        *log.Logger
-	Balancer      int
-}
-
-func GetDefaultGameSocketConfig() *GameSocketConfig {
-	logger := log.Default()
-	sc := GetDefaultSocketConfig()
-	sc.Logger = logger
-	return &GameSocketConfig{
-		SocketConfig: sc,
-		MaskInfo:     1114252,
-		Logger:       logger,
-	}
+	MaskInfo      int
 }
 
 func GetDefaultSocketConfig() *SocketConfig {
@@ -42,7 +25,7 @@ func GetDefaultSocketConfig() *SocketConfig {
 			},
 		},
 		Logger:        log.Default(),
-		TimeInTheGame: 3000,
-		Balancer:      10,
+		TimeInTheGame: 30,
+		MaskInfo:      1114252,
 	}
 }

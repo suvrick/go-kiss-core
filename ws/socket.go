@@ -4,13 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"net/http"
-	"net/url"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/suvrick/go-kiss-core/proxy"
 )
 
 // GameSock ...
@@ -26,11 +23,9 @@ type Socket struct {
 	read_chan  chan []byte
 	error_chan chan error
 
-	proxy *proxy.Proxy
-
 	openHandle  func()
-	closeHandle func(byte, string)
 	readHandle  func(io.Reader)
+	closeHandle func(byte, string)
 	errorHandle func(error)
 }
 
@@ -76,10 +71,6 @@ func (socket *Socket) SetReadHandler(handler func(reader io.Reader)) {
 
 func (socket *Socket) SetErrorHandler(handler func(err error)) {
 	socket.errorHandle = handler
-}
-
-func (socket *Socket) SetProxy(p *proxy.Proxy) {
-	socket.proxy = p
 }
 
 func (socket *Socket) Go() {
@@ -139,14 +130,6 @@ func (socket *Socket) connect() {
 
 	dialer := websocket.Dialer{
 		HandshakeTimeout: (socket.Timeout),
-	}
-
-	if socket.proxy != nil {
-		dialer.Proxy = http.ProxyURL(&url.URL{
-			Scheme: socket.proxy.Scheme,
-			Host:   socket.proxy.Host,
-			User:   url.UserPassword(socket.proxy.User, socket.proxy.Password),
-		})
 	}
 
 	client, resp, err := dialer.Dial(socket.Host, socket.Head)
