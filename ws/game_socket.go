@@ -91,15 +91,17 @@ func (gs *GameSocket) ReadHandler(reader io.Reader) {
 
 		switch p.Type {
 		case 4:
-			result, ok := gs.bot["result"]
+			result, ok := gs.bot["result"].(int)
 			if ok {
 				switch result {
-				case int:
-
+				case 0:
+					fmt.Println("ok auth")
+				default:
+					fmt.Println("fail auth")
+					gs.socket.Close()
 				}
 			}
 		}
-
 	}
 }
 
