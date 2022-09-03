@@ -1,3 +1,4 @@
+package socket
 
 // pack, err := Marshal(payload)
 

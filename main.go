@@ -1,11 +1,12 @@
 package main
 
 import (
-	"fmt"
+	"io"
 	"log"
-	"reflect"
 
 	"github.com/suvrick/go-kiss-core/frame"
+	"github.com/suvrick/go-kiss-core/packets/client"
+	"github.com/suvrick/go-kiss-core/packets/leb128"
 	"github.com/suvrick/go-kiss-core/ws"
 )
 
@@ -44,7 +45,6 @@ func main() {
 	s := ws.NewSocket(ws.GetDefaultSocketConfig())
 
 	s.SetErrorHandler(func(err error) {
-		log.Println("socket error")
 		log.Println(err.Error())
 		s.Close()
 	})
@@ -54,17 +54,17 @@ func main() {
 	})
 
 	s.SetCloseHandler(func(rule byte, msg string) {
-		log.Println("socket close")
+		log.Printf("socket close. %s", msg)
 		wait <- struct{}{}
 	})
 
-	s.SetReadHandler(func(packType ws.PacketServerType, structure interface{}) {
-		fmt.Printf("%s: %+v\n", reflect.TypeOf(structure), structure)
+	s.SetReadHandler(func(reader io.Reader) {
+		log.Println("socket read")
 	})
 
 	s.Go()
 
-	login := ws.PCLogin{
+	login := &client.Login{
 		ID:          r["login_id"].(uint64),
 		NetType:     r["frame_type"].(uint16),
 		DeviceType:  6,
@@ -73,12 +73,18 @@ func main() {
 		AccessToken: r["token2"].(string),
 		Gender:      2,
 	}
+
+	p, err := leb128.Marshal(login)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	//'14408', 41, 6, '207f27da4e9113369c402a86b7c033e7'
 	// login.ID = uint64(14408)
 	// login.NetType = 41
 	// login.Key = "207f27da4e9113369c402a86b7c033e7"
 
-	s.SendPacket(ws.LOGIN, &login)
+	s.Send(p)
 
 	<-wait
 }

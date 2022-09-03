@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	ErrMarshalClientPacket = errors.New("error marshal client packet")
-	ErrMarshalServerPacket = errors.New("error unmarshal server packet")
+	ErrMarshalClientPacket   = errors.New("error marshal client packet")
+	ErrUnmarshalServerPacket = errors.New("error unmarshal server packet")
 )
 
 func Unmarshal(reader io.Reader, s interface{}) error {
@@ -120,7 +120,10 @@ func Unmarshal(reader io.Reader, s interface{}) error {
 
 				item := reflect.New(struct_type)
 
-				Unmarshal(reader, item.Interface())
+				_err = Unmarshal(reader, item.Interface())
+				if _err != nil {
+					return _err
+				}
 
 				slice = reflect.Append(slice, item.Elem())
 			}
@@ -128,7 +131,7 @@ func Unmarshal(reader io.Reader, s interface{}) error {
 			field.Set(slice)
 
 		default:
-			panic(ErrMarshalClientPacket)
+			return ErrUnmarshalServerPacket
 		}
 	}
 
