@@ -135,9 +135,9 @@ func (f *Frame) Parse(input string) (map[string]interface{}, error) {
 
 	result := make(map[string]interface{}, 5)
 
-	defer func(result map[string]interface{}) {
-		f.log.Println(result)
-	}(result)
+	// defer func(result map[string]interface{}) {
+	// 	f.log.Println(result)
+	// }(result)
 
 	if f.keys == nil {
 		return result, ErrFrameParserNotInit
@@ -170,6 +170,10 @@ func (f *Frame) Parse(input string) (map[string]interface{}, error) {
 			id, err := strconv.ParseUint(queries.Get(p.LoginID), 10, 64)
 			if err != nil {
 				return result, ErrQueryParametrMiss
+			}
+
+			if strings.Index(input, "fotostrana") > 0 {
+				p.FrameType = 30
 			}
 
 			result["login_id"] = id
