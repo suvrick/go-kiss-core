@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"reflect"
 
 	"github.com/suvrick/go-kiss-core/frame"
 	"github.com/suvrick/go-kiss-core/ws"
@@ -32,7 +33,7 @@ func main() {
 
 	f := frame.NewFrameDefault()
 
-	r, _ := f.Parse(urls[3])
+	r, _ := f.Parse(urls[5])
 
 	// // r := []interface{}{
 	// // 	len, index, type, device, uint64(14408), 41, 6, "207f27da4e9113369c402a86b7c033e7",
@@ -58,24 +59,24 @@ func main() {
 	})
 
 	s.SetReadHandler(func(packType ws.PacketServerType, structure interface{}) {
-		fmt.Printf("%+v\n", structure)
+		fmt.Printf("%s: %+v\n", reflect.TypeOf(structure), structure)
 	})
 
 	s.Go()
 
 	login := ws.PCLogin{
-		ID:         r["login_id"].(uint64),
-		NetType:    r["frame_type"].(uint16),
-		DeviceType: 6,
-		Key:        r["token"].(string),
-		// OAuth:       1,
-		// AccessToken: r["token2"].(string),
-		Gender: 2,
+		ID:          r["login_id"].(uint64),
+		NetType:     r["frame_type"].(uint16),
+		DeviceType:  6,
+		Key:         r["token"].(string),
+		OAuth:       1,
+		AccessToken: r["token2"].(string),
+		Gender:      2,
 	}
 	//'14408', 41, 6, '207f27da4e9113369c402a86b7c033e7'
-	login.ID = uint64(14408)
-	login.NetType = 41
-	login.Key = "207f27da4e9113369c402a86b7c033e7"
+	// login.ID = uint64(14408)
+	// login.NetType = 41
+	// login.Key = "207f27da4e9113369c402a86b7c033e7"
 
 	s.SendPacket(ws.LOGIN, &login)
 
