@@ -1,9 +1,7 @@
 package main
 
 import (
-	"time"
-
-	"github.com/suvrick/go-kiss-core/ws"
+	"github.com/suvrick/go-kiss-core/until"
 )
 
 var urls = []string{
@@ -17,9 +15,24 @@ var urls = []string{
 	"view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=103786258&viewerId=103786258&isAppUser=1&isAppWidgetUser=0&sessionKey=5d09db98a83f25ff3885114f725c651022ee76138454ff&authKey=dc93c8e0c365ca792cf1198ab71c73e7&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1569558375&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?158&width=1000&height=690&sprites_version=83&useApiType=fs&",
 }
 
-func main() {
-	sock := ws.NewGameSocket(ws.GetDefaultSocketConfig())
-	sock.Run()
+type INT int64
+type UINT uint64
 
-	<-time.After(1 * time.Minute)
+func main() {
+	// sock := ws.NewGameSocket(ws.GetDefaultSocketConfig())
+	// sock.Run()
+
+	// <-time.After(1 * time.Minute)
+
+	m := make(map[string]any)
+	m["num"] = -123
+	m["unum"] = 123
+	m["string"] = "string"
+
+	until.ToInt64(m["num3"])
+
+	// fmt.Printf("%T\n", v)
+	// fmt.Printf("%v\n", v)
+	// fmt.Printf("%T\n", v2)
+	// fmt.Printf("%v\n", v2)
 }
