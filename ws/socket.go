@@ -90,11 +90,10 @@ type Socket struct {
 }
 
 /*
-
    "310": [
        "BALANCE_ITEMS",
        "[BII]"
-   ],
+   ]
 */
 
 const (
