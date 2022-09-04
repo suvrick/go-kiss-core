@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
+	"github.com/suvrick/go-kiss-core/api"
 	"github.com/suvrick/go-kiss-core/bot"
-	"github.com/suvrick/go-kiss-core/frame"
-	"github.com/suvrick/go-kiss-core/game"
-	"github.com/suvrick/go-kiss-core/packets/client"
 )
 
 var urls = []string{
+	"https://bottle2.itsrealgames.com/mobile/build/v1593/?social_api=mm&type=mm&record_first_session=1&6=&is_app_user=1&session_key=f53f650cd57b6bc75da0b65af0d0c028&vid=13402962412699287699&oid=13402962412699287699&app_id=543574&authentication_key=e1de7d6b1b9a18e124331d1a8e7a6709&session_expire=1623248257&ext_perm=notifications%2Cemails%2Cpayments&sig=d38fca257b4651d5fc2bbc3e2531842f&window_id=CometName_74be9f9e99659ab7f65e85f2a31d3d3b&referer_type=left_menu&version=1593",
 	"https://m.inspin.me/build/v431/?type=vk&user_id=292003911&api_url=https%3A%2F%2Fapi.vk.com%2Fapi.php&api_id=1930071&api_settings=8207&viewer_id=292003911&viewer_type=2&access_token=a0ce925b6322055cd7c291e7577bb363fb21ddd1c1026076d2ae71d1dd7e0e1416b68617869e6d20d6078&is_app_user=1&auth_key=2ff87aebac3ec78d0dc0fa5c55efda33&language=0&parent_language=0&is_secure=1&sid=e2048d62a447474d27fa6c5b862035e9d87cce7c8aba0affd06f06353c91280e416f39adf2f5d62abf77c&secret=46f45eb797&stats_hash=f1304753fffaf8bec8&lc_name=9791cbb4&api_script=https%3A%2F%2Fapi.vk.com%2Fapi.php&referrer=unknown&ads_app_id=1930071_7f55035857df794ec1&platform=html5_android&hash=",
 	"https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=100046693&viewerId=100046693&isAppUser=1&isAppWidgetUser=0&sessionKey=5d121ddedbef9721fc0fc02d33a2011a6938773f38a853&authKey=dd52b12107363624100e77b8b5160b02&apiSettings=743&silentBilling=1&lang=ru&fromServiceBlock=0&ls=0&pos=2&is_global=1&from_id=left.menu.service&from=left.menu.service&hasNotifications=1&_v=1&isOfferWallEnabled=0&appManage=0&connId=1563080077&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1",
 	"https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=100088538&viewerId=100088538&isAppUser=1&isAppWidgetUser=0&sessionKey=5d5a438a024349b54f24de4e2900ed26a89089f36d4edd&authKey=0f649b5a99bcd94ee913839afe100e75&apiSettings=743&silentBilling=1&lang=ru&fromServiceBlock=1&ls=1&pos=1&isFavlb=1&is_global=1&from_id=left.menu.service&from=left.menu.service&hasNotifications=1&_v=1&isOfferWallEnabled=0&appManage=0&connId=1563888983&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1",
@@ -24,46 +23,41 @@ var urls = []string{
 
 func main() {
 
-	f := frame.NewFrameDefault()
+	// f := frame.NewDefaultFrame()
 
-	r, _ := f.Parse(urls[0])
+	// r, _ := f.Parse(urls[0])
 
-	game := game.NewGame(game.GetDefaultGameConfig())
+	// game := game.NewGame(game.GetDefaultGameConfig())
 
-	game.Run()
+	// game.Run()
 
-	login := &client.Login{
-		ID:         r["login_id"].(uint64),
-		NetType:    r["frame_type"].(uint16),
-		DeviceType: 6,
-		Key:        r["token"].(string),
-		OAuth:      0,
-		//AccessToken: r["token2"].(string),
-		Gender: 0,
-	}
+	// login := &client.Login{
+	// 	ID:          r["login_id"].(uint64),
+	// 	NetType:     r["frame_type"].(uint16),
+	// 	DeviceType:  6,
+	// 	Key:         r["token"].(string),
+	// 	OAuth:       1,
+	// 	AccessToken: r["token2"].(string),
+	// 	Gender:      0,
+	// }
 
-	//'14408', 41, 6, '207f27da4e9113369c402a86b7c033e7'
-	login.ID = uint64(14408)
-	login.NetType = 41
-	login.Key = "207f27da4e9113369c402a86b7c033e7"
+	// //'14408', 41, 6, '207f27da4e9113369c402a86b7c033e7'
+	// // login.ID = uint64(14408)
+	// // login.NetType = 41
+	// // login.Key = "207f27da4e9113369c402a86b7c033e7"
 
-	game.Send(client.LOGIN, login)
+	// game.Send(client.LOGIN, login)
 
-	bot := <-game.Done
+	// bot := <-game.Done
 
-	Log(bot)
+	// Log(bot)
+
+	s := api.NewServer()
+	s.Run()
 }
 
 func Log(bot bot.Bot) {
 	js, _ := json.MarshalIndent(&bot, " ", "  ")
 
 	ioutil.WriteFile("log", js, 0644)
-
-	// log, err := os.OpenFile("", os.O_CREATE|os.O_RDWR, 0777)
-
-	// if err != nil {
-	// 	fmt.Println(string(js))
-	// } else {
-	// 	fmt.Fprint(log, js)
-	// }
 }

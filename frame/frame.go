@@ -43,6 +43,7 @@ const (
 	mm uint16 = 1
 	ok uint16 = 4
 	fs uint16 = 30
+	gs uint16 = 41
 	sa uint16 = 32
 	nn uint16 = 255
 )
@@ -60,7 +61,7 @@ var instance *Frame = nil
 var once sync.Once
 
 // return Default FrameManager
-func NewFrameDefault() *Frame {
+func NewDefaultFrame() *Frame {
 
 	ex, err := os.Executable()
 	if err != nil {
@@ -134,10 +135,6 @@ error: nil
 func (f *Frame) Parse(input string) (map[string]interface{}, error) {
 
 	result := make(map[string]interface{}, 5)
-
-	// defer func(result map[string]interface{}) {
-	// 	f.log.Println(result)
-	// }(result)
 
 	if f.keys == nil {
 		return result, ErrFrameParserNotInit
@@ -214,6 +211,8 @@ func GetFrameTypeName(t uint16) string {
 		return "fs"
 	case sa:
 		return "sa"
+	case gs:
+		return "gs"
 	default:
 		return "nn"
 	}

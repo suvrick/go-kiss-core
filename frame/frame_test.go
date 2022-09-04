@@ -125,7 +125,7 @@ func TestInitialize(t *testing.T) {
 
 	// f := NewFrame("./config.json", nil)
 
-	f := NewFrameDefault()
+	f := NewDefaultFrame()
 
 	if f.Err != nil {
 		t.Fatal(f.Err)

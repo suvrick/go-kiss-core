@@ -1,107 +1,19 @@
 {
    "ID": 0,
-   "Time": "2022-09-04T19:57:50.0857334+07:00",
-   "GameID": 42870078,
+   "Time": "2022-09-04T21:03:13.4366436+07:00",
+   "GameID": 0,
    "Result": 0,
-   "Name": "Меркурий",
+   "Name": "",
    "Sex": 0,
-   "Avatar": "https://bottle2.itsrealgames.com/saved/105/42870078/2_1479302542.jpg",
+   "Avatar": "",
    "Profile": "",
-   "Status": "Hello",
+   "Status": "",
    "CanCollect": false,
-   "BonusDay": 1,
-   "Balance": 910,
-   "BalanceHistory": [
-     910
-   ],
+   "BonusDay": 0,
+   "Balance": 0,
+   "BalanceHistory": null,
    "RewardGot": null,
    "Rewards": null,
-   "BalanceItems": [
-     {
-       "BalanceType": 0,
-       "A": 5,
-       "B": 0
-     },
-     {
-       "BalanceType": 1,
-       "A": 5,
-       "B": 0
-     },
-     {
-       "BalanceType": 2,
-       "A": 10,
-       "B": 1
-     },
-     {
-       "BalanceType": 3,
-       "A": 0,
-       "B": 0
-     },
-     {
-       "BalanceType": 4,
-       "A": 0,
-       "B": 5
-     },
-     {
-       "BalanceType": 5,
-       "A": 0,
-       "B": 0
-     },
-     {
-       "BalanceType": 6,
-       "A": 7,
-       "B": 0
-     },
-     {
-       "BalanceType": 7,
-       "A": 0,
-       "B": 0
-     },
-     {
-       "BalanceType": 8,
-       "A": 23,
-       "B": 0
-     },
-     {
-       "BalanceType": 9,
-       "A": 0,
-       "B": 0
-     },
-     {
-       "BalanceType": 10,
-       "A": 0,
-       "B": 0
-     },
-     {
-       "BalanceType": 11,
-       "A": 0,
-       "B": 0
-     },
-     {
-       "BalanceType": 12,
-       "A": 0,
-       "B": 0
-     },
-     {
-       "BalanceType": 13,
-       "A": 0,
-       "B": 0
-     },
-     {
-       "BalanceType": 14,
-       "A": 0,
-       "B": 0
-     },
-     {
-       "BalanceType": 15,
-       "A": 0,
-       "B": 0
-     },
-     {
-       "BalanceType": 16,
-       "A": 0,
-       "B": 0
-     }
-   ],
-   "CollectionsPoints": 257
+   "BalanceItems": null,
+   "CollectionsPoints": 0
  }
