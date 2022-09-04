@@ -24,6 +24,6 @@ func GetDefaultSocketConfig() *SocketConfig {
 			},
 		},
 		Logger:        log.Default(),
-		TimeInTheGame: 600,
+		TimeInTheGame: 10,
 	}
 }

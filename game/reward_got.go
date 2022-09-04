@@ -15,5 +15,14 @@ func (game *Game) RewardGot(reader io.Reader) (interface{}, error) {
 		return rewardGot, err
 	}
 
+	if rewardGot.UserID == game.bot.GameID {
+		if game.bot.RewardGot == nil {
+			game.bot.RewardGot = make([]int, 0)
+		}
+		game.bot.RewardGot = append(game.bot.RewardGot, rewardGot.RewardID)
+	}
+
+	game.socket.Logger.Printf("Read [%T] %+v\n", rewardGot, rewardGot)
+
 	return rewardGot, nil
 }

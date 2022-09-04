@@ -4,7 +4,9 @@ import (
 	"io"
 	"log"
 	"sync/atomic"
+	"time"
 
+	"github.com/suvrick/go-kiss-core/bot"
 	"github.com/suvrick/go-kiss-core/packets/client"
 	"github.com/suvrick/go-kiss-core/packets/leb128"
 	"github.com/suvrick/go-kiss-core/packets/server"
@@ -14,14 +16,19 @@ import (
 type Game struct {
 	socket *socket.Socket
 	msgID  int64
-	Done   chan struct{}
+	Done   chan bot.Bot
+
+	bot *bot.Bot
 }
 
 func NewGame(config *GameConfig) *Game {
 
 	game := Game{
-		Done:  make(chan struct{}),
+		Done:  make(chan bot.Bot),
 		msgID: 0,
+		bot: &bot.Bot{
+			Time: time.Now(),
+		},
 	}
 
 	ws := socket.NewSocket(config.SocketConfig)
@@ -45,7 +52,7 @@ func (game *Game) OpenHandler() {
 
 func (game *Game) CloseHandler(rule byte, msg string) {
 	game.socket.Logger.Printf("game over. %s\n", msg)
-	game.Done <- struct{}{}
+	game.Done <- *game.bot
 }
 
 func (game *Game) ErrorHandler(err error) {
@@ -69,6 +76,8 @@ func (game *Game) ReadHandler(reader io.Reader) {
 	switch packetType {
 	case server.LOGIN:
 		packet, err = game.Login(reader)
+	case server.INFO:
+		packet, err = game.Info(reader)
 	case server.BALANCE:
 		packet, err = game.Balance(reader)
 	case server.BONUS:
@@ -89,8 +98,6 @@ func (game *Game) ReadHandler(reader io.Reader) {
 		game.socket.Logger.Printf("Read [%T] %s\n", packet, err.Error())
 		return
 	}
-
-	game.socket.Logger.Printf("Read [%T] %+v\n", packet, packet)
 }
 
 func (game *Game) GameOver() {

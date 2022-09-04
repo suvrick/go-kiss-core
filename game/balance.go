@@ -15,5 +15,10 @@ func (game *Game) Balance(reader io.Reader) (interface{}, error) {
 		return balance, err
 	}
 
+	game.bot.Balance = balance.Bottles
+	game.bot.BalanceHistory = append(game.bot.BalanceHistory, game.bot.Balance)
+
+	game.socket.Logger.Printf("Read [%T] %+v\n", balance, balance)
+
 	return balance, nil
 }

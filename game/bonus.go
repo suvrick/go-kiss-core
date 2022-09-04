@@ -16,7 +16,12 @@ func (game *Game) Bonus(reader io.Reader) (interface{}, error) {
 		return bonus, err
 	}
 
-	if bonus.CanCollect == 1 {
+	game.bot.CanCollect = bonus.CanCollect
+	game.bot.BonusDay = bonus.Day
+
+	game.socket.Logger.Printf("Read [%T] %+v\n", bonus, bonus)
+
+	if bonus.CanCollect {
 		game.Send(client.BONUS, client.Bonus{})
 	}
 

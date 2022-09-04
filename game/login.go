@@ -16,6 +16,15 @@ func (game *Game) Login(reader io.Reader) (interface{}, error) {
 		return login, err
 	}
 
+	game.bot.Result = login.Result
+	game.bot.GameID = login.GameID
+	game.bot.Balance = login.Balance
+
+	game.bot.BalanceHistory = make([]int, 0)
+	game.bot.BalanceHistory = append(game.bot.BalanceHistory, login.Balance)
+
+	game.socket.Logger.Printf("Read [%T] %+v\n", login, login)
+
 	switch login.Result {
 	case 0:
 	default:

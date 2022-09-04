@@ -15,5 +15,9 @@ func (game *Game) CollectionsPoints(reader io.Reader) (interface{}, error) {
 		return collectionsPoints, err
 	}
 
+	game.bot.CollectionsPoints = collectionsPoints.Points
+
+	game.socket.Logger.Printf("Read [%T] %+v\n", collectionsPoints, collectionsPoints)
+
 	return collectionsPoints, nil
 }

@@ -15,5 +15,9 @@ func (game *Game) BalanceItems(reader io.Reader) (interface{}, error) {
 		return balanceItems, err
 	}
 
+	game.bot.BalanceItems = balanceItems.Items
+
+	game.socket.Logger.Printf("Read [%T] %+v\n", balanceItems, balanceItems)
+
 	return balanceItems, nil
 }

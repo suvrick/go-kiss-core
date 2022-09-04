@@ -28,87 +28,66 @@ func Unmarshal(reader io.Reader, s interface{}) error {
 		field := structure.Elem().Field(x)
 
 		switch reflect.ValueOf(s).Elem().Field(x).Kind() {
+		case reflect.Bool:
+			if _int, _err = ReadInt(reader, 8); _err == nil {
+				if _int == 0 {
+					field.SetBool(false)
+				} else {
+					field.SetBool(true)
+				}
+			}
 		case reflect.Int8:
-			_int, _err = ReadInt(reader, 8)
-			if _err != nil {
-				return _err
+			if _int, _err = ReadInt(reader, 8); _err == nil {
+				field.SetInt(_int)
 			}
-
-			field.SetInt(_int)
 		case reflect.Uint8:
-			_uint, _err = ReadUint(reader, 8)
-			if _err != nil {
-				return _err
+			if _uint, _err = ReadUint(reader, 8); _err == nil {
+				field.SetUint(_uint)
 			}
-
-			field.SetUint(_uint)
 		case reflect.Int16:
-			_int, _err = ReadInt(reader, 16)
-			if _err != nil {
-				return _err
+			if _int, _err = ReadInt(reader, 16); _err == nil {
+				field.SetInt(_int)
 			}
-
-			field.SetInt(_int)
 		case reflect.Uint16:
-			_uint, _err = ReadUint(reader, 32)
-			if _err != nil {
-				return _err
+			if _uint, _err = ReadUint(reader, 16); _err == nil {
+				field.SetUint(_uint)
 			}
-
-			field.SetUint(_uint)
 		case reflect.Int:
-			_int, _err = ReadInt(reader, 32)
-			if _err != nil {
-				return _err
+			if _int, _err = ReadInt(reader, 32); _err == nil {
+				field.SetInt(_int)
 			}
-
-			field.SetInt(_int)
 		case reflect.Uint:
-			_uint, _err = ReadUint(reader, 32)
-			if _err != nil {
-				return _err
+			if _uint, _err = ReadUint(reader, 32); _err == nil {
+				field.SetUint(_uint)
 			}
-
-			field.SetUint(_uint)
 		case reflect.Int32:
-			_int, _err = ReadInt(reader, 32)
-			if _err != nil {
-				return _err
+			if _int, _err = ReadInt(reader, 32); _err == nil {
+				field.SetInt(_int)
 			}
-
-			field.SetInt(_int)
 		case reflect.Uint32:
-			_uint, _err = ReadUint(reader, 32)
-			if _err != nil {
-				return _err
+			if _uint, _err = ReadUint(reader, 32); _err == nil {
+				field.SetUint(_uint)
 			}
-
-			field.SetUint(_uint)
 		case reflect.Int64:
-			_int, _err = ReadInt(reader, 64)
-			if _err != nil {
-				return _err
+			if _int, _err = ReadInt(reader, 64); _err == nil {
+				field.SetInt(_int)
 			}
-
-			field.SetInt(_int)
 		case reflect.Uint64:
-			_uint, _err = ReadUint(reader, 64)
-			if _err != nil {
-				return _err
+			if _uint, _err = ReadUint(reader, 64); _err == nil {
+				field.SetUint(_uint)
 			}
-
-			field.SetUint(_uint)
 		case reflect.String:
-			_int, _err = ReadInt(reader, 32)
-			if _err != nil {
-				return _err
+			if _uint, _err = ReadUint(reader, 16); _err == nil {
+
+				if _uint < 0 {
+					_err = ErrUnmarshalServerPacket
+					continue
+				}
+
+				str := make([]byte, _uint)
+				reader.Read(str)
+				field.SetString(string(str))
 			}
-
-			str := make([]byte, _int)
-
-			reader.Read(str)
-
-			field.SetString(string(str))
 		case reflect.Slice:
 			length, _ := ReadInt(reader, 32)
 
@@ -122,17 +101,20 @@ func Unmarshal(reader io.Reader, s interface{}) error {
 
 				_err = Unmarshal(reader, item.Interface())
 				if _err != nil {
-					return _err
+					continue
 				}
 
 				slice = reflect.Append(slice, item.Elem())
 			}
 
 			field.Set(slice)
-
 		default:
 			return ErrUnmarshalServerPacket
 		}
+	}
+
+	if _err != nil {
+		return ErrUnmarshalServerPacket
 	}
 
 	return nil
