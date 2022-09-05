@@ -1,0 +1,100 @@
+{
+   "game_id": 42897970,
+   "ResultString": "Success",
+   "name": "NegativZero",
+   "avatar": "https://bottle2.itsrealgames.com/saved2/137/42897970/s_1171600604.jpg",
+   "profile": "https://fotostrana.ru/user/100356692",
+   "status": "\"Ищешь себе принца...Сначало сделай из себя принцессу,лошадь у принца уже есть...!\"",
+   "balance": 360,
+   "balance_history": [
+     360
+   ],
+   "balance_items": [
+     {
+       "BalanceType": 0,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 1,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 2,
+       "A": 0,
+       "B": 1
+     },
+     {
+       "BalanceType": 3,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 4,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 5,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 6,
+       "A": 2,
+       "B": 0
+     },
+     {
+       "BalanceType": 7,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 8,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 9,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 10,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 11,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 12,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 13,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 14,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 15,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 16,
+       "A": 0,
+       "B": 0
+     }
+   ],
+   "collections_points": 338
+ }

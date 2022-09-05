@@ -1,11 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"flag"
+	"fmt"
 	"io/ioutil"
+	"os"
+	"sync"
 
-	"github.com/suvrick/go-kiss-core/api"
 	"github.com/suvrick/go-kiss-core/bot"
+	"github.com/suvrick/go-kiss-core/frame"
+	"github.com/suvrick/go-kiss-core/game"
+	"github.com/suvrick/go-kiss-core/packets/client"
 )
 
 var urls = []string{
@@ -21,43 +28,86 @@ var urls = []string{
 	"view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=103786258&viewerId=103786258&isAppUser=1&isAppWidgetUser=0&sessionKey=5d09db98a83f25ff3885114f725c651022ee76138454ff&authKey=dc93c8e0c365ca792cf1198ab71c73e7&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1569558375&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?158&width=1000&height=690&sprites_version=83&useApiType=fs&",
 }
 
+var path = flag.String("p", "C:\\Users\\suvrick\\Desktop\\Projects\\frames\\sa1.txt", "path from file frames")
+var count = flag.Int("b", 1, "count")
+
 func main() {
 
-	// f := frame.NewDefaultFrame()
+	flag.Parse()
 
-	// r, _ := f.Parse(urls[0])
+	Do()
 
-	// game := game.NewGame(game.GetDefaultGameConfig())
+	// s := api.NewServer()
+	// s.Run()
+}
 
-	// game.Run()
+func Do() {
 
-	// login := &client.Login{
-	// 	ID:          r["login_id"].(uint64),
-	// 	NetType:     r["frame_type"].(uint16),
-	// 	DeviceType:  6,
-	// 	Key:         r["token"].(string),
-	// 	OAuth:       1,
-	// 	AccessToken: r["token2"].(string),
-	// 	Gender:      0,
-	// }
+	if path == nil {
+		fmt.Println("empty path")
+		return
+	}
 
-	// //'14408', 41, 6, '207f27da4e9113369c402a86b7c033e7'
-	// // login.ID = uint64(14408)
-	// // login.NetType = 41
-	// // login.Key = "207f27da4e9113369c402a86b7c033e7"
+	frames := Load(*path)
 
-	// game.Send(client.LOGIN, login)
+	wg := sync.WaitGroup{}
 
-	// bot := <-game.Done
+	balanser := make(chan struct{}, *count)
 
-	// Log(bot)
+	for _, login := range frames {
+		balanser <- struct{}{}
+		wg.Add(1)
+		go func(l client.Login) {
+			defer func() {
+				<-balanser
+				wg.Done()
+			}()
+			game := game.NewGame(game.GetDefaultGameConfig())
+			game.Run()
+			game.Send(client.LOGIN, &l)
+			bot := <-game.Done
+			Log(bot)
+		}(login)
+	}
 
-	s := api.NewServer()
-	s.Run()
+	wg.Wait()
+	close(balanser)
+}
+
+func Load(path string) []client.Login {
+	result := make([]client.Login, 0)
+
+	file, err := os.Open(path)
+	if err != nil {
+		return result
+	}
+
+	defer file.Close()
+
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return result
+	}
+
+	frames := bytes.Split(data, []byte{'\n'})
+	parser := frame.NewDefaultFrame()
+
+	for _, v := range frames {
+		login, err := parser.Parse2(v)
+		if err != nil {
+			continue
+		}
+
+		result = append(result, *login)
+	}
+
+	return result
 }
 
 func Log(bot bot.Bot) {
 	js, _ := json.MarshalIndent(&bot, " ", "  ")
 
-	ioutil.WriteFile("log", js, 0644)
+	dir := fmt.Sprintf("log/%d", bot.GameID)
+
+	ioutil.WriteFile(dir, js, 0644)
 }

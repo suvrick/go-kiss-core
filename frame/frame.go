@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/suvrick/go-kiss-core/packets/client"
 )
 
 var (
@@ -183,6 +185,56 @@ func (f *Frame) Parse(input string) (map[string]interface{}, error) {
 	}
 
 	return result, ErrFrameTypeNotFound
+}
+
+func (f *Frame) Parse2(data []byte) (*client.Login, error) {
+
+	input := string(data)
+
+	if f.keys == nil {
+		return nil, ErrFrameParserNotInit
+	}
+
+	if len(f.keys) == 0 {
+		return nil, ErrFrameParserEmptyKeys
+	}
+
+	input = strings.TrimSpace(input)
+	input = strings.Replace(input, "\r", "", -1)
+
+	if len(input) == 0 {
+		return nil, ErrEmptyString
+	}
+
+	queries, err := url.ParseQuery(input)
+	if err != nil {
+		return nil, ErrInvalidFrame
+	}
+
+	for _, p := range f.keys {
+
+		if queries.Has(p.LoginID) && queries.Has(p.Token) && queries.Has(p.Token2) {
+
+			id, err := strconv.ParseUint(queries.Get(p.LoginID), 10, 64)
+			if err != nil {
+				return nil, ErrQueryParametrMiss
+			}
+
+			if strings.Index(input, "fotostrana") > 0 {
+				p.FrameType = 30
+			}
+
+			return &client.Login{
+				ID:          id,
+				NetType:     p.FrameType,
+				DeviceType:  5,
+				Key:         queries.Get(p.Token),
+				AccessToken: queries.Get(p.Token2),
+			}, nil
+		}
+	}
+
+	return nil, ErrFrameTypeNotFound
 }
 
 func (f *Frame) GetValue(intput string) (uint32, []interface{}, error) {

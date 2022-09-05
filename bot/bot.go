@@ -11,9 +11,9 @@ type Bot struct {
 	Time time.Time `json:"-"`
 
 	//Login
-	GameID int  `json:"game_id,omitempty"`
-	Result byte `json:"result,omitempty"`
-
+	GameID       uint64 `json:"game_id,omitempty"`
+	Result       uint16 `json:"result,omitempty"`
+	ResultString string `json:"result_status,omitempty"`
 	// Info
 	Name    string `json:"name,omitempty"`
 	Sex     byte   `json:"sex,omitempty"`
@@ -25,8 +25,8 @@ type Bot struct {
 	BonusDay   int  `json:"bonus_day,omitempty"`
 
 	//Balance
-	Balance        int   `json:"balance,omitempty"`
-	BalanceHistory []int `json:"balance_history,omitempty"`
+	Balance        uint   `json:"balance,omitempty"`
+	BalanceHistory []uint `json:"balance_history,omitempty"`
 
 	//RewardGot
 	RewardGot []int `json:"reward_got,omitempty"`

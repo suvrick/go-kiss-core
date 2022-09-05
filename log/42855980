@@ -1,0 +1,101 @@
+{
+   "game_id": 42855980,
+   "ResultString": "Success",
+   "name": "))ВреДА((",
+   "sex": 1,
+   "avatar": "https://bottle2.itsrealgames.com/saved/136/42855980/2_704847125.jpg",
+   "profile": "https://fotostrana.ru/user/100046693",
+   "bonus_day": 3,
+   "balance": 327180,
+   "balance_history": [
+     327180
+   ],
+   "balance_items": [
+     {
+       "BalanceType": 0,
+       "A": 1040,
+       "B": 1
+     },
+     {
+       "BalanceType": 1,
+       "A": 1169,
+       "B": 1
+     },
+     {
+       "BalanceType": 2,
+       "A": 542,
+       "B": 1
+     },
+     {
+       "BalanceType": 3,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 4,
+       "A": 0,
+       "B": 5
+     },
+     {
+       "BalanceType": 5,
+       "A": 1,
+       "B": 0
+     },
+     {
+       "BalanceType": 6,
+       "A": 25,
+       "B": 0
+     },
+     {
+       "BalanceType": 7,
+       "A": 0,
+       "B": 1
+     },
+     {
+       "BalanceType": 8,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 9,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 10,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 11,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 12,
+       "A": 0,
+       "B": 1
+     },
+     {
+       "BalanceType": 13,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 14,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 15,
+       "A": 134,
+       "B": 0
+     },
+     {
+       "BalanceType": 16,
+       "A": 0,
+       "B": 0
+     }
+   ],
+   "collections_points": 87
+ }

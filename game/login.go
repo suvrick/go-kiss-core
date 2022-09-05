@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/suvrick/go-kiss-core/packets/leb128"
@@ -16,17 +17,22 @@ func (game *Game) Login(reader io.Reader) (interface{}, error) {
 		return login, err
 	}
 
-	game.bot.Result = login.Result
+	game.bot.Result = uint16(login.Result)
+	game.bot.ResultString = login.Result.String()
 	game.bot.GameID = login.GameID
 	game.bot.Balance = login.Balance
 
-	game.bot.BalanceHistory = make([]int, 0)
+	game.bot.BalanceHistory = make([]uint, 0)
 	game.bot.BalanceHistory = append(game.bot.BalanceHistory, login.Balance)
 
 	game.socket.Logger.Printf("Read [%T] %+v\n", login, login)
 
+	fmt.Println(login.Result)
+
 	switch login.Result {
-	case 0:
+	case server.Success:
+	case server.Exist:
+		// game.Send(server.LOGIN, pack)
 	default:
 		game.GameOver()
 	}

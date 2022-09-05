@@ -1,0 +1,99 @@
+{
+   "game_id": 43062633,
+   "ResultString": "Success",
+   "name": "Серж",
+   "avatar": "https://i09.fotocdn.net/s126/5bbdb8eae6dcb17d/user_m/2862350385.jpg?20200217134919",
+   "profile": "https://fotostrana.ru/user/100546622",
+   "balance": 480,
+   "balance_history": [
+     480
+   ],
+   "balance_items": [
+     {
+       "BalanceType": 0,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 1,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 2,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 3,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 4,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 5,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 6,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 7,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 8,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 9,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 10,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 11,
+       "A": 3,
+       "B": 0
+     },
+     {
+       "BalanceType": 12,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 13,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 14,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 15,
+       "A": 0,
+       "B": 0
+     },
+     {
+       "BalanceType": 16,
+       "A": 0,
+       "B": 0
+     }
+   ],
+   "collections_points": 31
+ }

@@ -1,6 +1,7 @@
 package server
 
 type PacketServerType uint16
+type LoginResultType uint16
 
 /*
 	NULL = 0,
