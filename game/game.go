@@ -1,8 +1,8 @@
 package game
 
 import (
+	"fmt"
 	"io"
-	"log"
 	"sync/atomic"
 	"time"
 
@@ -18,7 +18,8 @@ type Game struct {
 	msgID  int64
 	Done   chan bot.Bot
 
-	bot *bot.Bot
+	login *client.Login
+	bot   *bot.Bot
 }
 
 func NewGame(config *GameConfig) *Game {
@@ -46,17 +47,36 @@ func NewGame(config *GameConfig) *Game {
 	return &game
 }
 
+// return game instance with deault configure
+func NewGameDefault() *Game {
+	config := GetDefaultGameConfig()
+	return NewGame(config)
+}
+
+func (game *Game) LoginSend(login *client.Login) {
+
+	if game.login == nil {
+		game.login = login
+
+		game.bot.ID = GetBotID(login)
+	}
+
+	game.Send(client.LOGIN, game.login)
+}
+
 func (game *Game) OpenHandler() {
-	game.socket.Logger.Println("open")
+	game.Log("open")
+
+	//go game.Loop()
 }
 
 func (game *Game) CloseHandler(rule byte, msg string) {
-	game.socket.Logger.Printf("game over. %s\n", msg)
+	game.Logf("game over. %s", msg)
 	game.Done <- *game.bot
 }
 
 func (game *Game) ErrorHandler(err error) {
-	game.socket.Logger.Println(err.Error())
+	game.Logf("catch error. %s", err.Error())
 	game.GameOver()
 }
 
@@ -69,33 +89,24 @@ func (game *Game) ReadHandler(reader io.Reader) {
 	t, _ := leb128.ReadUint(reader, 16)
 
 	packetType := server.PacketServerType(t)
-
-	var packet interface{}
-	var err error
-
 	switch packetType {
 	case server.LOGIN:
-		packet, err = game.Login(reader)
+		game.Login(reader)
 	case server.INFO:
-		packet, err = game.Info(reader)
+		game.Info(reader)
 	case server.BALANCE:
-		packet, err = game.Balance(reader)
+		game.Balance(reader)
 	case server.BONUS:
-		packet, err = game.Bonus(reader)
+		game.Bonus(reader)
 	case server.REWARDS:
-		packet, err = game.Rewards(reader)
+		game.Rewards(reader)
 	case server.BALANCE_ITEMS:
-		packet, err = game.BalanceItems(reader)
+		game.BalanceItems(reader)
 	case server.COLLECTIONS_POINTS:
-		packet, err = game.CollectionsPoints(reader)
+		game.CollectionsPoints(reader)
 	case server.REWARD_GOT:
-		packet, err = game.RewardGot(reader)
+		game.RewardGot(reader)
 	default:
-		return
-	}
-
-	if err != nil {
-		game.socket.Logger.Printf("Read [%T] %s\n", packet, err.Error())
 		return
 	}
 }
@@ -104,11 +115,24 @@ func (game *Game) GameOver() {
 	game.socket.Close()
 }
 
+func (game *Game) Loop() {
+	for {
+		<-time.After(time.Microsecond * 500)
+		if game.bot.Live < 0 {
+			break
+		}
+	}
+
+	fmt.Println("GameOver call")
+	game.GameOver()
+}
+
 func (game *Game) Send(packType client.PacketClientType, packet interface{}) {
 
 	pack, err := leb128.Marshal(packet)
 	if err != nil {
-		log.Fatalln(err)
+		game.LogErrorPacket(packet, err)
+		return
 	}
 
 	data := make([]byte, 0)
@@ -127,7 +151,7 @@ func (game *Game) Send(packType client.PacketClientType, packet interface{}) {
 
 	data_len = append(data_len, data...)
 
-	game.socket.Logger.Printf("Send [%T] %+v\n", packet, packet)
+	game.LogSendPacket(packet)
 
 	game.socket.Send(data_len)
 
@@ -136,4 +160,34 @@ func (game *Game) Send(packType client.PacketClientType, packet interface{}) {
 
 func (game *Game) Run() {
 	game.socket.Go()
+}
+
+func (game *Game) LogErrorPacket(p any, err error) {
+	game.Logf("Error packet [%T] %s", p, err)
+}
+
+func (game *Game) LogReadPacket(p any) {
+	s := fmt.Sprintf("Read [%T] %+v", p, p)
+	game.Log(s)
+}
+
+func (game *Game) LogSendPacket(p any) {
+	s := fmt.Sprintf("Send [%T] %+v", p, p)
+	game.Log(s)
+}
+
+func (game *Game) Logf(s string, param ...any) {
+	s = fmt.Sprintf(s, param...)
+	game.bot.Log = append(game.bot.Log, s)
+}
+
+func (game *Game) Log(s string) {
+	if game.bot.Log == nil {
+		game.bot.Log = make([]string, 0)
+	}
+	game.bot.Log = append(game.bot.Log, s)
+}
+
+func GetBotID(l *client.Login) string {
+	return fmt.Sprintf("%d%d", l.NetType, l.ID)
 }

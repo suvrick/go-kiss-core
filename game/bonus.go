@@ -8,22 +8,21 @@ import (
 	"github.com/suvrick/go-kiss-core/packets/server"
 )
 
-func (game *Game) Bonus(reader io.Reader) (interface{}, error) {
+func (game *Game) Bonus(reader io.Reader) {
 	bonus := &server.Bonus{}
 
 	err := leb128.Unmarshal(reader, bonus)
 	if err != nil {
-		return bonus, err
+		game.LogErrorPacket(bonus, err)
+		return
 	}
 
 	game.bot.CanCollect = bonus.CanCollect
 	game.bot.BonusDay = bonus.Day
 
-	game.socket.Logger.Printf("Read [%T] %+v\n", bonus, bonus)
+	game.LogReadPacket(*bonus)
 
 	if bonus.CanCollect {
 		game.Send(client.BONUS, client.Bonus{})
 	}
-
-	return bonus, nil
 }

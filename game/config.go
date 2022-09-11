@@ -18,7 +18,6 @@ func GetDefaultGameConfig() *GameConfig {
 	sc.Logger = logger
 	return &GameConfig{
 		SocketConfig: sc,
-		MaskInfo:     1114252,
 		Logger:       logger,
 	}
 }

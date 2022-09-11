@@ -7,17 +7,22 @@ import (
 	"github.com/suvrick/go-kiss-core/packets/server"
 )
 
-func (game *Game) CollectionsPoints(reader io.Reader) (interface{}, error) {
+func (game *Game) CollectionsPoints(reader io.Reader) {
+
+	defer func() {
+		game.bot.Live--
+	}()
+
 	collectionsPoints := &server.CollectionsPoints{}
 
 	err := leb128.Unmarshal(reader, collectionsPoints)
 	if err != nil {
-		return collectionsPoints, err
+		game.LogErrorPacket(collectionsPoints, err)
+		return
 	}
 
 	game.bot.CollectionsPoints = collectionsPoints.Points
 
-	game.socket.Logger.Printf("Read [%T] %+v\n", collectionsPoints, collectionsPoints)
+	game.LogReadPacket(*collectionsPoints)
 
-	return collectionsPoints, nil
 }

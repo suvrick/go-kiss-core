@@ -7,18 +7,17 @@ import (
 	"github.com/suvrick/go-kiss-core/packets/server"
 )
 
-func (game *Game) Balance(reader io.Reader) (interface{}, error) {
+func (game *Game) Balance(reader io.Reader) {
 	balance := &server.Balance{}
 
 	err := leb128.Unmarshal(reader, balance)
 	if err != nil {
-		return balance, err
+		game.LogErrorPacket(balance, err)
+		return
 	}
 
 	game.bot.Balance = balance.Bottles
 	game.bot.BalanceHistory = append(game.bot.BalanceHistory, game.bot.Balance)
 
-	game.socket.Logger.Printf("Read [%T] %+v\n", balance, balance)
-
-	return balance, nil
+	game.LogReadPacket(*balance)
 }

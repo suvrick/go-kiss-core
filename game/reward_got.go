@@ -7,12 +7,14 @@ import (
 	"github.com/suvrick/go-kiss-core/packets/server"
 )
 
-func (game *Game) RewardGot(reader io.Reader) (interface{}, error) {
+func (game *Game) RewardGot(reader io.Reader) {
+
 	rewardGot := &server.RewardGot{}
 
 	err := leb128.Unmarshal(reader, rewardGot)
 	if err != nil {
-		return rewardGot, err
+		game.LogErrorPacket(rewardGot, err)
+		return
 	}
 
 	if rewardGot.UserID == game.bot.GameID {
@@ -22,7 +24,7 @@ func (game *Game) RewardGot(reader io.Reader) (interface{}, error) {
 		game.bot.RewardGot = append(game.bot.RewardGot, rewardGot.RewardID)
 	}
 
-	game.socket.Logger.Printf("Read [%T] %+v\n", rewardGot, rewardGot)
+	game.LogReadPacket(*rewardGot)
 
-	return rewardGot, nil
+	game.bot.Live--
 }

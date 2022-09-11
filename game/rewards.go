@@ -8,15 +8,16 @@ import (
 	"github.com/suvrick/go-kiss-core/packets/server"
 )
 
-func (game *Game) Rewards(reader io.Reader) (interface{}, error) {
+func (game *Game) Rewards(reader io.Reader) {
 	rewards := &server.Rewards{}
 
 	err := leb128.Unmarshal(reader, rewards)
 	if err != nil {
-		return rewards, err
+		game.LogErrorPacket(rewards, err)
+		return
 	}
 
-	game.socket.Logger.Printf("Read [%T] %+v\n", rewards, rewards)
+	game.LogReadPacket(*rewards)
 
 	for i := range rewards.Rewards {
 		reward := rewards.Rewards[i]
@@ -30,9 +31,24 @@ func (game *Game) Rewards(reader io.Reader) (interface{}, error) {
 			game.Send(client.GAME_REWARDS_GET,
 				&client.GameRewardsGet{RewardID: reward.ID})
 
-			return rewards, nil
+			game.bot.Live++
+
+			return
 		}
 	}
 
-	return rewards, nil
+	if EmptyRewars(rewards) {
+		game.bot.Live--
+	}
+}
+
+func EmptyRewars(rewards *server.Rewards) bool {
+
+	for _, v := range rewards.Rewards {
+		if v.Count > 0 {
+			return false
+		}
+	}
+
+	return true
 }
