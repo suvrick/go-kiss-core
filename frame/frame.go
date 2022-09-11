@@ -3,20 +3,22 @@
 package frame
 
 import (
+	"bytes"
+	_ "embed"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"hash/fnv"
 	"log"
 	"net/url"
-	"os"
-	"path"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/suvrick/go-kiss-core/packets/client"
 )
+
+//go:embed config.json
+var frameConfigBytes []byte
 
 var (
 	//Пустая строка
@@ -35,7 +37,6 @@ var (
 
 type Frame struct {
 	log  *log.Logger
-	path string
 	keys []t_words
 	Err  error
 }
@@ -62,29 +63,15 @@ type t_words struct {
 var instance *Frame = nil
 var once sync.Once
 
-// return Default FrameManager
-func NewDefaultFrame() *Frame {
-
-	ex, err := os.Executable()
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	dir := path.Dir(ex)
-
-	p := path.Join(dir, "frame", "config.json")
-
-	fmt.Println(p)
-
-	return NewFrame(p, nil)
+func NewFrameDefault() *Frame {
+	return NewFrame(log.Default())
 }
 
 // Singleton
-func NewFrame(path string, logger *log.Logger) *Frame {
+func NewFrame(logger *log.Logger) *Frame {
 
 	once.Do(func() {
 		instance = &Frame{
-			path: path,
 			keys: make([]t_words, 0),
 			log:  logger,
 		}
@@ -100,18 +87,8 @@ func NewFrame(path string, logger *log.Logger) *Frame {
 }
 
 func (f *Frame) load_keys() {
-
-	file, err := os.Open(f.path)
-	if err != nil {
-		f.Err = err
-		return
-	}
-
-	defer file.Close()
-
-	decoder := json.NewDecoder(file)
-
-	err = decoder.Decode(&f.keys)
+	decoder := json.NewDecoder(bytes.NewReader(frameConfigBytes))
+	err := decoder.Decode(&f.keys)
 	if err != nil {
 		f.Err = err
 		return
