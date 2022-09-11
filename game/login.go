@@ -20,22 +20,23 @@ func (game *Game) Login(reader io.Reader) {
 	game.LogReadPacket(*login)
 
 	game.bot.Result = uint16(login.Result)
+
 	game.bot.ResultString = login.Result.String()
 
 	switch login.Result {
 	case server.Success:
 
 		game.bot.GameID = login.GameID
+
 		game.bot.Balance = login.Balance
 
 		game.bot.BalanceHistory = make([]uint, 0)
-		game.bot.BalanceHistory = append(game.bot.BalanceHistory, login.Balance)
 
-		game.bot.Live++
+		game.bot.BalanceHistory = append(game.bot.BalanceHistory, login.Balance)
 
 	case server.Exist:
 		game.LoginSend(nil)
 	default:
-		game.bot.Live--
+		game.GameOver()
 	}
 }

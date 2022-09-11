@@ -25,6 +25,4 @@ func (game *Game) RewardGot(reader io.Reader) {
 	}
 
 	game.LogReadPacket(*rewardGot)
-
-	game.bot.Live--
 }

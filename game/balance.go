@@ -8,6 +8,7 @@ import (
 )
 
 func (game *Game) Balance(reader io.Reader) {
+
 	balance := &server.Balance{}
 
 	err := leb128.Unmarshal(reader, balance)
@@ -17,6 +18,7 @@ func (game *Game) Balance(reader io.Reader) {
 	}
 
 	game.bot.Balance = balance.Bottles
+
 	game.bot.BalanceHistory = append(game.bot.BalanceHistory, game.bot.Balance)
 
 	game.LogReadPacket(*balance)

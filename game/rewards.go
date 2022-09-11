@@ -20,25 +20,37 @@ func (game *Game) Rewards(reader io.Reader) {
 	game.LogReadPacket(*rewards)
 
 	for i := range rewards.Rewards {
+
 		reward := rewards.Rewards[i]
+
 		if reward.Count > 0 {
-			if game.bot.Rewards == nil {
-				game.bot.Rewards = make([]server.Reward, 0)
-			}
 
 			game.bot.Rewards = append(game.bot.Rewards, reward)
 
 			game.Send(client.GAME_REWARDS_GET,
 				&client.GameRewardsGet{RewardID: reward.ID})
 
-			game.bot.Live++
-
 			return
 		}
 	}
 
 	if EmptyRewars(rewards) {
-		game.bot.Live--
+
+		if game.bot.CanCollect && game.bot.IsNeedSendBonus {
+
+			game.Send(client.BONUS, client.Bonus{})
+
+			game.bot.IsNeedSendBonus = false
+
+		} else {
+
+			game.Send(client.INFO, &client.Info{
+				PlayerID: game.bot.GameID,
+				Mask:     0,
+			})
+
+		}
+
 	}
 }
 

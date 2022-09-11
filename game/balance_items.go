@@ -8,6 +8,7 @@ import (
 )
 
 func (game *Game) BalanceItems(reader io.Reader) {
+
 	balanceItems := &server.BalanceItems{}
 
 	err := leb128.Unmarshal(reader, balanceItems)

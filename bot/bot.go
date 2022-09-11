@@ -9,38 +9,39 @@ import (
 type Bot struct {
 	Log []string `json:"_log"`
 
-	ID   string    `json:"id,omitempty"`
+	ID   string    `json:"id"`
 	Time time.Time `json:"time"`
 
 	//Login
-	GameID       uint64 `json:"game_id,omitempty"`
+	GameID       uint64 `json:"game_id"`
 	Result       uint16 `json:"result"`
-	ResultString string `json:"result_string,omitempty"`
+	ResultString string `json:"result_string"`
 	// Info
-	Name     string `json:"name,omitempty"`
-	Sex      byte   `json:"sex,omitempty"`
-	Avatar   string `json:"avatar,omitempty"`
-	AvatarID byte   `json:"avatar_id,omitempty"`
-	Profile  string `json:"profile,omitempty"`
-	Status   string `json:"status,omitempty"`
+	Name     string `json:"name"`
+	Sex      byte   `json:"sex"`
+	Avatar   string `json:"avatar"`
+	AvatarID byte   `json:"avatar_id"`
+	Profile  string `json:"profile"`
+	Status   string `json:"status"`
 	//Bonus
-	CanCollect bool `json:"can_collect,omitempty"`
-	BonusDay   int  `json:"bonus_day,omitempty"`
+	CanCollect bool `json:"can_collect"`
+	BonusDay   int  `json:"bonus_day"`
 
 	//Balance
-	Balance        uint   `json:"balance,omitempty"`
-	BalanceHistory []uint `json:"balance_history,omitempty"`
+	Balance        uint   `json:"balance"`
+	BalanceHistory []uint `json:"balance_history"`
 
 	//RewardGot
-	RewardGot []int `json:"reward_got,omitempty"`
+	RewardGot []int `json:"reward_got"`
 
 	//Rewards
-	Rewards []server.Reward `json:"rewards,omitempty"`
+	Rewards []server.Reward `json:"rewards"`
 
 	// BalanceItems
-	BalanceItems []server.BalanceItem `json:"balance_items,omitempty"`
+	BalanceItems []server.BalanceItem `json:"-"`
 
-	CollectionsPoints uint16 `json:"collections_points,omitempty"`
+	CollectionsPoints uint16 `json:"collections_points"`
 
-	Live int8 `json:"-"`
+	IsNeedSendBonus bool `json:"-"`
+	IsFinishPacket  bool `json:"-"`
 }

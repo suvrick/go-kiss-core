@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/gosuri/uilive"
 	"github.com/suvrick/go-kiss-core/bot"
 	"github.com/suvrick/go-kiss-core/frame"
 	"github.com/suvrick/go-kiss-core/game"
@@ -31,7 +30,6 @@ var urls = []string{
 }
 
 var frameParser *frame.Frame
-var writer *uilive.Writer
 
 var writeLog = flag.Bool("l", false, "write result to 'log/bot_id'")
 var url = flag.String("f", "", "frame by game")
@@ -43,12 +41,13 @@ func main() {
 	flag.Parse()
 
 	if *writeLog {
-		fmt.Printf("write log: on")
+		fmt.Printf("write log: on\n")
 	} else {
-		fmt.Printf("write log: off")
+		fmt.Printf("write log: off\n")
 	}
 
-	writer = uilive.New()
+	uu := "https://bottle2.itsrealgames.com/www/vk.html?social_api=vk&type=vk&record_first_session=1&6&api_url=https://api.vk.com/api.php&api_id=1930071&api_settings=8207&viewer_id=95680242&viewer_type=2&sid=4921eb0cd7c7889784f9833c6c4577fd07b6ddc15aa862d3fd307d59fbb6900c1fcc3282353b5d8ef9179&secret=5d754c0d65&access_token=20ba1ae06cbab26b14af359334e71e7226e341c70c1f0f0995faac9cc0e6399e862850ba826d748257958&user_id=95680242&group_id=0&is_app_user=1&auth_key=d3936a1b653517c641e2e9fdae093d27&language=0&parent_language=0&is_secure=1&stats_hash=6e744671f2cea9e1bd&ads_app_id=1930071_6b0928ee3c2621bd14&referrer=unknown&lc_name=67c77d2f&platform=web&hash="
+	url = &uu
 
 	Run()
 }

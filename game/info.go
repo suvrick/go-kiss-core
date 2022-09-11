@@ -8,6 +8,12 @@ import (
 )
 
 func (game *Game) Info(reader io.Reader) {
+
+	if game.bot.IsFinishPacket {
+		game.GameOver()
+		return
+	}
+
 	info := &server.Info{}
 
 	err := leb128.Unmarshal(reader, info)
@@ -17,13 +23,20 @@ func (game *Game) Info(reader io.Reader) {
 	}
 
 	game.bot.Name = info.Name
+
 	game.bot.Sex = info.Sex
 
 	game.bot.Avatar = info.Avatar
+
 	game.bot.AvatarID = info.AvatarID
 
 	game.bot.Profile = info.Profile
+
 	game.bot.Status = info.Status
+
+	game.bot.IsNeedSendBonus = true
+
+	game.bot.IsFinishPacket = true
 
 	game.LogReadPacket(*info)
 }

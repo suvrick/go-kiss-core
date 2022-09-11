@@ -28,7 +28,11 @@ func NewGame(config *GameConfig) *Game {
 		Done:  make(chan bot.Bot),
 		msgID: 0,
 		bot: &bot.Bot{
-			Time: time.Now(),
+			Time:           time.Now(),
+			RewardGot:      make([]int, 0),
+			BalanceHistory: make([]uint, 0),
+			Log:            make([]string, 0),
+			Rewards:        make([]server.Reward, 0),
 		},
 	}
 
@@ -52,6 +56,28 @@ func NewGameDefault() *Game {
 	config := GetDefaultGameConfig()
 	return NewGame(config)
 }
+
+// func (game *Game) LiveUp() {
+// 	game.bot.Live++
+// 	game.bot.LiveHistory = append(game.bot.LiveHistory, game.bot.Live)
+// }
+
+// func (game *Game) LiveDown() {
+// 	game.bot.Live--
+// 	game.bot.LiveHistory = append(game.bot.LiveHistory, game.bot.Live)
+// }
+
+// func (game *Game) Loop() {
+// 	for {
+// 		<-time.After(time.Microsecond * 500)
+// 		if game.bot.Live < 0 {
+// 			break
+// 		}
+// 	}
+
+// 	game.Log("close loop")
+// 	game.GameOver()
+// }
 
 func (game *Game) LoginSend(login *client.Login) {
 
@@ -77,7 +103,7 @@ func (game *Game) CloseHandler(rule byte, msg string) {
 
 func (game *Game) ErrorHandler(err error) {
 	game.Logf("catch error. %s", err.Error())
-	game.GameOver()
+	//game.GameOver()
 }
 
 func (game *Game) ReadHandler(reader io.Reader) {
@@ -113,18 +139,6 @@ func (game *Game) ReadHandler(reader io.Reader) {
 
 func (game *Game) GameOver() {
 	game.socket.Close()
-}
-
-func (game *Game) Loop() {
-	for {
-		<-time.After(time.Microsecond * 500)
-		if game.bot.Live < 0 {
-			break
-		}
-	}
-
-	fmt.Println("GameOver call")
-	game.GameOver()
 }
 
 func (game *Game) Send(packType client.PacketClientType, packet interface{}) {
@@ -182,9 +196,6 @@ func (game *Game) Logf(s string, param ...any) {
 }
 
 func (game *Game) Log(s string) {
-	if game.bot.Log == nil {
-		game.bot.Log = make([]string, 0)
-	}
 	game.bot.Log = append(game.bot.Log, s)
 }
 

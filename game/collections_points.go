@@ -9,9 +9,9 @@ import (
 
 func (game *Game) CollectionsPoints(reader io.Reader) {
 
-	defer func() {
-		game.bot.Live--
-	}()
+	// defer func() {
+	// 	game.bot.Live--
+	// }()
 
 	collectionsPoints := &server.CollectionsPoints{}
 
@@ -24,5 +24,4 @@ func (game *Game) CollectionsPoints(reader io.Reader) {
 	game.bot.CollectionsPoints = collectionsPoints.Points
 
 	game.LogReadPacket(*collectionsPoints)
-
 }

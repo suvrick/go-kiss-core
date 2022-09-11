@@ -1,0 +1,90 @@
+{
+   "_log": [
+     "open",
+     "Send [*client.Login] \u0026{ID:95680242 NetType:0 DeviceType:5 Key:d3936a1b653517c641e2e9fdae093d27 OAuth:0 AccessToken:20ba1ae06cbab26b14af359334e71e7226e341c70c1f0f0995faac9cc0e6399e862850ba826d748257958 Referrer:0 Tag:0 FieldInt:0 FieldString: RoomLanguage:0 FieldString2: Gender:0 Captcha:}",
+     "Read [server.Login] {Result:Success GameID:6149395 Balance:710}",
+     "Read [server.Bonus] {CanCollect:false Day:0}",
+     "Read [server.Info] {ArrLen:1048 ItemCount:1 GameID:6149395 LoginID:95680242 NetType:0 Name:Шум Sex:0 Tag:0 Referrer:0 Ddate:549590400 Avatar: AvatarID:253 Profile:http://vk.com/id95680242 Status:}",
+     "Read [server.BalanceItems] {Items:[{BalanceType:0 A:3 B:0} {BalanceType:1 A:3 B:0} {BalanceType:2 A:5 B:1} {BalanceType:3 A:0 B:0} {BalanceType:4 A:3 B:2} {BalanceType:5 A:3 B:0} {BalanceType:6 A:5 B:0} {BalanceType:7 A:0 B:0} {BalanceType:8 A:5 B:1} {BalanceType:9 A:0 B:0} {BalanceType:10 A:0 B:0} {BalanceType:11 A:0 B:0} {BalanceType:12 A:0 B:0} {BalanceType:13 A:0 B:0} {BalanceType:14 A:0 B:0} {BalanceType:15 A:0 B:0} {BalanceType:16 A:0 B:0}]}",
+     "Read [server.Rewards] {Rewards:[]}",
+     "Send [*client.Info] \u0026{PlayerID:6149395 Mask:0}",
+     "Read [server.CollectionsPoints] {Points:288}",
+     "catch error. websocket: close 1006 (abnormal closure): unexpected EOF",
+     "game over. Read error"
+   ],
+   "id": "095680242",
+   "time": "2022-09-11T17:55:51.3145328+07:00",
+   "game_id": 6149395,
+   "result": 0,
+   "result_string": "Success",
+   "name": "Шум",
+   "sex": 0,
+   "avatar": "",
+   "avatar_id": 253,
+   "profile": "http://vk.com/id95680242",
+   "status": "",
+   "can_collect": false,
+   "bonus_day": 0,
+   "balance": 710,
+   "balance_history": [
+     710
+   ],
+   "reward_got": null,
+   "rewards": [],
+   "collections_points": 288
+ }:0 B:0} {BalanceType:12 A:0 B:0} {BalanceType:13 A:0 B:0} {BalanceType:14 A:0 B:0} {BalanceType:15 A:0 B:0} {BalanceType:16 A:0 B:0}]}",
+     "Read [server.Rewards] {Rewards:[{ID:2011 Count:1}]}",
+     "Send [*client.GameRewardsGet] \u0026{RewardID:2011}",
+     "Read [server.Rewards] {Rewards:[]}",
+     "Send [client.Bonus] {}",
+     "Read [server.RewardGot] {UserID:6149395 RewardID:32}",
+     "Read [server.Rewards] {Rewards:[{ID:32 Count:1}]}",
+     "Send [*client.GameRewardsGet] \u0026{RewardID:32}",
+     "Read [server.Rewards] {Rewards:[]}",
+     "Send [*client.Info] \u0026{PlayerID:6149395 Mask:0}",
+     "Read [server.Balance] {Bottles:710}",
+     "catch error. websocket: close 1006 (abnormal closure): unexpected EOF",
+     "game over. Read error"
+   ],
+   "id": "095680242",
+   "time": "2022-09-11T17:43:30.4562027+07:00",
+   "game_id": 6149395,
+   "result": 0,
+   "result_string": "Success",
+   "name": "Шум",
+   "sex": 0,
+   "avatar": "",
+   "avatar_id": 253,
+   "profile": "http://vk.com/id95680242",
+   "status": "",
+   "can_collect": true,
+   "bonus_day": 0,
+   "balance": 710,
+   "balance_history": [
+     690,
+     710
+   ],
+   "reward_got": [
+     2035,
+     32
+   ],
+   "rewards": [
+     {
+       "ID": 2035,
+       "Count": 1
+     },
+     {
+       "ID": 2035,
+       "Count": 1
+     },
+     {
+       "ID": 2011,
+       "Count": 1
+     },
+     {
+       "ID": 32,
+       "Count": 1
+     }
+   ],
+   "collections_points": 288
+ }
