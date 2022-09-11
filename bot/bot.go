@@ -7,19 +7,22 @@ import (
 )
 
 type Bot struct {
-	ID   uint64    `json:"id,omitempty"`
-	Time time.Time `json:"-"`
+	Log []string `json:"_log"`
+
+	ID   string    `json:"id,omitempty"`
+	Time time.Time `json:"time"`
 
 	//Login
 	GameID       uint64 `json:"game_id,omitempty"`
-	Result       uint16 `json:"result,omitempty"`
-	ResultString string `json:"result_status,omitempty"`
+	Result       uint16 `json:"result"`
+	ResultString string `json:"result_string,omitempty"`
 	// Info
-	Name    string `json:"name,omitempty"`
-	Sex     byte   `json:"sex,omitempty"`
-	Avatar  string `json:"avatar,omitempty"`
-	Profile string `json:"profile,omitempty"`
-	Status  string `json:"status,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Sex      byte   `json:"sex,omitempty"`
+	Avatar   string `json:"avatar,omitempty"`
+	AvatarID byte   `json:"avatar_id,omitempty"`
+	Profile  string `json:"profile,omitempty"`
+	Status   string `json:"status,omitempty"`
 	//Bonus
 	CanCollect bool `json:"can_collect,omitempty"`
 	BonusDay   int  `json:"bonus_day,omitempty"`
@@ -38,4 +41,6 @@ type Bot struct {
 	BalanceItems []server.BalanceItem `json:"balance_items,omitempty"`
 
 	CollectionsPoints uint16 `json:"collections_points,omitempty"`
+
+	Live int8 `json:"-"`
 }
