@@ -116,7 +116,7 @@ func (socket *Socket) getCloseRuleMsg() string {
 func (socket *Socket) connect() {
 
 	dialer := websocket.Dialer{
-		HandshakeTimeout: (socket.Timeout),
+		HandshakeTimeout: (socket.ConnectTimeout),
 	}
 
 	client, resp, err := dialer.Dial(socket.Host, socket.Head)

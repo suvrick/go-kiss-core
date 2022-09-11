@@ -11,6 +11,18 @@ var (
 	ErrUnmarshalServerPacket = errors.New("error unmarshal server packet")
 )
 
+func Skip(v interface{}) bool {
+	t := reflect.TypeOf(v)
+	for i := 0; i < t.NumField(); i++ {
+		if value, ok := t.Field(i).Tag.Lookup("pack"); ok {
+			if value == "skip" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func Unmarshal(reader io.Reader, s interface{}) error {
 
 	var _err error = nil
@@ -23,9 +35,19 @@ func Unmarshal(reader io.Reader, s interface{}) error {
 
 	numfield := reflect.ValueOf(s).Elem().NumField()
 
+	var skip bool
+
 	for x := 0; x < numfield; x++ {
 
 		field := structure.Elem().Field(x)
+
+		el := structure.Elem().Interface()
+
+		tag := reflect.TypeOf(el).Field(x).Tag
+
+		if tag.Get("pack") == "skip" {
+			skip = true
+		}
 
 		switch reflect.ValueOf(s).Elem().Field(x).Kind() {
 		case reflect.Bool:
@@ -77,17 +99,25 @@ func Unmarshal(reader io.Reader, s interface{}) error {
 				field.SetUint(_uint)
 			}
 		case reflect.String:
-			if _uint, _err = ReadUint(reader, 16); _err == nil {
-
-				if _uint < 0 {
-					_err = ErrUnmarshalServerPacket
-					continue
-				}
-
+			_uint, _err = ReadUint(reader, 8)
+			if _err == nil {
 				str := make([]byte, _uint)
 				reader.Read(str)
 				field.SetString(string(str))
 			}
+		case reflect.Struct:
+
+			struct_type := reflect.TypeOf(field.Interface())
+
+			strct := reflect.New(struct_type)
+
+			_err = Unmarshal(reader, strct.Interface())
+			if _err != nil {
+				continue
+			}
+
+			field.Set(strct.Elem())
+
 		case reflect.Slice:
 			length, _ := ReadInt(reader, 32)
 
@@ -109,11 +139,16 @@ func Unmarshal(reader io.Reader, s interface{}) error {
 
 			field.Set(slice)
 		default:
-			return ErrUnmarshalServerPacket
+			_err = ErrUnmarshalServerPacket
 		}
 	}
 
 	if _err != nil {
+
+		if skip {
+			return nil
+		}
+
 		return ErrUnmarshalServerPacket
 	}
 
@@ -275,12 +310,18 @@ func ReadUint(r io.Reader, n uint) (uint64, error) {
 	p := make([]byte, 1)
 	var res uint64
 	var shift uint
+
 	for {
 		_, err := io.ReadFull(r, p)
 		if err != nil {
 			return 0, err
 		}
 		b := uint64(p[0])
+
+		if n == 8 {
+			return b, nil
+		}
+
 		switch {
 		case b < 1<<7 && b < 1<<n:
 			res += (1 << shift) * b

@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sync"
 
+	"github.com/gosuri/uilive"
 	"github.com/suvrick/go-kiss-core/bot"
 	"github.com/suvrick/go-kiss-core/frame"
 	"github.com/suvrick/go-kiss-core/game"
@@ -28,49 +30,113 @@ var urls = []string{
 	"view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=103786258&viewerId=103786258&isAppUser=1&isAppWidgetUser=0&sessionKey=5d09db98a83f25ff3885114f725c651022ee76138454ff&authKey=dc93c8e0c365ca792cf1198ab71c73e7&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1569558375&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?158&width=1000&height=690&sprites_version=83&useApiType=fs&",
 }
 
-var path = flag.String("p", "C:\\Users\\suvrick\\Desktop\\Projects\\frames\\sa1.txt", "path from file frames")
-var count = flag.Int("b", 1, "count")
+var frameParser *frame.Frame
+var writer *uilive.Writer
+
+var writeLog = flag.Bool("l", false, "write result to 'log/bot_id'")
+var url = flag.String("f", "", "frame by game")
+var path = flag.String("p", "", "path from file frames")
+var count = flag.Int("b", 3, "count max instance game")
 
 func main() {
 
 	flag.Parse()
 
-	Do()
+	if *writeLog {
+		fmt.Printf("write log: on")
+	} else {
+		fmt.Printf("write log: off")
+	}
 
-	// s := api.NewServer()
-	// s.Run()
+	writer = uilive.New()
+
+	Run()
+}
+
+func Run() {
+
+	frameParser = frame.NewFrameDefault()
+	if frameParser.Err != nil {
+		fmt.Println(frameParser.Err.Error())
+		return
+	}
+
+	if *url != "" {
+		login, err := frameParser.Parse2([]byte(*url))
+		if err != nil {
+			fmt.Println("parse frame: FAIL")
+			return
+		}
+
+		fmt.Println("parse frame: OK")
+
+		game := game.NewGameDefault()
+		game.Run()
+		game.LoginSend(login)
+
+		bot := <-game.Done
+
+		if *writeLog {
+			Log(bot)
+		} else {
+			js, err := MarshalBot(bot)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+
+			fmt.Println(string(js))
+		}
+		return
+	}
+
+	if *path != "" {
+		Do()
+	}
 }
 
 func Do() {
 
-	if path == nil {
-		fmt.Println("empty path")
-		return
-	}
-
 	frames := Load(*path)
+
+	fmt.Printf("load frames (%d) for file '%s'\n", len(frames), *path)
 
 	wg := sync.WaitGroup{}
 
 	balanser := make(chan struct{}, *count)
 
+	fmt.Printf("set game max instanse: %d\n", *count)
+
 	for _, login := range frames {
 		balanser <- struct{}{}
 		wg.Add(1)
+
 		go func(l client.Login) {
 			defer func() {
 				<-balanser
 				wg.Done()
 			}()
-			game := game.NewGame(game.GetDefaultGameConfig())
+			game := game.NewGameDefault()
 			game.Run()
-			game.Send(client.LOGIN, &l)
+			game.LoginSend(&l)
+
 			bot := <-game.Done
-			Log(bot)
+
+			if *writeLog {
+				Log(bot)
+			} else {
+				js, err := MarshalBot(bot)
+				if err != nil {
+					fmt.Println(err.Error())
+					return
+				}
+				fmt.Println(string(js))
+			}
 		}(login)
 	}
 
 	wg.Wait()
+
 	close(balanser)
 }
 
@@ -79,6 +145,7 @@ func Load(path string) []client.Login {
 
 	file, err := os.Open(path)
 	if err != nil {
+		fmt.Println(err.Error())
 		return result
 	}
 
@@ -86,15 +153,18 @@ func Load(path string) []client.Login {
 
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
+		fmt.Println(err.Error())
 		return result
 	}
 
 	frames := bytes.Split(data, []byte{'\n'})
-	parser := frame.NewDefaultFrame()
 
 	for _, v := range frames {
-		login, err := parser.Parse2(v)
+
+		login, err := frameParser.Parse2(v)
+
 		if err != nil {
+			fmt.Println(err.Error())
 			continue
 		}
 
@@ -104,10 +174,48 @@ func Load(path string) []client.Login {
 	return result
 }
 
+func MarshalBot(bot bot.Bot) ([]byte, error) {
+	js, err := json.MarshalIndent(&bot, " ", "  ")
+	if err != nil {
+		return nil, err
+	}
+
+	return js, nil
+}
+
 func Log(bot bot.Bot) {
-	js, _ := json.MarshalIndent(&bot, " ", "  ")
 
-	dir := fmt.Sprintf("log/%d", bot.GameID)
+	js, err := MarshalBot(bot)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
 
-	ioutil.WriteFile(dir, js, 0644)
+	cDir, err := os.Getwd()
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	dir := filepath.Join(cDir, "log")
+
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err := os.Mkdir(dir, os.ModePerm)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+	}
+
+	f_name := filepath.Join(dir, bot.ID)
+
+	f, err := os.OpenFile(f_name, os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	fmt.Fprint(f, string(js))
+
+	defer f.Close()
 }

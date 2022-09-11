@@ -20,6 +20,11 @@ type Info struct {
 	Status    string
 }
 
+type Avatar struct {
+	Avatar   string
+	AvatarID byte
+}
+
 /*
 	nid?: string; // PlayerInfoParser.NET_ID; [I;
 	abstract type: NetType; // PlayerInfoParser.TYPE; [B;
