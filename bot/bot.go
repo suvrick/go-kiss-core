@@ -26,19 +26,15 @@ type Bot struct {
 	//Bonus
 	CanCollect bool `json:"can_collect"`
 	BonusDay   int  `json:"bonus_day"`
-
 	//Balance
 	Balance        uint   `json:"balance"`
 	BalanceHistory []uint `json:"balance_history"`
-
 	//RewardGot
 	RewardGot []int `json:"reward_got"`
-
 	//Rewards
 	Rewards []server.Reward `json:"rewards"`
-
 	// BalanceItems
-	BalanceItems []server.BalanceItem `json:"-"`
+	BalanceItems []server.BalanceItem `json:"balance_items"`
 
 	CollectionsPoints uint16 `json:"collections_points"`
 
