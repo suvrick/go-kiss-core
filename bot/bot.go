@@ -42,6 +42,8 @@ type Bot struct {
 
 	CollectionsPoints uint16 `json:"collections_points"`
 
+	ErrorHistory []string `json:"errors"`
+
 	IsNeedSendBonus bool `json:"-"`
 	IsFinishPacket  bool `json:"-"`
 }

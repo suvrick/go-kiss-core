@@ -31,6 +31,7 @@ func NewGame(config *GameConfig) *Game {
 			Time:           time.Now(),
 			RewardGot:      make([]int, 0),
 			BalanceHistory: make([]uint, 0),
+			ErrorHistory:   make([]string, 0),
 			Log:            make([]string, 0),
 			Rewards:        make([]server.Reward, 0),
 		},
@@ -102,8 +103,9 @@ func (game *Game) CloseHandler(rule byte, msg string) {
 }
 
 func (game *Game) ErrorHandler(err error) {
-	game.Logf("catch error. %s", err.Error())
-	//game.GameOver()
+	err_str := fmt.Sprintf("catch error. %s", err.Error())
+	game.Logf(err_str)
+	game.bot.ErrorHistory = append(game.bot.ErrorHistory, err_str)
 }
 
 func (game *Game) ReadHandler(reader io.Reader) {
