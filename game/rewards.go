@@ -44,9 +44,9 @@ func (game *Game) Rewards(reader io.Reader) {
 
 		} else {
 
-			game.Send(client.INFO, &client.Info{
-				PlayerID: game.bot.GameID,
-				Mask:     0,
+			game.Send(client.REQUEST, &client.Request{
+				Players: []uint64{game.bot.GameID},
+				ID:      game.bot.GameID,
 			})
 
 		}

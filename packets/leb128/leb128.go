@@ -256,6 +256,25 @@ func Marshal(s interface{}) ([]byte, error) {
 			} else {
 				err = ErrMarshalClientPacket
 			}
+		case reflect.Slice:
+
+			lenn := field.Len()
+
+			result = AppendInt(result, int64(lenn))
+
+			for i := 0; i < lenn; i++ {
+
+				val := field.Index(i)
+
+				var res []byte
+
+				switch val.Kind() {
+				case reflect.Uint64:
+					res = AppendUint(res, val.Interface().(uint64))
+				}
+
+				result = append(result, res...)
+			}
 		default:
 			err = ErrMarshalClientPacket
 		}
