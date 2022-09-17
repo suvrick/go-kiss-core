@@ -34,8 +34,6 @@ func (game *Game) Info(reader io.Reader) {
 
 	game.bot.Status = info.Status
 
-	game.bot.IsNeedSendBonus = true
-
 	game.bot.IsFinishPacket = true
 
 	game.LogReadPacket(*info)

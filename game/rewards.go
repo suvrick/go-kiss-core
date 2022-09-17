@@ -36,11 +36,11 @@ func (game *Game) Rewards(reader io.Reader) {
 
 	if EmptyRewars(rewards) {
 
-		if game.bot.CanCollect && game.bot.IsNeedSendBonus {
+		if game.bot.CanCollect && !game.bot.IsNeedSendBonus {
 
 			game.Send(client.BONUS, client.Bonus{})
 
-			game.bot.IsNeedSendBonus = false
+			game.bot.IsNeedSendBonus = true
 
 		} else {
 

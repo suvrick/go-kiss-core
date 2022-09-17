@@ -42,4 +42,6 @@ type Bot struct {
 
 	IsNeedSendBonus bool `json:"-"`
 	IsFinishPacket  bool `json:"-"`
+
+	//Packets *heap.Interface
 }

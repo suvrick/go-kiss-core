@@ -34,6 +34,8 @@ func (game *Game) Login(reader io.Reader) {
 
 		game.bot.BalanceHistory = append(game.bot.BalanceHistory, login.Balance)
 
+		game.BuySend()
+
 	case server.Exist:
 		game.LoginSend(nil)
 	default:

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -25,6 +27,8 @@ type Socket struct {
 	rule_close byte
 	client     *websocket.Conn
 
+	proxy *url.URL
+
 	wg sync.WaitGroup
 
 	send_chan  chan []byte
@@ -32,6 +36,7 @@ type Socket struct {
 	error_chan chan error
 
 	openHandle  func()
+	proxyHandle func(proxy *url.URL)
 	closeHandle func(byte, string)
 	readHandle  func(io.Reader)
 	errorHandle func(error)
@@ -64,8 +69,63 @@ func NewSocket(config *SocketConfig) *Socket {
 	}
 }
 
+func (socket *Socket) Go() {
+	socket.connect()
+	socket.wg.Add(1) // for read
+	go socket.read()
+	go socket.done()
+}
+
+func (socket *Socket) connect() {
+
+	dialer := websocket.Dialer{
+		HandshakeTimeout: (socket.ConnectTimeout),
+	}
+
+	if socket.proxy != nil {
+		if socket.proxyHandle != nil {
+			socket.proxyHandle(socket.proxy)
+		}
+		dialer.Proxy = http.ProxyURL(socket.proxy)
+	}
+
+	client, resp, err := dialer.Dial(socket.Host, socket.Head)
+
+	if err != nil {
+		socket.setClosedRule(ERROR_CONNECT_CLOSE)
+		if socket.errorHandle != nil {
+			socket.errorHandle(err)
+			return
+		}
+	}
+
+	socket.client = client
+
+	if resp != nil {
+		if resp.StatusCode != 101 {
+			socket.setClosedRule(ERROR_CONNECT_CLOSE)
+			// При корректном открытии ws соединения, код должен быть 101
+			if socket.errorHandle != nil {
+				socket.errorHandle(err)
+			}
+			return
+		}
+	}
+
+	//Таймаут после которого игра закроется.
+	go socket.timeoutToGame()
+
+	if socket.openHandle != nil {
+		socket.openHandle()
+	}
+}
+
 func (socket *Socket) SetOpenHandler(handler func()) {
 	socket.openHandle = handler
+}
+
+func (socket *Socket) SetProxyHandler(handler func(proxy *url.URL)) {
+	socket.proxyHandle = handler
 }
 
 func (socket *Socket) SetCloseHandler(handler func(rule byte, msg string)) {
@@ -80,11 +140,8 @@ func (socket *Socket) SetErrorHandler(handler func(err error)) {
 	socket.errorHandle = handler
 }
 
-func (socket *Socket) Go() {
-	socket.connect()
-	socket.wg.Add(1) // for read
-	go socket.read()
-	go socket.done()
+func (socket *Socket) SetProxy(p *url.URL) {
+	socket.proxy = p
 }
 
 func (socket *Socket) Send(packet []byte) {
@@ -113,43 +170,7 @@ func (socket *Socket) getCloseRuleMsg() string {
 	return closed_rules[socket.rule_close]
 }
 
-func (socket *Socket) connect() {
-
-	dialer := websocket.Dialer{
-		HandshakeTimeout: (socket.ConnectTimeout),
-	}
-
-	client, resp, err := dialer.Dial(socket.Host, socket.Head)
-
-	socket.client = client
-
-	if err != nil {
-		socket.setClosedRule(ERROR_CONNECT_CLOSE)
-		if socket.errorHandle != nil {
-			socket.errorHandle(err)
-		}
-		return
-	}
-
-	if resp != nil {
-		if resp.StatusCode != 101 {
-			socket.setClosedRule(ERROR_CONNECT_CLOSE)
-			// При корректном открытии ws соединения, код должен быть 101
-			if socket.errorHandle != nil {
-				socket.errorHandle(err)
-			}
-			return
-		}
-	}
-
-	go socket.timeout()
-
-	if socket.openHandle != nil {
-		socket.openHandle()
-	}
-}
-
-func (socket *Socket) timeout() {
+func (socket *Socket) timeoutToGame() {
 	<-time.After(time.Duration(socket.TimeInTheGame) * time.Second)
 	socket.setClosedRule(ERROR_TIMEOUT_CLOSE)
 	socket.close_connection()

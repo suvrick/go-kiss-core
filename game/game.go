@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"io"
+	"net/url"
 	"sync/atomic"
 	"time"
 
@@ -19,6 +20,7 @@ type Game struct {
 	Done   chan bot.Bot
 
 	login *client.Login
+	buy   *client.Buy
 	bot   *bot.Bot
 }
 
@@ -52,33 +54,22 @@ func NewGame(config *GameConfig) *Game {
 	return &game
 }
 
+func NewGameWithProxy(config *GameConfig, proxy *url.URL) *Game {
+	game := NewGame(config)
+	game.socket.SetProxy(proxy)
+	return game
+}
+
 // return game instance with deault configure
 func NewGameDefault() *Game {
 	config := GetDefaultGameConfig()
 	return NewGame(config)
 }
 
-// func (game *Game) LiveUp() {
-// 	game.bot.Live++
-// 	game.bot.LiveHistory = append(game.bot.LiveHistory, game.bot.Live)
-// }
-
-// func (game *Game) LiveDown() {
-// 	game.bot.Live--
-// 	game.bot.LiveHistory = append(game.bot.LiveHistory, game.bot.Live)
-// }
-
-// func (game *Game) Loop() {
-// 	for {
-// 		<-time.After(time.Microsecond * 500)
-// 		if game.bot.Live < 0 {
-// 			break
-// 		}
-// 	}
-
-// 	game.Log("close loop")
-// 	game.GameOver()
-// }
+func NewGameWithProxyDefault(proxy *url.URL) *Game {
+	config := GetDefaultGameConfig()
+	return NewGameWithProxy(config, proxy)
+}
 
 func (game *Game) LoginSend(login *client.Login) {
 
@@ -91,10 +82,22 @@ func (game *Game) LoginSend(login *client.Login) {
 	game.Send(client.LOGIN, game.login)
 }
 
-func (game *Game) OpenHandler() {
-	game.Log("open")
+func (game *Game) SetBuyPacket(buy *client.Buy) {
+	game.buy = buy
+}
 
-	//go game.Loop()
+func (game *Game) BuySend() {
+	if game.buy != nil {
+		game.Send(client.BUY, game.buy)
+	}
+}
+
+func (game *Game) OpenHandler() {
+	game.Log("open connection.")
+}
+
+func (game *Game) ProxyHandler(proxy *url.URL) {
+	game.Logf("set proxy connection %s.", &proxy.Host)
 }
 
 func (game *Game) CloseHandler(rule byte, msg string) {
