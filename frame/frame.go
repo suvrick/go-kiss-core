@@ -3,226 +3,163 @@
 package frame
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"hash/fnv"
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 )
-
-func init() {
-	data, _ := Unmarshal([]byte(keys_json))
-	f := New()
-	f.Initialize(data)
-}
-
-var instance IFrameManager
-var once sync.Once
-
-type IFrameManager interface {
-	Initialize(words []t_words) error
-	Parse(input string) (FrameDTO, error)
-}
-
-type Frame struct {
-	keys []t_words
-}
-
-func (f *Frame) Initialize(data []t_words) error {
-	copy(f.keys, data)
-	return nil
-}
-
-func (f *Frame) Parse(input string) (FrameDTO, error) {
-	result := FrameDTO{}
-
-	if f.keys == nil {
-		return result, ErrFrameParserNotInit
-	}
-
-	if len(f.keys) == 0 {
-		return result, ErrFrameParserEmptyKeys
-	}
-
-	input = strings.TrimSpace(input)
-
-	// TODO: поискать способ удаления сразу всех спец.символов
-	input = strings.Replace(input, "\r", "", -1)
-
-	if len(input) == 0 {
-		return result, ErrEmptyString
-	}
-
-	q, err := url.ParseQuery(input)
-	if err != nil {
-		return result, ErrInvalidFrame
-	}
-
-	// TODO: возвращаем первое совпадение всех ключей. Хм-м что-то как-то стрёмно
-	for _, p := range f.keys {
-
-		if q.Has(p.LoginID) && q.Has(p.Token) && q.Has(p.Token2) {
-
-			id_value := q.Get(p.LoginID)
-			id, err := strconv.ParseUint(id_value, 10, 64)
-			if err != nil {
-				return result, ErrQueryParametrMiss
-			}
-
-			// TODO: костыль для фотостраны
-			if strings.Index(input, "fotostrana") > 0 {
-				p.FrameType = 30
-			}
-
-			result.Hash = getHex(input)
-			result.ID = id
-			result.NetType = p.FrameType
-			result.Key = q.Get(p.Token)
-			result.AccessToken = q.Get(p.Token2)
-
-			return result, nil
-		}
-	}
-
-	return result, ErrFrameTypeNotFound
-}
-
-func New() IFrameManager {
-	if instance == nil {
-		once.Do(func() {
-			instance = &Frame{
-				keys: make([]t_words, 0),
-			}
-		})
-	}
-	return instance
-}
 
 const (
-	vk uint16 = 0
-	mm uint16 = 1
-	ok uint16 = 4
-	fs uint16 = 30
-	gs uint16 = 41
-	sa uint16 = 32
-	nn uint16 = 255
+	VK int = 0
+	MM int = 1
+	OK int = 4
+	FS int = 30
+	SA int = 32
+	GS int = 41
+	NN int = 255
 )
 
-type FrameDTO struct {
-	Hash        uint32
-	ID          uint64
-	NetType     uint16
-	Key         string
-	AccessToken string
-}
-
 // Названия ключей для каждого типа соц.сети
-// config.json
 type t_words struct {
-	FrameType uint16 `json:"frame_type"`
+	FrameType int    `json:"frame_type"`
 	LoginID   string `json:"id"`
 	Token     string `json:"token"`
 	Token2    string `json:"token2"`
+	Tag       string `json:"tag"`
+	OAuth     string `json:"oauth"`
 }
 
-func Unmarshal(data []byte) ([]t_words, error) {
-	result := make([]t_words, 0)
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	err := decoder.Decode(&result)
-	return result, err
+var QUERIES = []t_words{
+	{
+		FrameType: 0,
+		LoginID:   "viewer_id",
+		Token:     "auth_key",
+		Token2:    "access_token",
+		Tag:       "",
+		OAuth:     "OAuth",
+	},
+	{
+		FrameType: 1,
+		LoginID:   "vid",
+		Token:     "authentication_key",
+		Token2:    "session_key",
+		Tag:       "",
+		OAuth:     "OAuth",
+	},
+	{
+		FrameType: 1,
+		LoginID:   "vid",
+		Token:     "authentication_key",
+		Token2:    "access_token",
+		Tag:       "",
+		OAuth:     "OAuth",
+	},
+	{
+		FrameType: 4,
+		LoginID:   "logged_user_id",
+		Token:     "auth_sig",
+		Token2:    "session_key",
+		Tag:       "",
+		OAuth:     "OAuth",
+	},
+	{
+		FrameType: 30,
+		LoginID:   "userId",
+		Token:     "authKey",
+		Token2:    "",
+		Tag:       "fotostrana",
+		OAuth:     "OAuth",
+	},
+	{
+		FrameType: 32,
+		LoginID:   "userId",
+		Token:     "authKey",
+		Token2:    "sessionKey",
+		Tag:       "",
+		OAuth:     "OAuth",
+	},
 }
 
-/*
-GetFrameTypeName возращает строковое представления f_type.
+func Parse2(input string) map[string]interface{} {
+	return Parse(input, QUERIES)
+}
 
-Если не удалось определить тип frame, то "nn"
-*/
-func GetFrameTypeName(t uint16) string {
+func Parse(input string, words []t_words) map[string]interface{} {
+
+	result := make(map[string]interface{})
+	result["id"] = getHex(input)
+	result["frame"] = input
+	result["frame_type"] = NN
+	result["frame_type_name"] = getFrameTypeName(NN)
+
+	q, err := url.ParseQuery(input)
+	if err != nil {
+		return result
+	}
+
+	i, c := -1, 2
+
+	for index, word := range words {
+
+		var counter int
+
+		if q.Has(word.LoginID) {
+			counter++
+		}
+
+		if q.Has(word.Token) {
+			counter++
+		}
+
+		if counter == 2 && len(word.Tag) != 0 && strings.Contains(input, word.Tag) {
+			counter++
+		}
+
+		if counter >= c {
+			i = index
+			c = counter
+		}
+	}
+
+	if i > -1 {
+		result["login_id"], result["error"] = strconv.ParseUint(q.Get(words[i].LoginID), 10, 64)
+		result["device"] = 5
+		result["frame_type"] = words[i].FrameType
+		result["frame_type_name"] = getFrameTypeName(words[i].FrameType)
+		result["key"] = q.Get(words[i].Token)
+		result["oauth"] = q.Has(words[i].OAuth)
+		result["access_token"] = q.Get(words[i].Token2)
+	}
+
+	return result
+}
+
+// getFrameTypeName возращает строковое представления FrameType.
+// Если не удалось определить тип frame, то "nn"
+func getFrameTypeName(t int) string {
 	switch t {
-	case vk:
+	case VK:
 		return "vk"
-	case mm:
+	case MM:
 		return "mm"
-	case ok:
+	case OK:
 		return "ok"
-	case fs:
+	case FS:
 		return "fs"
-	case sa:
+	case SA:
 		return "sa"
-	case gs:
+	case GS:
 		return "gs"
 	default:
 		return "nn"
 	}
 }
 
-func getHex(s string) uint32 {
-
-	hex := fnv.New32a()
-
+func getHex(s string) uint64 {
+	hex := fnv.New64a()
 	_, err := hex.Write([]byte(s))
 	if err != nil {
 		return 0
 	}
-
-	return hex.Sum32()
+	return hex.Sum64()
 }
-
-var (
-	//Пустая строка
-	ErrEmptyString = errors.New("frame parse error.empty string")
-	//Ошибка при разборе строки в map[string]string
-	ErrInvalidFrame = errors.New("frame parse error.invalid frame")
-	//Нет соотвествий по шаблону.Не смог определить тип социальной сети.
-	ErrFrameTypeNotFound = errors.New("frame parse error.frame type not found")
-	//Не иницилизирован словарь шаблонов.Вызовите Initialize(...)
-	ErrFrameParserNotInit = errors.New("frame parse error.not initialize")
-	//Не иницилизирован словарь шаблонов.Вызовите Initialize(...)
-	ErrFrameParserEmptyKeys = errors.New("frame parse error. keys is empty")
-	//Не смог конвертировать LoginID из строки в uint64
-	ErrQueryParametrMiss = errors.New("frame parse error.invalid loginID")
-)
-
-const keys_json = `
-[
-    {
-        "frame_type": 0,
-        "id": "viewer_id",
-        "token": "auth_key",
-        "token2": "access_token"
-    },
-    {
-        "frame_type": 1,
-        "id": "vid",
-        "token": "authentication_key",
-        "token2": "session_key"
-    },
-    {
-        "frame_type": 1,
-        "id": "vid",
-        "token": "authentication_key",
-        "token2": "access_token"
-    },
-    {
-        "frame_type": 4,
-        "id": "logged_user_id",
-        "token": "auth_sig",
-        "token2": "session_key"
-    },
-    {
-        "frame_type": 30,
-        "id": "userId",
-        "token": "authKey",
-        "token2": "fotostrana"
-    },
-    {
-        "frame_type": 32,
-        "id": "userId",
-        "token": "authKey",
-        "token2": "sessionKey"
-    }
-]
-`

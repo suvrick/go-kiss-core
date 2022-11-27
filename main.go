@@ -1,20 +1,8 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"flag"
-	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"sync"
-
-	"github.com/suvrick/go-kiss-core/bot"
 	"github.com/suvrick/go-kiss-core/frame"
-	"github.com/suvrick/go-kiss-core/game"
-	"github.com/suvrick/go-kiss-core/packets/client"
-	"github.com/suvrick/go-kiss-core/proxy"
+	"github.com/suvrick/go-kiss-core/packets/leb128"
 )
 
 //103786258
@@ -34,236 +22,160 @@ var urls = []string{
 	"view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=103786258&viewerId=103786258&isAppUser=1&isAppWidgetUser=0&sessionKey=5d09db98a83f25ff3885114f725c651022ee76138454ff&authKey=dc93c8e0c365ca792cf1198ab71c73e7&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1569558375&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?158&width=1000&height=690&sprites_version=83&useApiType=fs&",
 }
 
-var writeLog = flag.Bool("l", false, "write result to 'log/bot_id'")
-var url = flag.String("f", "", "frame by game")
-var path = flag.String("p", "", "path from file frames")
-var count = flag.Int("b", 3, "count max instance game")
+type Chunk struct {
+	ID        int
+	MetaID    int
+	Index     int
+	Type      rune
+	Name      string
+	IsRequred bool
 
-func main() {
-
-	// web.Run()
-
-	// return
-
-	flag.Parse()
-
-	if *writeLog {
-		fmt.Printf("write log: on\n")
-	} else {
-		fmt.Printf("write log: off\n")
-	}
-
-	uu := "https://bottle2.itsrealgames.com/www/vk.html?social_api=vk&type=vk&record_first_session=1&6&api_url=https://api.vk.com/api.php&api_id=1930071&api_settings=8207&viewer_id=95680242&viewer_type=2&sid=4921eb0cd7c7889784f9833c6c4577fd07b6ddc15aa862d3fd307d59fbb6900c1fcc3282353b5d8ef9179&secret=5d754c0d65&access_token=20ba1ae06cbab26b14af359334e71e7226e341c70c1f0f0995faac9cc0e6399e862850ba826d748257958&user_id=95680242&group_id=0&is_app_user=1&auth_key=d3936a1b653517c641e2e9fdae093d27&language=0&parent_language=0&is_secure=1&stats_hash=6e744671f2cea9e1bd&ads_app_id=1930071_6b0928ee3c2621bd14&referrer=unknown&lc_name=67c77d2f&platform=web&hash="
-
-	url = &uu
-
-	Run()
+	Parent *Chunk
 }
 
-func Run() {
-
-	if *url != "" {
-		frameDTO, err := frame.New().Parse(*url)
-		if err != nil {
-			fmt.Println("parse frame: FAIL")
-			return
-		}
-
-		fmt.Println("parse frame: OK")
-
-		p := proxy.GetDefaultProxy()
-
-		game := game.NewGameWithProxyDefault(p.URL)
-		game.Run()
-		game.LoginSend(&client.Login{
-			ID:          frameDTO.ID,
-			NetType:     frameDTO.NetType,
-			DeviceType:  5,
-			Key:         frameDTO.Key,
-			AccessToken: frameDTO.AccessToken,
-		})
-
-		// game := game.NewGame(context *Context)
-		// game.SetConfig(config *socket.Config)
-		// game.SetBot(bot *bot.Bot)
-		// game.SetProxyManager(proxyManager *IProxyManager)
-		// game.SetDoneFunc(doneFunc func(bot *bot.Bot))
-		// game.Run()
-
-		// <-game.Done
-
-		// buy := &client.Buy{
-		// 	BuyType:  2,
-		// 	Coin:     30,
-		// 	PlayerID: 42870078,
-		// 	PrizeID:  10169,
-		// 	XZ:       0,
-		// 	Count:    1,
-		// 	XZ2:      5,
-		// }
-
-		// game.SetBuyPacket(buy)
-
-		bot := <-game.Done
-
-		if *writeLog {
-			Log(bot)
-		} else {
-			js, err := MarshalBot(bot)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-
-			fmt.Println(string(js))
-		}
-		return
-	}
-
-	if *path != "" {
-		Do()
-	}
+type Meta struct {
+	ID           int
+	PacketID     int
+	PacketFormat string
+	PacketName   string
+	PacketType   int
 }
 
-func Do() {
-
-	frames := Load(*path)
-
-	fmt.Printf("load frames (%d) for file '%s'\n", len(frames), *path)
-
-	wg := sync.WaitGroup{}
-
-	balanser := make(chan struct{}, *count)
-
-	fmt.Printf("set game max instanse: %d\n", *count)
-
-	for _, login := range frames {
-		balanser <- struct{}{}
-		wg.Add(1)
-
-		go func(l client.Login) {
-			defer func() {
-				<-balanser
-				wg.Done()
-			}()
-			game := game.NewGameDefault()
-			game.Run()
-			game.LoginSend(&l)
-
-			// buy := &client.Buy{
-			// 	BuyType:  251,
-			// 	Coin:     10,
-			// 	PlayerID: 42870078,
-			// 	PrizeID:  10242,
-			// 	XZ:       0,
-			// 	Count:    1,
-			// 	XZ2:      6,
-			// }
-
-			//game.SetBuyPacket(buy)
-
-			bot := <-game.Done
-
-			if *writeLog {
-				Log(bot)
-			} else {
-				js, err := MarshalBot(bot)
-				if err != nil {
-					fmt.Println(err.Error())
-					return
-				}
-				fmt.Println(string(js))
-			}
-		}(login)
-	}
-
-	wg.Wait()
-
-	close(balanser)
+var metes = []*Meta{
+	{
+		ID:           1,
+		PacketID:     4,
+		PacketFormat: "IBBS,BSIIBSBSBS",
+		PacketName:   "LOGIN",
+		PacketType:   1,
+	},
 }
 
-func Load(path string) []client.Login {
-	result := make([]client.Login, 0)
+var chunks = []*Chunk{
+	{
+		ID:        1,
+		MetaID:    1,
+		Index:     0,
+		Type:      'I',
+		Name:      "login_id",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	{
+		ID:        2,
+		MetaID:    1,
+		Index:     1,
+		Type:      'B',
+		Name:      "device",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	{
+		ID:        3,
+		MetaID:    1,
+		Index:     2,
+		Type:      'I',
+		Name:      "frame_type",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	{
+		ID:        4,
+		MetaID:    1,
+		Index:     3,
+		Type:      'S',
+		Name:      "key",
+		IsRequred: true,
+		Parent:    nil,
+	},
+}
 
-	file, err := os.Open(path)
-	if err != nil {
-		fmt.Println(err.Error())
-		return result
-	}
-
-	defer file.Close()
-
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-		fmt.Println(err.Error())
-		return result
-	}
-
-	frames := bytes.Split(data, []byte{'\n'})
-
-	for _, v := range frames {
-
-		login, err := frame.New().Parse(string(v))
-
-		if err != nil {
-			fmt.Println(err.Error())
-			continue
+func GetMeta(packetType int, packetID int) *Meta {
+	var m *Meta
+	for _, v := range metes {
+		if v.PacketType == packetType && v.PacketID == packetID {
+			m = v
+			break
 		}
-
-		result = append(result, client.Login{
-			ID:          login.ID,
-			NetType:     login.NetType,
-			DeviceType:  5,
-			Key:         login.Key,
-			AccessToken: login.AccessToken,
-		})
 	}
+	return m
+}
 
+func GetScheme(metaID int) []*Chunk {
+	result := make([]*Chunk, 0)
+	for _, chunk := range chunks {
+		if chunk.MetaID == metaID {
+			result = append(result, chunk)
+		}
+	}
 	return result
 }
 
-func MarshalBot(bot bot.Bot) ([]byte, error) {
-	js, err := json.MarshalIndent(&bot, " ", "  ")
-	if err != nil {
-		return nil, err
+func Marshal(values map[string]interface{}) []byte {
+	// получить мета данные пакета
+	packetID, ok := values["packet_id"].(int)
+	if !ok {
+		return nil
 	}
 
-	return js, nil
+	packetType, ok := values["packet_type"].(int)
+	if !ok {
+		return nil
+	}
+
+	m := GetMeta(packetType, packetID)
+	if m == nil {
+		return nil
+	}
+
+	schemes := GetScheme(m.ID)
+	if schemes == nil {
+		return nil
+	}
+
+	// TODO: need sort
+
+	buffer := make([]byte, 0)
+	for _, chunk := range schemes {
+
+		val, ok := values[chunk.Name]
+		if !ok {
+			return nil
+		}
+
+		switch chunk.Type {
+		case 'B':
+		case 'I':
+		case 'S':
+		case 'A':
+		default:
+			return nil
+		}
+		// 0x5f79f7c
+		// [12,12,0,9,49,48,48,49,49,52,51,48,48]
+		buf, err := leb128.GetBytes(val)
+		if err != nil {
+			return nil
+		}
+
+		buffer = append(buffer, buf...)
+	}
+
+	return buffer
 }
 
-func Log(bot bot.Bot) {
+func Unmarshal(buffer []byte) map[string]interface{} {
+	return nil
+}
 
-	js, err := MarshalBot(bot)
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
+func main() {
+	p := frame.Parse2(urls[4])
+	p["packet_id"] = 4
+	p["packet_type"] = 1
 
-	cDir, err := os.Getwd()
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
+	Marshal(p)
 
-	dir := filepath.Join(cDir, "log")
-
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err := os.Mkdir(dir, os.ModePerm)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-	}
-
-	f_name := filepath.Join(dir, bot.ID)
-
-	f, err := os.OpenFile(f_name, os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-
-	fmt.Fprint(f, string(js))
-
-	defer f.Close()
+	p["packet_id"] = 4
+	p["packet_type"] = 0
+	Marshal(p)
 }
