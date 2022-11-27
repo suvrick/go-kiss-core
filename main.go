@@ -17,6 +17,10 @@ import (
 	"github.com/suvrick/go-kiss-core/proxy"
 )
 
+//103786258
+//sessionKey=5d09db98a83f25ff3885114f725c651022ee76138454ff
+//dc93c8e0c365ca792cf1198ab71c73e7
+
 var urls = []string{
 	"https://bottle2.itsrealgames.com/mobile/build/v1593/?social_api=mm&type=mm&record_first_session=1&6=&is_app_user=1&session_key=f53f650cd57b6bc75da0b65af0d0c028&vid=13402962412699287699&oid=13402962412699287699&app_id=543574&authentication_key=e1de7d6b1b9a18e124331d1a8e7a6709&session_expire=1623248257&ext_perm=notifications%2Cemails%2Cpayments&sig=d38fca257b4651d5fc2bbc3e2531842f&window_id=CometName_74be9f9e99659ab7f65e85f2a31d3d3b&referer_type=left_menu&version=1593",
 	"https://m.inspin.me/build/v431/?type=vk&user_id=292003911&api_url=https%3A%2F%2Fapi.vk.com%2Fapi.php&api_id=1930071&api_settings=8207&viewer_id=292003911&viewer_type=2&access_token=a0ce925b6322055cd7c291e7577bb363fb21ddd1c1026076d2ae71d1dd7e0e1416b68617869e6d20d6078&is_app_user=1&auth_key=2ff87aebac3ec78d0dc0fa5c55efda33&language=0&parent_language=0&is_secure=1&sid=e2048d62a447474d27fa6c5b862035e9d87cce7c8aba0affd06f06353c91280e416f39adf2f5d62abf77c&secret=46f45eb797&stats_hash=f1304753fffaf8bec8&lc_name=9791cbb4&api_script=https%3A%2F%2Fapi.vk.com%2Fapi.php&referrer=unknown&ads_app_id=1930071_7f55035857df794ec1&platform=html5_android&hash=",
@@ -29,8 +33,6 @@ var urls = []string{
 	"view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=103786202&viewerId=103786202&isAppUser=1&isAppWidgetUser=0&sessionKey=5d063a76c0ea63fd48b4d06f8cc85e45122d9abe8bb4f0&authKey=b508c5dbc13ee88cf28affbb76d5fe34&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1569558150&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?158&width=1000&height=690&sprites_version=83&useApiType=fs&",
 	"view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=103786258&viewerId=103786258&isAppUser=1&isAppWidgetUser=0&sessionKey=5d09db98a83f25ff3885114f725c651022ee76138454ff&authKey=dc93c8e0c365ca792cf1198ab71c73e7&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1569558375&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?158&width=1000&height=690&sprites_version=83&useApiType=fs&",
 }
-
-var frameParser *frame.Frame
 
 var writeLog = flag.Bool("l", false, "write result to 'log/bot_id'")
 var url = flag.String("f", "", "frame by game")
@@ -60,14 +62,8 @@ func main() {
 
 func Run() {
 
-	frameParser = frame.NewFrameDefault()
-	if frameParser.Err != nil {
-		fmt.Println(frameParser.Err.Error())
-		return
-	}
-
 	if *url != "" {
-		login, err := frameParser.Parse2([]byte(*url))
+		frameDTO, err := frame.New().Parse(*url)
 		if err != nil {
 			fmt.Println("parse frame: FAIL")
 			return
@@ -79,7 +75,13 @@ func Run() {
 
 		game := game.NewGameWithProxyDefault(p.URL)
 		game.Run()
-		game.LoginSend(login)
+		game.LoginSend(&client.Login{
+			ID:          frameDTO.ID,
+			NetType:     frameDTO.NetType,
+			DeviceType:  5,
+			Key:         frameDTO.Key,
+			AccessToken: frameDTO.AccessToken,
+		})
 
 		// game := game.NewGame(context *Context)
 		// game.SetConfig(config *socket.Config)
@@ -201,14 +203,20 @@ func Load(path string) []client.Login {
 
 	for _, v := range frames {
 
-		login, err := frameParser.Parse2(v)
+		login, err := frame.New().Parse(string(v))
 
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
 		}
 
-		result = append(result, *login)
+		result = append(result, client.Login{
+			ID:          login.ID,
+			NetType:     login.NetType,
+			DeviceType:  5,
+			Key:         login.Key,
+			AccessToken: login.AccessToken,
+		})
 	}
 
 	return result

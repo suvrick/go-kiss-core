@@ -19,9 +19,11 @@ type Game struct {
 	msgID  int64
 	Done   chan bot.Bot
 
+	/* packets */
 	login *client.Login
 	buy   *client.Buy
-	bot   *bot.Bot
+
+	bot *bot.Bot
 }
 
 func NewGame(config *GameConfig) *Game {
@@ -117,7 +119,11 @@ func (game *Game) ReadHandler(reader io.Reader) {
 
 	leb128.ReadInt(reader, 32)
 
-	t, _ := leb128.ReadUint(reader, 16)
+	t, err := leb128.ReadUint(reader, 16)
+	if err != nil {
+		game.Logf(err.Error())
+		return
+	}
 
 	packetType := server.PacketServerType(t)
 	switch packetType {
@@ -155,25 +161,17 @@ func (game *Game) Send(packType client.PacketClientType, packet interface{}) {
 	}
 
 	data := make([]byte, 0)
-
 	data = leb128.AppendInt(data, int64(game.msgID)) // message ID
-
 	data = leb128.AppendUint(data, uint64(packType)) // packet type
-
-	data = leb128.AppendUint(data, uint64(6)) //device
-
+	data = leb128.AppendUint(data, uint64(6))        //device
 	data = append(data, pack...)
 
 	data_len := make([]byte, 0)
-
 	data_len = leb128.AppendInt(data_len, int64(len(data))) // packet len
-
 	data_len = append(data_len, data...)
 
 	game.LogSendPacket(packet)
-
 	game.socket.Send(data_len)
-
 	atomic.AddInt64(&game.msgID, 1)
 }
 

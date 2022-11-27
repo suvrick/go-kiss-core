@@ -62,5 +62,11 @@ func (pm *ProxyManager) UpdateProxy(p *Proxy) {
 }
 
 func GetDefaultProxy() *Proxy {
-	return &Proxy{}
+	return &Proxy{
+		URL: &url.URL{
+			Scheme: "http",
+			Host:   "zproxy.lum-superproxy.io:22225",
+			User:   url.UserPassword("lum-customer-c_07f044e7-zone-static", "hcx7fnqnph27"),
+		},
+	}
 }
