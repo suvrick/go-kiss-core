@@ -111,6 +111,69 @@ func GetScheme(metaID int) []*Chunk {
 	return result
 }
 
+func GetScheme2(chunks []*Chunk, parent *Chunk) []*Chunk {
+	result := make([]*Chunk, 0)
+	for _, chunk := range chunks {
+		if chunk.Parent == parent {
+			result = append(result, chunk)
+		}
+	}
+	return result
+}
+
+func Marshal2(schemes []*Chunk, values map[string]interface{}) []byte {
+
+	buffer := make([]byte, 0)
+
+	for _, chunk := range schemes {
+
+		val, ok := values[chunk.Name]
+		if !ok {
+			return nil
+		}
+
+		switch chunk.Type {
+		case 'B':
+			b, ok := val.(byte)
+			if !ok {
+				return nil
+			}
+
+			buffer = leb128.AppendUint(buffer, uint64(b))
+		case 'I':
+			b, ok := val.(uint64)
+			if !ok {
+				return nil
+			}
+
+			buffer = leb128.AppendUint(buffer, uint64(b))
+		case 'S':
+			s, ok := val.(string)
+			if !ok {
+				return nil
+			}
+
+			buffer = leb128.AppendUint(buffer, uint64(len(s)))
+			buffer = append(buffer, []byte(s)...)
+
+		case 'A':
+
+			arr, ok := val.(map[string]interface{})
+			if !ok {
+				return nil
+			}
+
+			schemes2 := GetScheme2(schemes, chunk)
+			buf := Marshal2(schemes2, arr)
+			buffer = append(buffer, buf...)
+		default:
+			return nil
+		}
+	}
+
+	return buffer
+}
+
 func Marshal(values map[string]interface{}) []byte {
 	// получить мета данные пакета
 	packetID, ok := values["packet_id"].(int)
@@ -135,31 +198,7 @@ func Marshal(values map[string]interface{}) []byte {
 
 	// TODO: need sort
 
-	buffer := make([]byte, 0)
-	for _, chunk := range schemes {
-
-		val, ok := values[chunk.Name]
-		if !ok {
-			return nil
-		}
-
-		switch chunk.Type {
-		case 'B':
-		case 'I':
-		case 'S':
-		case 'A':
-		default:
-			return nil
-		}
-		// 0x5f79f7c
-		// [12,12,0,9,49,48,48,49,49,52,51,48,48]
-		buf, err := leb128.GetBytes(val)
-		if err != nil {
-			return nil
-		}
-
-		buffer = append(buffer, buf...)
-	}
+	buffer := Marshal2(schemes, values)
 
 	return buffer
 }
