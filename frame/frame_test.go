@@ -1,13 +1,14 @@
 package frame
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 )
 
 var frames = []string{
-	//"",
-	//"invalid frame",
+	"",
+	"invalid frame",
 	"https://bottle2.itsrealgames.com/www/sa.html?time=1571556651549&locale=RU&viewer_id=96172620&userId=96172620&access_token=2e39e1384066cc2c37665f53eff40409adf22061c804db05b80d05a1cbe2d22a41fe282bc264a14405b29&api_url=https://api.vk.com/method/&net_type=0&api_id=4432260&useApiType=vk&OAuth=true&auth_key=&email=pripevochka8989@mail.ru",
 	"view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=104015872&viewerId=104015872&isAppUser=1&isAppWidgetUser=0&sessionKey=5db68d0bc9be09339317d785fd88ec42ae7976d721bf8e&authKey=3d6ac3df40e40ffc4243b650efae46f5&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1570189957&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?161&width=1000&height=690&sprites_version=87&useApiType=fs&",
 	"https://bottle2.itsrealgames.com/www/sa.html?time=1571552893425&&userId=114941701&sessionKey=67f5e4f7a90144c5eba1b91694132904&authKey=33513e2ce85cabfd6ec59d827aa28cea&net_type=32&useApiType=sa&email=tsd_8326@mail.ru&locale=RU",
@@ -21,13 +22,12 @@ var frames = []string{
 func TestParseFrames(t *testing.T) {
 	for _, v := range frames {
 		r := Parse2(v)
-		fmt.Printf("%#v\n", r)
 
-		b, ok := r["frame_type"].(int)
-		if !ok {
-			fmt.Println(b)
+		j, e := json.MarshalIndent(&r, "", "  ")
+		if e != nil {
+			fmt.Println(e.Error())
 		}
 
-		fmt.Println(b)
+		fmt.Println(string(j))
 	}
 }

@@ -3,6 +3,7 @@
 package frame
 
 import (
+	"fmt"
 	"hash/fnv"
 	"net/url"
 	"strconv"
@@ -20,7 +21,7 @@ const (
 )
 
 // Названия ключей для каждого типа соц.сети
-type t_words struct {
+type QueryParam struct {
 	FrameType int    `json:"frame_type"`
 	LoginID   string `json:"id"`
 	Token     string `json:"token"`
@@ -29,7 +30,7 @@ type t_words struct {
 	OAuth     string `json:"oauth"`
 }
 
-var QUERIES = []t_words{
+var QUERIES = []QueryParam{
 	{
 		FrameType: 0,
 		LoginID:   "viewer_id",
@@ -84,7 +85,7 @@ func Parse2(input string) map[string]interface{} {
 	return Parse(input, QUERIES)
 }
 
-func Parse(input string, words []t_words) map[string]interface{} {
+func Parse(input string, words []QueryParam) map[string]interface{} {
 
 	result := make(map[string]interface{})
 	result["id"] = getHex(input)
@@ -94,6 +95,7 @@ func Parse(input string, words []t_words) map[string]interface{} {
 
 	q, err := url.ParseQuery(input)
 	if err != nil {
+		result["error"] = fmt.Sprintf("frame parse fail: %s", err.Error())
 		return result
 	}
 
@@ -122,13 +124,21 @@ func Parse(input string, words []t_words) map[string]interface{} {
 	}
 
 	if i > -1 {
-		result["login_id"], result["error"] = strconv.ParseUint(q.Get(words[i].LoginID), 10, 64)
+		id, err := strconv.ParseUint(q.Get(words[i].LoginID), 10, 64)
+		if err != nil {
+			result["error"] = fmt.Sprintf("frame parse fail: %s", err.Error())
+			return result
+		}
+
+		result["login_id"] = id
 		result["device"] = 5
 		result["frame_type"] = words[i].FrameType
 		result["frame_type_name"] = getFrameTypeName(words[i].FrameType)
 		result["key"] = q.Get(words[i].Token)
 		result["oauth"] = q.Has(words[i].OAuth)
 		result["access_token"] = q.Get(words[i].Token2)
+	} else {
+		result["error"] = "frame parse fail: unknown frame type"
 	}
 
 	return result

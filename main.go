@@ -111,7 +111,7 @@ func GetScheme(metaID int) []*Chunk {
 	return result
 }
 
-func GetScheme2(chunks []*Chunk, parent *Chunk) []*Chunk {
+func GetSubScheme(chunks []*Chunk, parent *Chunk) []*Chunk {
 	result := make([]*Chunk, 0)
 	for _, chunk := range chunks {
 		if chunk.Parent == parent {
@@ -163,7 +163,7 @@ func Marshal2(schemes []*Chunk, values map[string]interface{}) []byte {
 				return nil
 			}
 
-			schemes2 := GetScheme2(schemes, chunk)
+			schemes2 := GetSubScheme(schemes, chunk)
 			buf := Marshal2(schemes2, arr)
 			buffer = append(buffer, buf...)
 		default:
