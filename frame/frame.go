@@ -21,7 +21,7 @@ const (
 )
 
 // Названия ключей для каждого типа соц.сети
-type QueryParam struct {
+type Key struct {
 	FrameType int    `json:"frame_type"`
 	LoginID   string `json:"id"`
 	Token     string `json:"token"`
@@ -30,7 +30,7 @@ type QueryParam struct {
 	OAuth     string `json:"oauth"`
 }
 
-var QUERIES = []QueryParam{
+var KEIS = []Key{
 	{
 		FrameType: 0,
 		LoginID:   "viewer_id",
@@ -82,13 +82,13 @@ var QUERIES = []QueryParam{
 }
 
 func Parse2(input string) map[string]interface{} {
-	return Parse(input, QUERIES)
+	return Parse(input, KEIS)
 }
 
-func Parse(input string, words []QueryParam) map[string]interface{} {
+func Parse(input string, keis []Key) map[string]interface{} {
 
 	result := make(map[string]interface{})
-	result["id"] = getHex(input)
+	result["hash"] = getFrameHash(input)
 	result["frame"] = input
 	result["frame_type"] = NN
 	result["frame_type_name"] = getFrameTypeName(NN)
@@ -101,19 +101,19 @@ func Parse(input string, words []QueryParam) map[string]interface{} {
 
 	i, c := -1, 2
 
-	for index, word := range words {
+	for index, key := range keis {
 
 		var counter int
 
-		if q.Has(word.LoginID) {
+		if q.Has(key.LoginID) {
 			counter++
 		}
 
-		if q.Has(word.Token) {
+		if q.Has(key.Token) {
 			counter++
 		}
 
-		if counter == 2 && len(word.Tag) != 0 && strings.Contains(input, word.Tag) {
+		if counter == 2 && len(key.Tag) != 0 && strings.Contains(input, key.Tag) {
 			counter++
 		}
 
@@ -124,7 +124,7 @@ func Parse(input string, words []QueryParam) map[string]interface{} {
 	}
 
 	if i > -1 {
-		id, err := strconv.ParseUint(q.Get(words[i].LoginID), 10, 64)
+		id, err := strconv.ParseUint(q.Get(keis[i].LoginID), 10, 64)
 		if err != nil {
 			result["error"] = fmt.Sprintf("frame parse fail: %s", err.Error())
 			return result
@@ -132,11 +132,11 @@ func Parse(input string, words []QueryParam) map[string]interface{} {
 
 		result["login_id"] = id
 		result["device"] = 5
-		result["frame_type"] = words[i].FrameType
-		result["frame_type_name"] = getFrameTypeName(words[i].FrameType)
-		result["key"] = q.Get(words[i].Token)
-		result["oauth"] = q.Has(words[i].OAuth)
-		result["access_token"] = q.Get(words[i].Token2)
+		result["frame_type"] = keis[i].FrameType
+		result["frame_type_name"] = getFrameTypeName(keis[i].FrameType)
+		result["key"] = q.Get(keis[i].Token)
+		result["oauth"] = q.Has(keis[i].OAuth)
+		result["access_token"] = q.Get(keis[i].Token2)
 	} else {
 		result["error"] = "frame parse fail: unknown frame type"
 	}
@@ -165,7 +165,7 @@ func getFrameTypeName(t int) string {
 	}
 }
 
-func getHex(s string) uint64 {
+func getFrameHash(s string) uint64 {
 	hex := fnv.New64a()
 	_, err := hex.Write([]byte(s))
 	if err != nil {

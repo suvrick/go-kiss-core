@@ -1,8 +1,10 @@
 package main
 
 import (
+	"log"
+
 	"github.com/suvrick/go-kiss-core/frame"
-	"github.com/suvrick/go-kiss-core/packets/leb128"
+	"github.com/suvrick/go-kiss-core/game"
 )
 
 //103786258
@@ -22,199 +24,24 @@ var urls = []string{
 	"view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=103786258&viewerId=103786258&isAppUser=1&isAppWidgetUser=0&sessionKey=5d09db98a83f25ff3885114f725c651022ee76138454ff&authKey=dc93c8e0c365ca792cf1198ab71c73e7&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1569558375&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?158&width=1000&height=690&sprites_version=83&useApiType=fs&",
 }
 
-type Chunk struct {
-	ID        int
-	MetaID    int
-	Index     int
-	Type      rune
-	Name      string
-	IsRequred bool
-
-	Parent *Chunk
-}
-
-type Meta struct {
-	ID           int
-	PacketID     int
-	PacketFormat string
-	PacketName   string
-	PacketType   int
-}
-
-var metes = []*Meta{
-	{
-		ID:           1,
-		PacketID:     4,
-		PacketFormat: "IBBS,BSIIBSBSBS",
-		PacketName:   "LOGIN",
-		PacketType:   1,
-	},
-}
-
-var chunks = []*Chunk{
-	{
-		ID:        1,
-		MetaID:    1,
-		Index:     0,
-		Type:      'I',
-		Name:      "login_id",
-		IsRequred: true,
-		Parent:    nil,
-	},
-	{
-		ID:        2,
-		MetaID:    1,
-		Index:     1,
-		Type:      'B',
-		Name:      "device",
-		IsRequred: true,
-		Parent:    nil,
-	},
-	{
-		ID:        3,
-		MetaID:    1,
-		Index:     2,
-		Type:      'I',
-		Name:      "frame_type",
-		IsRequred: true,
-		Parent:    nil,
-	},
-	{
-		ID:        4,
-		MetaID:    1,
-		Index:     3,
-		Type:      'S',
-		Name:      "key",
-		IsRequred: true,
-		Parent:    nil,
-	},
-}
-
-func GetMeta(packetType int, packetID int) *Meta {
-	var m *Meta
-	for _, v := range metes {
-		if v.PacketType == packetType && v.PacketID == packetID {
-			m = v
-			break
-		}
-	}
-	return m
-}
-
-func GetScheme(metaID int) []*Chunk {
-	result := make([]*Chunk, 0)
-	for _, chunk := range chunks {
-		if chunk.MetaID == metaID {
-			result = append(result, chunk)
-		}
-	}
-	return result
-}
-
-func GetSubScheme(chunks []*Chunk, parent *Chunk) []*Chunk {
-	result := make([]*Chunk, 0)
-	for _, chunk := range chunks {
-		if chunk.Parent == parent {
-			result = append(result, chunk)
-		}
-	}
-	return result
-}
-
-func Marshal2(schemes []*Chunk, values map[string]interface{}) []byte {
-
-	buffer := make([]byte, 0)
-
-	for _, chunk := range schemes {
-
-		val, ok := values[chunk.Name]
-		if !ok {
-			return nil
-		}
-
-		switch chunk.Type {
-		case 'B':
-			b, ok := val.(byte)
-			if !ok {
-				return nil
-			}
-
-			buffer = leb128.AppendUint(buffer, uint64(b))
-		case 'I':
-			b, ok := val.(uint64)
-			if !ok {
-				return nil
-			}
-
-			buffer = leb128.AppendUint(buffer, uint64(b))
-		case 'S':
-			s, ok := val.(string)
-			if !ok {
-				return nil
-			}
-
-			buffer = leb128.AppendUint(buffer, uint64(len(s)))
-			buffer = append(buffer, []byte(s)...)
-
-		case 'A':
-
-			arr, ok := val.(map[string]interface{})
-			if !ok {
-				return nil
-			}
-
-			schemes2 := GetSubScheme(schemes, chunk)
-			buf := Marshal2(schemes2, arr)
-			buffer = append(buffer, buf...)
-		default:
-			return nil
-		}
-	}
-
-	return buffer
-}
-
-func Marshal(values map[string]interface{}) []byte {
-	// получить мета данные пакета
-	packetID, ok := values["packet_id"].(int)
-	if !ok {
-		return nil
-	}
-
-	packetType, ok := values["packet_type"].(int)
-	if !ok {
-		return nil
-	}
-
-	m := GetMeta(packetType, packetID)
-	if m == nil {
-		return nil
-	}
-
-	schemes := GetScheme(m.ID)
-	if schemes == nil {
-		return nil
-	}
-
-	// TODO: need sort
-
-	buffer := Marshal2(schemes, values)
-
-	return buffer
-}
-
-func Unmarshal(buffer []byte) map[string]interface{} {
-	return nil
-}
-
 func main() {
+
+	game := game.NewGame()
+	game.SetStopPacketsID([]int{9})
+	err := game.Connect()
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	login := CreateLoginPacket()
+	game.Send(login)
+
+	<-game.End()
+}
+
+func CreateLoginPacket() map[string]interface{} {
 	p := frame.Parse2(urls[4])
-	p["packet_id"] = 4
+	p["packet_id"] = uint64(4)
 	p["packet_type"] = 1
-
-	Marshal(p)
-
-	p["packet_id"] = 4
-	p["packet_type"] = 0
-	Marshal(p)
+	return p
 }
