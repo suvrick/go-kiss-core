@@ -376,6 +376,7 @@ func (g *Game) loop(packetID uint64, b *bytes.Buffer) {
 
 	for _, v := range g.stop_packets {
 		if uint64(v) == packetID {
+			g.Close()
 			return
 		}
 	}
@@ -389,7 +390,7 @@ func (g *Game) loop(packetID uint64, b *bytes.Buffer) {
 	switch packetID {
 	case 4:
 		fmt.Printf("%v\n", g.s_packet)
-		g.Close()
+		//g.Close()
 	}
 }
 
