@@ -394,7 +394,7 @@ func (g *Game) loop(packetID uint64, b *bytes.Buffer) {
 	}
 }
 
-func (g *Game) Unmarshal2(r io.ByteReader, schemes []*Chunk) error {
+func (g *Game) Unzip(r io.ByteReader, schemes []*Chunk) error {
 
 	var value interface{}
 	var err error
@@ -445,10 +445,10 @@ func (g *Game) Unmarshal(packetID uint64, r io.ByteReader) error {
 		return fmt.Errorf("not found meta for packetID: %d", packetID)
 	}
 
-	return g.Unmarshal2(r, schemes)
+	return g.Unzip(r, schemes)
 }
 
-func (g *Game) Marshal2(schemes []*Chunk, values map[string]interface{}) error {
+func (g *Game) Zip(schemes []*Chunk, values map[string]interface{}) error {
 
 	ss := SortByChunk(schemes)
 	sort.Sort(ss)
@@ -475,7 +475,7 @@ func (g *Game) Marshal2(schemes []*Chunk, values map[string]interface{}) error {
 
 			schemes2 := GetSubScheme(schemes, chunk)
 			for _, v := range arr {
-				err := g.Marshal2(schemes2, v)
+				err := g.Zip(schemes2, v)
 				if err != nil {
 					return fmt.Errorf("bad sengnature")
 				}
@@ -511,5 +511,5 @@ func (g *Game) Marshal(values map[string]interface{}) error {
 	}
 
 	// TODO: need sort
-	return g.Marshal2(schemes, g.c_packet)
+	return g.Zip(schemes, g.c_packet)
 }
