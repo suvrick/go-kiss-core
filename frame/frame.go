@@ -32,6 +32,7 @@ type Frame struct {
 }
 
 func (f *Frame) Initialize(data []t_words) error {
+	f.keys = make([]t_words, len(data))
 	copy(f.keys, data)
 	return nil
 }

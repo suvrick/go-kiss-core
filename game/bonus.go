@@ -3,6 +3,7 @@ package game
 import (
 	"io"
 
+	"github.com/suvrick/go-kiss-core/packets/client"
 	"github.com/suvrick/go-kiss-core/packets/leb128"
 	"github.com/suvrick/go-kiss-core/packets/server"
 )
@@ -21,7 +22,9 @@ func (game *Game) Bonus(reader io.Reader) {
 
 	game.bot.BonusDay = bonus.Day
 
-	game.bot.IsNeedSendBonus = game.bot.CanCollect
+	if game.bot.CanCollect {
+		game.Send(client.BONUS, client.Bonus{})
+	}
 
 	game.LogReadPacket(*bonus)
 }

@@ -9,10 +9,6 @@ import (
 
 func (game *Game) CollectionsPoints(reader io.Reader) {
 
-	// defer func() {
-	// 	game.bot.Live--
-	// }()
-
 	collectionsPoints := &server.CollectionsPoints{}
 
 	err := leb128.Unmarshal(reader, collectionsPoints)

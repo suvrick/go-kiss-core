@@ -27,31 +27,30 @@ func (game *Game) Rewards(reader io.Reader) {
 
 			game.bot.Rewards = append(game.bot.Rewards, reward)
 
-			game.Send(client.GAME_REWARDS_GET,
-				&client.GameRewardsGet{RewardID: reward.ID})
+			game.Send(client.GAME_REWARDS_GET, &client.GameRewardsGet{RewardID: reward.ID})
 
 			return
 		}
 	}
 
-	if EmptyRewars(rewards) {
+	// if EmptyRewars(rewards) {
 
-		if game.bot.CanCollect && !game.bot.IsNeedSendBonus {
+	// 	if game.bot.CanCollect && !game.bot.IsNeedSendBonus {
 
-			game.Send(client.BONUS, client.Bonus{})
+	// 		game.Send(client.BONUS, client.Bonus{})
 
-			game.bot.IsNeedSendBonus = true
+	// 		game.bot.IsNeedSendBonus = true
 
-		} else {
+	// 	} else {
 
-			game.Send(client.REQUEST, &client.Request{
-				Players: []uint64{game.bot.GameID},
-				ID:      game.bot.GameID,
-			})
+	// 		game.Send(client.REQUEST, &client.Request{
+	// 			Players: []uint64{game.bot.GameID},
+	// 			ID:      game.bot.GameID,
+	// 		})
 
-		}
+	// 	}
 
-	}
+	// }
 }
 
 func EmptyRewars(rewards *server.Rewards) bool {

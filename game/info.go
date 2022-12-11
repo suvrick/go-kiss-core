@@ -9,12 +9,7 @@ import (
 
 func (game *Game) Info(reader io.Reader) {
 
-	if game.bot.IsFinishPacket {
-		game.GameOver()
-		return
-	}
-
-	info := &server.Info{}
+	info := server.Info{}
 
 	err := leb128.Unmarshal(reader, info)
 	if err != nil {
@@ -36,5 +31,5 @@ func (game *Game) Info(reader io.Reader) {
 
 	game.bot.IsFinishPacket = true
 
-	game.LogReadPacket(*info)
+	game.LogReadPacket(info)
 }
