@@ -49,6 +49,13 @@ var metes = []*Meta{
 		PacketName:   "LOGIN",
 		PacketType:   0,
 	},
+	{
+		ID:           3,
+		PacketID:     62,
+		PacketFormat: "BB",
+		PacketName:   "BONUS",
+		PacketType:   0,
+	},
 }
 
 var chunks = []*Chunk{
@@ -150,6 +157,24 @@ var chunks = []*Chunk{
 		Type:      'I',
 		Name:      "balance",
 		IsRequred: false,
+		Parent:    nil,
+	},
+	{
+		ID:        12,
+		MetaID:    3,
+		Index:     0,
+		Type:      'B',
+		Name:      "can_collect",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	{
+		ID:        13,
+		MetaID:    3,
+		Index:     1,
+		Type:      'B',
+		Name:      "bonus_day",
+		IsRequred: true,
 		Parent:    nil,
 	},
 }
@@ -413,7 +438,7 @@ func (g *Game) Unzip(r io.ByteReader, schemes []*Chunk) error {
 		case 'S':
 			value, err = leb128.Read(r, chunk.Type)
 		default:
-			err = fmt.Errorf("unsupported type: v", chunk.Type)
+			err = fmt.Errorf("unsupported type: %v", chunk.Type)
 		}
 
 		if err != nil {

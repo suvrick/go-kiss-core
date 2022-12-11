@@ -25,8 +25,12 @@ var urls = []string{
 }
 
 func main() {
+	CreateGame()
+}
+
+func CreateGame() {
 	game := game.NewGame()
-	game.SetStopPacketsID([]int{17})
+	game.SetStopPacketsID([]int{9})
 	err := game.Connect()
 	if err != nil {
 		log.Fatalln(err.Error())
