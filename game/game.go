@@ -51,11 +51,28 @@ var metes = []*Meta{
 	},
 	{
 		ID:           3,
-		PacketID:     62,
+		PacketID:     17,
 		PacketFormat: "BB",
 		PacketName:   "BONUS",
 		PacketType:   0,
 	},
+	{
+		ID:           4,
+		PacketID:     5,
+		PacketFormat: "IIIIBS",
+		PacketName:   "INFO",
+		PacketType:   0,
+	},
+}
+
+var chunk = Chunk{
+	ID:        24,
+	MetaID:    4,
+	Index:     10,
+	Type:      'A',
+	Name:      "avatar",
+	IsRequred: true,
+	Parent:    nil,
 }
 
 var chunks = []*Chunk{
@@ -159,6 +176,7 @@ var chunks = []*Chunk{
 		IsRequred: false,
 		Parent:    nil,
 	},
+	// BONUS
 	{
 		ID:        12,
 		MetaID:    3,
@@ -174,6 +192,134 @@ var chunks = []*Chunk{
 		Index:     1,
 		Type:      'B',
 		Name:      "bonus_day",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	//INFO (IIIIBSBIIISBSS)
+	{
+		ID:        14,
+		MetaID:    4,
+		Index:     0,
+		Type:      'I',
+		Name:      "",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	{
+		ID:        15,
+		MetaID:    4,
+		Index:     1,
+		Type:      'I',
+		Name:      "",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	{
+		ID:        16,
+		MetaID:    4,
+		Index:     2,
+		Type:      'I',
+		Name:      "game_id",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	{
+		ID:        17,
+		MetaID:    4,
+		Index:     3,
+		Type:      'I',
+		Name:      "login_id",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	{
+		ID:        18,
+		MetaID:    4,
+		Index:     4,
+		Type:      'B',
+		Name:      "net_type",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	{
+		ID:        19,
+		MetaID:    4,
+		Index:     5,
+		Type:      'S',
+		Name:      "name",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	{
+		ID:        20,
+		MetaID:    4,
+		Index:     6,
+		Type:      'B',
+		Name:      "sex",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	{
+		ID:        21,
+		MetaID:    4,
+		Index:     7,
+		Type:      'I',
+		Name:      "tag",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	{
+		ID:        22,
+		MetaID:    4,
+		Index:     8,
+		Type:      'I',
+		Name:      "referrer",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	{
+		ID:        23,
+		MetaID:    4,
+		Index:     9,
+		Type:      'I',
+		Name:      "ddate",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	&chunk,
+	{
+		ID:        25,
+		MetaID:    4,
+		Index:     0,
+		Type:      'S',
+		Name:      "avatar",
+		IsRequred: false,
+		Parent:    &chunk,
+	},
+	{
+		ID:        26,
+		MetaID:    4,
+		Index:     1,
+		Type:      'I',
+		Name:      "avatar_id",
+		IsRequred: false,
+		Parent:    &chunk,
+	},
+	{
+		ID:        27,
+		MetaID:    4,
+		Index:     11,
+		Type:      'S',
+		Name:      "profile",
+		IsRequred: true,
+		Parent:    nil,
+	},
+	{
+		ID:        28,
+		MetaID:    4,
+		Index:     12,
+		Type:      'S',
+		Name:      "status",
 		IsRequred: true,
 		Parent:    nil,
 	},
@@ -196,23 +342,19 @@ func GetMeta(packetType int, packetID uint64) *Meta {
 	return m
 }
 
-func GetScheme(metaID int) []*Chunk {
-	result := make([]*Chunk, 0)
-	for _, chunk := range chunks {
-		if chunk.MetaID == metaID {
-			result = append(result, chunk)
-		}
-	}
-	return result
-}
+func GetChunks(metaID int, parent *Chunk) []*Chunk {
 
-func GetSubScheme(chunks []*Chunk, parent *Chunk) []*Chunk {
 	result := make([]*Chunk, 0)
+
 	for _, chunk := range chunks {
-		if chunk.Parent == parent {
+		if chunk.MetaID == metaID && chunk.Parent == parent {
 			result = append(result, chunk)
 		}
 	}
+
+	ss := SortByChunk(result)
+	sort.Sort(ss)
+
 	return result
 }
 
@@ -272,7 +414,9 @@ func (g *Game) End() chan struct{} {
 }
 
 func (g *Game) Close() {
-	g.socket.Close()
+	if g.socket != nil {
+		g.socket.Close()
+	}
 	close(g.end)
 }
 
@@ -303,6 +447,10 @@ func (g *Game) Connect() error {
 }
 
 func (g *Game) ConnectWithProxy(proxy *url.URL) error {
+
+	if proxy == nil {
+		return fmt.Errorf("empty")
+	}
 
 	dialer := websocket.Dialer{
 		HandshakeTimeout: (time.Second * 60),
@@ -383,15 +531,19 @@ func (g *Game) read() {
 			continue
 		}
 
+		_ = msgLen
+		_ = msgID
+
 		packetID, err := leb128.ReadUint(g.r_buffer, 8)
 		if err != nil {
 			//s.emitErrorHandler(err)
 			continue
 		}
 
+		//fmt.Printf("Recv >> packetID: %d,msgID: %d, msgLen: %d, data: %x\n", packetID, msgID, msgLen, g.r_buffer.Bytes())
+
 		g.loop(packetID, g.r_buffer)
 
-		fmt.Printf("Recv >> packetID: %d,msgID: %d, msgLen: %d\n", packetID, msgID, msgLen)
 	}
 
 	fmt.Println("Close")
@@ -408,24 +560,24 @@ func (g *Game) loop(packetID uint64, b *bytes.Buffer) {
 
 	err := g.Unmarshal(packetID, b)
 	if err != nil {
-		// logger
+		fmt.Printf("error: %s\n", err.Error())
 		return
+	} else {
+		fmt.Printf("get packetID: %d, %v\n", packetID, g.s_packet)
 	}
 
-	switch packetID {
-	case 4:
-		fmt.Printf("%v\n", g.s_packet)
-		//g.Close()
-	}
+	// switch packetID {
+	// case 4:
+
+	// 	//g.Close()
+	// }
 }
 
-func (g *Game) Unzip(r io.ByteReader, schemes []*Chunk) error {
+func (g *Game) Unzip(r io.ByteReader, schemes []*Chunk) (map[string]interface{}, error) {
 
 	var value interface{}
+	var value2 map[string]interface{}
 	var err error
-
-	ss := SortByChunk(schemes)
-	sort.Sort(ss)
 
 	for _, chunk := range schemes {
 		switch chunk.Type {
@@ -437,20 +589,44 @@ func (g *Game) Unzip(r io.ByteReader, schemes []*Chunk) error {
 			value, err = leb128.Read(r, chunk.Type)
 		case 'S':
 			value, err = leb128.Read(r, chunk.Type)
+		case 'A':
+			value, err = leb128.Read(r, 'I')
+			schemes2 := GetChunks(chunk.MetaID, chunk)
+			arrLen, ok := value.(int64)
+			if !ok {
+				err = fmt.Errorf("cast error")
+			}
+
+			arr := make([]map[string]interface{}, arrLen)
+
+			for arrLen > 0 {
+				value2, err = g.Unzip(r, schemes2)
+				if err != nil {
+					return nil, fmt.Errorf("")
+				}
+
+				arr = append(arr, value2)
+
+				arrLen--
+			}
+
+			value = arr
 		default:
 			err = fmt.Errorf("unsupported type: %v", chunk.Type)
 		}
 
 		if err != nil {
 			if chunk.IsRequred {
-				return err
+				return value2, err
 			}
 		} else {
-			g.s_packet[chunk.Name] = value
+			if len(chunk.Name) > 0 {
+				g.s_packet[chunk.Name] = value
+			}
 		}
 	}
 
-	return nil
+	return value2, nil
 }
 
 func (g *Game) Unmarshal(packetID uint64, r io.ByteReader) error {
@@ -460,25 +636,26 @@ func (g *Game) Unmarshal(packetID uint64, r io.ByteReader) error {
 	g.s_packet["packet_type"] = 0
 	g.s_packet["packet_id"] = packetID
 
+	if packetID == uint64(5) {
+		fmt.Println(packetID)
+	}
+
 	m := GetMeta(0, packetID)
 	if m == nil {
 		return fmt.Errorf("not found meta for packetID: %d", packetID)
 	}
 
-	schemes := GetScheme(m.ID)
+	schemes := GetChunks(m.ID, nil)
 	if schemes == nil {
 		return fmt.Errorf("not found meta for packetID: %d", packetID)
 	}
-
-	return g.Unzip(r, schemes)
+	_, err := g.Unzip(r, schemes)
+	return err
 }
 
-func (g *Game) Zip(schemes []*Chunk, values map[string]interface{}) error {
+func (g *Game) Zip(chunks []*Chunk, values map[string]interface{}) error {
 
-	ss := SortByChunk(schemes)
-	sort.Sort(ss)
-
-	for _, chunk := range schemes {
+	for _, chunk := range chunks {
 
 		val, ok := values[chunk.Name]
 		if !ok {
@@ -497,8 +674,10 @@ func (g *Game) Zip(schemes []*Chunk, values map[string]interface{}) error {
 			if !ok {
 				return fmt.Errorf("bad sengnature")
 			}
+			// write len of array ???
+			leb128.Write(g.s_buffer, len(arr))
 
-			schemes2 := GetSubScheme(schemes, chunk)
+			schemes2 := GetChunks(chunk.MetaID, chunk)
 			for _, v := range arr {
 				err := g.Zip(schemes2, v)
 				if err != nil {
@@ -530,7 +709,7 @@ func (g *Game) Marshal(values map[string]interface{}) error {
 		return fmt.Errorf("not found meta by packet_id: %d", packetID)
 	}
 
-	schemes := GetScheme(m.ID)
+	schemes := GetChunks(m.ID, nil)
 	if schemes == nil {
 		return fmt.Errorf("not found scheme by packet_id: %d, meta_id: %d", packetID, m.ID)
 	}
