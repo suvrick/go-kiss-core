@@ -4,10 +4,9 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build game.exe",
+            "label": "proto generate",
             "type": "shell",
-            "command": "go build -o=C:\\Users\\suvrick\\game.exe",
-            "problemMatcher": []
+            "command": "protoc --go_out=. --go-grpc_out=. protos/game.proto"
         }
     ]
 }

@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package game;
+
+option go_package="./protos";
+
+service Game {
+    rpc Login(ClientLogin) returns (ServerResponse) {}
+    rpc LoginS(ServerLogin) returns (ServerResponse) {}
+}
+
+message ServerResponse {}
+
+message ClientLogin {
+    uint64 login_id = 1;
+    uint64 net_type = 2;   
+    uint32 device_type = 3; 
+    string key = 4;
+    bool oauth = 5;       
+    string access_token = 6;
+    int32 referrer = 7;
+    int32 tag = 8;
+    uint32 field_int = 9;
+    string field_string = 10;
+    uint32 language = 11;
+    string field_string_two = 12;
+    uint32 gender = 13;
+    string captcha = 14;
+}
+
+message ServerLogin {
+    int32 result = 1;
+    int32 game_id = 2;
+    int32 balance = 3;
+}
+
+message ClientShutdown {}
+
