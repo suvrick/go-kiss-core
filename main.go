@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/suvrick/go-kiss-core/frame"
 	"github.com/suvrick/go-kiss-core/game"
+	"github.com/suvrick/go-kiss-core/packets"
 )
 
 //103786258
@@ -30,21 +30,22 @@ func main() {
 
 func CreateGame() {
 	game := game.NewGame()
-	game.SetStopPacketsID([]int{9})
-	err := game.Connect()
+	err := game.Connect(nil)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
 
 	login := CreateLoginPacket()
-	game.Send(login)
+	game.Send(packets.C_LOGIN, login)
 
 	<-game.End()
 }
 
-func CreateLoginPacket() map[string]interface{} {
-	p := frame.Parse2(urls[4])
-	p["packet_id"] = uint64(4)
-	p["packet_type"] = 1
-	return p
+func CreateLoginPacket() []any {
+	return []any{
+		103786258,
+		32,
+		5,
+		"dc93c8e0c365ca792cf1198ab71c73e7",
+	}
 }

@@ -1,0 +1,20 @@
+[
+    {
+        "type": 0,
+        "id": 4,
+        "name": "LOGIN",
+        "format": "B,IIII[B]IIIISBBIIBS"
+    },
+    {
+        "type": 0,
+        "id": 5,
+        "name": "INFO",
+        "format": "AI,I"
+    },
+    {
+        "type": 1,
+        "id": 4,
+        "name": "LOGIN",
+        "format": "LBBS,BSIIBSBSBS"
+    }
+]
