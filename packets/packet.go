@@ -51,43 +51,94 @@ func NewClientPacket(id ClientPacketType, data []any) ([]byte, error) {
 func marshal(w io.ByteWriter, formats []rune, data []any) error {
 
 	var skip bool
+	var char rune
 	var err error
-	var cPoiner int
+	var cPointer int
+	var dPointer int
+	var isArray bool
 
-	for cPoiner < len(formats) {
+	for cPointer < len(formats) {
 
-		char := formats[cPoiner]
-
-		if cPoiner >= len(data) && !skip {
-			return fmt.Errorf("")
+		if err != nil {
+			if skip {
+				return nil
+			} else {
+				break
+			}
 		}
 
-		value := data[cPoiner]
+		char = formats[cPointer]
 
 		switch char {
 		case ',':
 			skip = true
+			cPointer++
+			continue
 		case '[':
+			isArray = true
+			cPointer++
+			continue
 		case ']':
-		case 'B':
-			err = leb128.Write(w, value)
-		case 'I':
-			err = leb128.Write(w, value)
-		case 'L':
-			err = leb128.Write(w, value)
-		case 'S':
-			err = leb128.Write(w, value)
-		case 'A':
-		default:
-			break
+			isArray = false
+			cPointer++
+			continue
 		}
+
+		if dPointer >= len(data) {
+			err = fmt.Errorf("miss value of index: %d for data: %v", dPointer, data)
+			continue
+		}
+
+		value := data[dPointer]
+
+		if isArray {
+			subFormats := getSubFormat(cPointer, formats)
+			if newData, ok := value.([]interface{}); ok {
+				_ = leb128.Write(w, len(newData))
+				err = marshal(w, subFormats, newData)
+				cPointer += len(subFormats) - 1 //прибавляем вычитанную длину группы
+			} else {
+				err = fmt.Errorf("params %T not cast of slice", value)
+			}
+		} else {
+			switch char {
+			case 'B':
+				err = leb128.Write(w, value)
+			case 'I':
+				err = leb128.Write(w, value)
+			case 'L':
+				err = leb128.Write(w, value)
+			case 'S':
+				err = leb128.Write(w, value)
+			case 'A':
+				// TODO: imnplement for array ...
+			default:
+				err = fmt.Errorf("unsupported code %v", char)
+			}
+		}
+
+		dPointer++
+		cPointer++
 
 	}
 
 	return err
 }
 
-func getValue() (any, bool) {}
+func getSubFormat(index int, formats []rune) []rune {
+	r := make([]rune, 0)
+	for i := index; i < len(formats); i++ {
+		c := formats[i]
+
+		if c == ']' {
+			break
+		}
+
+		r = append(r, c)
+	}
+
+	return r
+}
 
 func NewServerPacket(id ServerPacketType, r io.ByteReader) ([]any, error) {
 	p := getServerScheme(id)
