@@ -94,9 +94,10 @@ func marshal(w io.ByteWriter, formats []rune, data []any) error {
 		if isArray {
 			subFormats := getSubFormat(cPointer, formats)
 			if newData, ok := value.([]interface{}); ok {
-				_ = leb128.Write(w, len(newData))
-				err = marshal(w, subFormats, newData)
-				cPointer += len(subFormats) - 1 //прибавляем вычитанную длину группы
+				if err = leb128.Write(w, len(newData)); err == nil {
+					err = marshal(w, subFormats, newData)
+					cPointer += len(subFormats) - 1 //прибавляем вычитанную длину группы
+				}
 			} else {
 				err = fmt.Errorf("params %T not cast of slice", value)
 			}
@@ -114,6 +115,7 @@ func marshal(w io.ByteWriter, formats []rune, data []any) error {
 				// TODO: imnplement for array ...
 			default:
 				err = fmt.Errorf("unsupported code %v", char)
+				continue
 			}
 		}
 
@@ -127,14 +129,23 @@ func marshal(w io.ByteWriter, formats []rune, data []any) error {
 
 func getSubFormat(index int, formats []rune) []rune {
 	r := make([]rune, 0)
+	dep := 0
 	for i := index; i < len(formats); i++ {
 		c := formats[i]
 
+		if c == '[' {
+			dep++
+		}
+
 		if c == ']' {
-			break
+			dep--
+			if dep == -1 {
+				break
+			}
 		}
 
 		r = append(r, c)
+
 	}
 
 	return r
