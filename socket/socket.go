@@ -22,7 +22,7 @@ var (
 
 // GameSock ...
 type Socket struct {
-	*SocketConfig
+	config *SocketConfig
 
 	rule_close byte
 	client     *websocket.Conn
@@ -31,12 +31,7 @@ type Socket struct {
 
 	wg sync.WaitGroup
 
-	send_chan  chan []byte
-	read_chan  chan []byte
-	error_chan chan error
-
 	openHandle  func()
-	proxyHandle func(proxy *url.URL)
 	closeHandle func(byte, string)
 	readHandle  func(io.Reader)
 	errorHandle func(error)
@@ -60,42 +55,29 @@ var closed_rules = map[byte]string{
 
 func NewSocket(config *SocketConfig) *Socket {
 	return &Socket{
-		SocketConfig: config,
-		wg:           sync.WaitGroup{},
-		rule_close:   255,
-		send_chan:    make(chan []byte),
-		read_chan:    make(chan []byte),
-		error_chan:   make(chan error),
+		config:     config,
+		wg:         sync.WaitGroup{},
+		rule_close: 255,
 	}
 }
 
-func (socket *Socket) Go() {
-	socket.connect()
-	socket.wg.Add(1) // for read
-	go socket.read()
-	go socket.done()
-}
-
-func (socket *Socket) connect() {
+func (socket *Socket) Connection() error {
 
 	dialer := websocket.Dialer{
-		HandshakeTimeout: (socket.ConnectTimeout),
+		HandshakeTimeout: (socket.config.ConnectTimeout),
 	}
 
 	if socket.proxy != nil {
-		if socket.proxyHandle != nil {
-			socket.proxyHandle(socket.proxy)
-		}
 		dialer.Proxy = http.ProxyURL(socket.proxy)
 	}
 
-	client, resp, err := dialer.Dial(socket.Host, socket.Head)
+	client, resp, err := dialer.Dial(socket.config.Host, socket.config.Head)
 
 	if err != nil {
 		socket.setClosedRule(ERROR_CONNECT_CLOSE)
 		if socket.errorHandle != nil {
 			socket.errorHandle(err)
-			return
+			return ErrConnectionFail
 		}
 	}
 
@@ -108,24 +90,25 @@ func (socket *Socket) connect() {
 			if socket.errorHandle != nil {
 				socket.errorHandle(err)
 			}
-			return
+			return ErrConnectionNot101
 		}
 	}
 
 	//Таймаут после которого игра закроется.
-	go socket.timeoutToGame()
-
 	if socket.openHandle != nil {
 		socket.openHandle()
 	}
+
+	socket.wg.Add(1) // for read
+	go socket.timeoutToGame()
+	go socket.read()
+	go socket.done()
+
+	return nil
 }
 
 func (socket *Socket) SetOpenHandler(handler func()) {
 	socket.openHandle = handler
-}
-
-func (socket *Socket) SetProxyHandler(handler func(proxy *url.URL)) {
-	socket.proxyHandle = handler
 }
 
 func (socket *Socket) SetCloseHandler(handler func(rule byte, msg string)) {
@@ -138,10 +121,6 @@ func (socket *Socket) SetReadHandler(handler func(reader io.Reader)) {
 
 func (socket *Socket) SetErrorHandler(handler func(err error)) {
 	socket.errorHandle = handler
-}
-
-func (socket *Socket) SetProxy(p *url.URL) {
-	socket.proxy = p
 }
 
 func (socket *Socket) Send(packet []byte) {
@@ -171,18 +150,13 @@ func (socket *Socket) getCloseRuleMsg() string {
 }
 
 func (socket *Socket) timeoutToGame() {
-	<-time.After(time.Duration(socket.TimeInTheGame) * time.Second)
+	<-time.After(time.Duration(socket.config.TimeInTheGame) * time.Second)
 	socket.setClosedRule(ERROR_TIMEOUT_CLOSE)
 	socket.close_connection()
-	//наверное закрытие по таймауту не является ошибкой
-	// if socket.errorHandle != nil {
-	// 	socket.errorHandle(ErrTimeoutTheGame)
-	// }
 }
 
 func (socket *Socket) done() {
 	socket.wg.Wait()
-	socket.close_chan()
 	if socket.closeHandle != nil {
 		socket.closeHandle(socket.rule_close, socket.getCloseRuleMsg())
 	}
@@ -217,17 +191,6 @@ func (socket *Socket) close_connection() {
 		socket.client.Close()
 		socket.client = nil
 	}
-}
-
-func (socket *Socket) close_chan() {
-	close(socket.error_chan)
-	socket.error_chan = nil
-
-	close(socket.send_chan)
-	socket.send_chan = nil
-
-	close(socket.read_chan)
-	socket.read_chan = nil
 }
 
 func (socket *Socket) setClosedRule(rule byte) {

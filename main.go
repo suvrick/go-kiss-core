@@ -14,7 +14,6 @@ import (
 	"github.com/suvrick/go-kiss-core/frame"
 	"github.com/suvrick/go-kiss-core/game"
 	"github.com/suvrick/go-kiss-core/packets/client"
-	"github.com/suvrick/go-kiss-core/proxy"
 )
 
 //103786258
@@ -53,9 +52,9 @@ func main() {
 	// 	fmt.Printf("write log: off\n")
 	// }
 
-	uu := "https://bottle2.itsrealgames.com/www/vk.html?social_api=vk&type=vk&record_first_session=1&6&api_url=https://api.vk.com/api.php&api_id=1930071&api_settings=8207&viewer_id=95680242&viewer_type=2&sid=4921eb0cd7c7889784f9833c6c4577fd07b6ddc15aa862d3fd307d59fbb6900c1fcc3282353b5d8ef9179&secret=5d754c0d65&access_token=20ba1ae06cbab26b14af359334e71e7226e341c70c1f0f0995faac9cc0e6399e862850ba826d748257958&user_id=95680242&group_id=0&is_app_user=1&auth_key=d3936a1b653517c641e2e9fdae093d27&language=0&parent_language=0&is_secure=1&stats_hash=6e744671f2cea9e1bd&ads_app_id=1930071_6b0928ee3c2621bd14&referrer=unknown&lc_name=67c77d2f&platform=web&hash="
+	//uu := "https://bottle2.itsrealgames.com/www/vk.html?social_api=vk&type=vk&record_first_session=1&6&api_url=https://api.vk.com/api.php&api_id=1930071&api_settings=8207&viewer_id=95680242&viewer_type=2&sid=4921eb0cd7c7889784f9833c6c4577fd07b6ddc15aa862d3fd307d59fbb6900c1fcc3282353b5d8ef9179&secret=5d754c0d65&access_token=20ba1ae06cbab26b14af359334e71e7226e341c70c1f0f0995faac9cc0e6399e862850ba826d748257958&user_id=95680242&group_id=0&is_app_user=1&auth_key=d3936a1b653517c641e2e9fdae093d27&language=0&parent_language=0&is_secure=1&stats_hash=6e744671f2cea9e1bd&ads_app_id=1930071_6b0928ee3c2621bd14&referrer=unknown&lc_name=67c77d2f&platform=web&hash="
 
-	url = &uu
+	url = &urls[9]
 
 	Run()
 
@@ -72,10 +71,13 @@ func Run() {
 
 		fmt.Println("parse frame: OK")
 
-		p := proxy.GetDefaultProxy()
+		game := game.NewGameDefault()
+		err = game.Connection()
+		if err != nil {
+			fmt.Println("game connect: FAIL")
+			return
+		}
 
-		game := game.NewGameWithProxyDefault(p.URL)
-		game.Run()
 		game.LoginSend(&client.Login{
 			ID:          frameDTO.ID,
 			NetType:     frameDTO.NetType,
@@ -121,9 +123,9 @@ func Run() {
 		return
 	}
 
-	if *path != "" {
-		Do()
-	}
+	// if *path != "" {
+	// 	Do()
+	// }
 }
 
 func Do() {
@@ -148,7 +150,7 @@ func Do() {
 				wg.Done()
 			}()
 			game := game.NewGameDefault()
-			game.Run()
+			game.Connection()
 			game.LoginSend(&l)
 
 			// buy := &client.Buy{

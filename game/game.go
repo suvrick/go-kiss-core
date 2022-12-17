@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/suvrick/go-kiss-core/bot"
+	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/packets/client"
-	"github.com/suvrick/go-kiss-core/packets/leb128"
 	"github.com/suvrick/go-kiss-core/packets/server"
 	"github.com/suvrick/go-kiss-core/socket"
 )
@@ -56,21 +56,18 @@ func NewGame(config *GameConfig) *Game {
 	return &game
 }
 
-func NewGameWithProxy(config *GameConfig, proxy *url.URL) *Game {
-	game := NewGame(config)
-	game.socket.SetProxy(proxy)
-	return game
-}
-
 // return game instance with deault configure
 func NewGameDefault() *Game {
 	config := GetDefaultGameConfig()
 	return NewGame(config)
 }
 
-func NewGameWithProxyDefault(proxy *url.URL) *Game {
-	config := GetDefaultGameConfig()
-	return NewGameWithProxy(config, proxy)
+func (g *Game) Connection() error {
+	return g.socket.Connection()
+}
+
+func (g *Game) ConnectionWithProxy(proxy *url.URL) error {
+	return g.socket.Connection()
 }
 
 func (game *Game) LoginSend(login *client.Login) {
@@ -98,10 +95,6 @@ func (game *Game) OpenHandler() {
 	game.Log("open connection.")
 }
 
-func (game *Game) ProxyHandler(proxy *url.URL) {
-	game.Logf("set proxy connection %s.", &proxy.Host)
-}
-
 func (game *Game) CloseHandler(rule byte, msg string) {
 	game.Logf("game over. %s", msg)
 	game.Done <- *game.bot
@@ -115,17 +108,28 @@ func (game *Game) ErrorHandler(err error) {
 
 func (game *Game) ReadHandler(reader io.Reader) {
 
-	leb128.ReadInt(reader, 32)
-
-	leb128.ReadInt(reader, 32)
-
-	t, err := leb128.ReadUint(reader, 16)
+	//read packetLen
+	_, err := leb128.ReadUint(reader, 32)
 	if err != nil {
 		game.Logf(err.Error())
 		return
 	}
 
-	packetType := server.PacketServerType(t)
+	//read packetIndex
+	_, err = leb128.ReadUint(reader, 32)
+	if err != nil {
+		game.Logf(err.Error())
+		return
+	}
+
+	// read packetID
+	packetID, err := leb128.ReadUint(reader, 32)
+	if err != nil {
+		game.Logf(err.Error())
+		return
+	}
+
+	packetType := server.PacketServerType(packetID)
 	switch packetType {
 	case server.LOGIN:
 		game.Login(reader)
@@ -143,8 +147,6 @@ func (game *Game) ReadHandler(reader io.Reader) {
 		game.CollectionsPoints(reader)
 	case server.REWARD_GOT:
 		game.RewardGot(reader)
-	default:
-		return
 	}
 }
 
@@ -161,9 +163,9 @@ func (game *Game) Send(packType client.PacketClientType, packet interface{}) {
 	}
 
 	data := make([]byte, 0)
-	data = leb128.AppendInt(data, int64(game.msgID)) // message ID
-	data = leb128.AppendUint(data, uint64(packType)) // packet type
-	data = leb128.AppendUint(data, uint64(6))        //device
+	data = leb128.AppendInt(data, int64(game.msgID)) // messageID
+	data = leb128.AppendUint(data, uint64(packType)) // packetID
+	data = leb128.AppendUint(data, uint64(5))        //device
 	data = append(data, pack...)
 
 	data_len := make([]byte, 0)
@@ -173,10 +175,6 @@ func (game *Game) Send(packType client.PacketClientType, packet interface{}) {
 	game.LogSendPacket(packet)
 	game.socket.Send(data_len)
 	atomic.AddInt64(&game.msgID, 1)
-}
-
-func (game *Game) Run() {
-	game.socket.Go()
 }
 
 func (game *Game) LogErrorPacket(p any, err error) {
