@@ -6,23 +6,23 @@ const INFO PacketServerType = 5
 type Info struct {
 	ArrLen    int
 	ItemCount uint16
-	GameID    uint64
-	LoginID   uint64
-	NetType   byte
+	GameID    int64
+	LoginID   int64
+	NetType   int8
 	Name      string
-	Sex       byte
+	Sex       int8
 	Tag       int
 	Referrer  int
 	Ddate     int
 	Avatar    string
-	AvatarID  byte
+	AvatarID  int8
 	Profile   string
 	Status    string
 }
 
 type Avatar struct {
 	Avatar   string
-	AvatarID byte
+	AvatarID int8
 }
 
 /*

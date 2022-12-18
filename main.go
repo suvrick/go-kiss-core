@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/suvrick/go-kiss-core/frame"
 	"github.com/suvrick/go-kiss-core/packets/client"
@@ -26,6 +27,10 @@ var urls = []string{
 	"view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=103786258&viewerId=103786258&isAppUser=1&isAppWidgetUser=0&sessionKey=5d09db98a83f25ff3885114f725c651022ee76138454ff&authKey=dc93c8e0c365ca792cf1198ab71c73e7&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1569558375&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?158&width=1000&height=690&sprites_version=83&useApiType=fs&",
 }
 
+var selfID int64
+
+var tototo93 int64 = 22132982
+
 func main() {
 
 	game := socket.NewSocket(socket.GetDefaultSocketConfig())
@@ -40,7 +45,7 @@ func main() {
 		return
 	}
 
-	game.Send(client.LOGIN, GetLoginPacket())
+	game.Send(client.LOGIN, GetLoginPacket(2))
 
 	game.Wait()
 }
@@ -50,7 +55,58 @@ func errorHandler(game *socket.Socket, err error) {
 }
 
 func readHandler(game *socket.Socket, ID server.PacketServerType, packet interface{}) {
-	game.Log(fmt.Sprintf("[read] %v", packet))
+
+	game.Log(fmt.Sprintf("[read] %#v", packet))
+
+	switch ID {
+	case server.LOGIN:
+		p := packet.(*server.Login)
+		switch p.Result {
+		case server.Success:
+
+			selfID = p.GameID
+
+			game.Log("[read] game successed!")
+			// game.Send(client.BOTTLE_PLAY, &client.BottlePlay{ByteField: 0, ByteField2: 0})
+			game.Send(client.MOVE, &client.Move{PlayerID: tototo93, ByteField: 0})
+		default:
+			game.Close()
+		}
+	case server.BONUS:
+		p := packet.(*server.Bonus)
+		if p.CanCollect {
+			game.Send(client.BONUS, &client.Bonus{})
+		}
+	case server.REWARDS:
+		p := packet.(*server.Rewards)
+		for _, reward := range p.Rewards {
+			if reward.Count > 0 {
+				game.Send(client.GAME_REWARDS_GET, &client.GameRewardsGet{
+					RewardID: reward.ID,
+				})
+				break
+			}
+		}
+	case server.BOTTLE_LEADER:
+		p := packet.(*server.BottleLeader)
+		if p.LeaderID == selfID {
+			game.Log("I am leader!")
+			<-time.After(time.Second * 5)
+			game.Log("Roll bottle!")
+			game.Send(client.BOTTLE_ROLL, &client.BottleRoll{
+				IntField: 10,
+			})
+		}
+	case server.BOTTLE_ROLL:
+		p := packet.(*server.BottleRoll)
+		if p.LeaderID == selfID || p.RollerID == selfID {
+			game.Log("I am leader or rollerID!")
+			<-time.After(time.Second * 5)
+			game.Send(client.BOTTLE_KISS, &client.BottleKiss{
+				ByteField: 1,
+			})
+		}
+	}
 }
 
 func openHandler(game *socket.Socket) {
@@ -61,10 +117,10 @@ func closeHandler(game *socket.Socket, rule byte, caption string) {
 	game.Log(fmt.Sprintf("[close] game socket close by %s", caption))
 }
 
-func GetLoginPacket() *client.Login {
+func GetLoginPacket(index int) *client.Login {
 
 	fm := frame.New()
-	frameDTO, err := fm.Parse(urls[9])
+	frameDTO, err := fm.Parse(urls[index])
 	if err != nil {
 		return nil
 	}

@@ -5,7 +5,7 @@ const LOGIN PacketServerType = 4
 // LOGIN(4) "B,II"
 type Login struct {
 	Result  LoginResultType `pack:"skip"`
-	GameID  uint64
+	GameID  int64
 	Balance int
 }
 

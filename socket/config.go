@@ -28,6 +28,6 @@ func GetDefaultSocketConfig() *SocketConfig {
 			},
 		},
 		Logger:        log.New(os.Stdout, "", log.Ltime|log.Lshortfile),
-		TimeInTheGame: 5,
+		TimeInTheGame: 7775,
 	}
 }

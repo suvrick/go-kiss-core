@@ -3,6 +3,7 @@ package socket
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -128,6 +129,8 @@ func (socket *Socket) SetErrorHandler(handler func(socket *Socket, err error)) {
 
 func (socket *Socket) Send(packetID client.PacketClientType, packet interface{}) {
 
+	socket.Log(fmt.Sprintf("[send] %#v", packet))
+
 	if socket.client == nil {
 		if socket.errorHandle != nil {
 			socket.errorHandle(socket, ErrConnectionFail)
@@ -181,11 +184,11 @@ func (socket *Socket) Wait() {
 func (socket *Socket) loop() {
 
 	defer func() {
-		// if recover() != nil {
-		// 	if socket.errorHandle != nil {
-		// 		socket.errorHandle(socket, fmt.Errorf("catch recover from loop"))
-		// 	}
-		// }
+		if r := recover(); r != nil {
+			if socket.errorHandle != nil {
+				socket.errorHandle(socket, fmt.Errorf("catch recover from loop. %v", r))
+			}
+		}
 	}()
 
 	for socket.client != nil {
@@ -244,16 +247,34 @@ func (socket *Socket) read(reader io.Reader) {
 		packet = &server.Info{}
 	case server.BALANCE:
 		packet = &server.Balance{}
+	case server.CONTEST_ITEMS:
+		packet = &server.ContestItems{}
 	case server.BONUS:
 		packet = &server.Bonus{}
 	case server.REWARDS:
 		packet = &server.Rewards{}
 	case server.BALANCE_ITEMS:
-		packet = &server.BalanceItem{}
+		packet = &server.BalanceItems{}
 	case server.COLLECTIONS_POINTS:
 		packet = &server.CollectionsPoints{}
 	case server.REWARD_GOT:
 		packet = &server.RewardGot{}
+	case server.BOTTLE_PLAY_DENIED:
+		packet = &server.BottlePlayDenied{}
+	case server.BOTTLE_ROOM:
+		packet = &server.BottleRoom{}
+	case server.BOTTLE_JOIN:
+		packet = &server.BottleJoin{}
+	case server.BOTTLE_LEAVE:
+		packet = &server.BottleLeave{}
+	case server.BOTTLE_LEADER:
+		packet = &server.BottleLeader{}
+	case server.BOTTLE_ROLL:
+		packet = &server.BottleRoll{}
+	case server.BOTTLE_KISS:
+		packet = &server.BottleKiss{}
+	case server.BOTTLE_ENTER:
+		packet = &server.BottleEnter{}
 	}
 
 	if packet != nil {
