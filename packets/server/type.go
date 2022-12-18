@@ -3,10 +3,6 @@ package server
 type PacketServerType uint16
 type LoginResultType uint16
 
-type ServerPacket struct {
-	ID PacketServerType
-}
-
 /*
 	NULL = 0,
 	HELLO = 1,

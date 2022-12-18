@@ -3,6 +3,7 @@ package socket
 import (
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -26,7 +27,7 @@ func GetDefaultSocketConfig() *SocketConfig {
 				"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
 			},
 		},
-		Logger:        log.Default(),
+		Logger:        log.New(os.Stdout, "", log.Ltime|log.Lshortfile),
 		TimeInTheGame: 5,
 	}
 }

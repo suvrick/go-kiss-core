@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/suvrick/go-kiss-core/leb128"
+	"github.com/suvrick/go-kiss-core/packets/client"
+	"github.com/suvrick/go-kiss-core/packets/server"
 )
 
 var (
@@ -22,19 +25,18 @@ var (
 
 // GameSock ...
 type Socket struct {
-	config *SocketConfig
+	config      *SocketConfig
+	packetIndex uint64
+	rule_close  byte
+	client      *websocket.Conn
+	logger      *log.Logger
+	proxy       *url.URL
+	done        chan struct{}
 
-	rule_close byte
-	client     *websocket.Conn
-
-	proxy *url.URL
-
-	wg sync.WaitGroup
-
-	openHandle  func()
-	closeHandle func(byte, string)
-	readHandle  func(io.Reader)
-	errorHandle func(error)
+	openHandle  func(sender *Socket)
+	closeHandle func(sender *Socket, rule byte, caption string)
+	readHandle  func(sender *Socket, packetID server.PacketServerType, packet interface{})
+	errorHandle func(sender *Socket, err error)
 }
 
 const (
@@ -56,9 +58,13 @@ var closed_rules = map[byte]string{
 func NewSocket(config *SocketConfig) *Socket {
 	return &Socket{
 		config:     config,
-		wg:         sync.WaitGroup{},
+		done:       make(chan struct{}),
 		rule_close: 255,
 	}
+}
+
+func (s *Socket) Log(msg string) {
+	s.config.Logger.Println(msg)
 }
 
 func (socket *Socket) Connection() error {
@@ -76,7 +82,7 @@ func (socket *Socket) Connection() error {
 	if err != nil {
 		socket.setClosedRule(ERROR_CONNECT_CLOSE)
 		if socket.errorHandle != nil {
-			socket.errorHandle(err)
+			socket.errorHandle(socket, err)
 			return ErrConnectionFail
 		}
 	}
@@ -88,61 +94,196 @@ func (socket *Socket) Connection() error {
 			socket.setClosedRule(ERROR_CONNECT_CLOSE)
 			// При корректном открытии ws соединения, код должен быть 101
 			if socket.errorHandle != nil {
-				socket.errorHandle(err)
+				socket.errorHandle(socket, err)
 			}
 			return ErrConnectionNot101
 		}
 	}
 
-	//Таймаут после которого игра закроется.
 	if socket.openHandle != nil {
-		socket.openHandle()
+		socket.openHandle(socket)
 	}
 
-	socket.wg.Add(1) // for read
 	go socket.timeoutToGame()
-	go socket.read()
-	go socket.done()
+	go socket.loop()
 
 	return nil
 }
 
-func (socket *Socket) SetOpenHandler(handler func()) {
+func (socket *Socket) SetOpenHandler(handler func(*Socket)) {
 	socket.openHandle = handler
 }
 
-func (socket *Socket) SetCloseHandler(handler func(rule byte, msg string)) {
+func (socket *Socket) SetCloseHandler(handler func(sender *Socket, rule byte, msg string)) {
 	socket.closeHandle = handler
 }
 
-func (socket *Socket) SetReadHandler(handler func(reader io.Reader)) {
+func (socket *Socket) SetReadHandler(handler func(*Socket, server.PacketServerType, interface{})) {
 	socket.readHandle = handler
 }
 
-func (socket *Socket) SetErrorHandler(handler func(err error)) {
+func (socket *Socket) SetErrorHandler(handler func(socket *Socket, err error)) {
 	socket.errorHandle = handler
 }
 
-func (socket *Socket) Send(packet []byte) {
+func (socket *Socket) Send(packetID client.PacketClientType, packet interface{}) {
 
 	if socket.client == nil {
-		socket.errorHandle(ErrConnectionFail)
+		if socket.errorHandle != nil {
+			socket.errorHandle(socket, ErrConnectionFail)
+		}
 		return
 	}
 
-	err := socket.client.WriteMessage(websocket.BinaryMessage, packet)
+	pack, err := leb128.Marshal(packet)
+	if err != nil {
+		if socket.errorHandle != nil {
+			socket.errorHandle(socket, err)
+		}
+		return
+	}
 
+	data := make([]byte, 0)
+	data = leb128.AppendInt(data, int64(socket.packetIndex)) // messageID
+	data = leb128.AppendUint(data, uint64(packetID))         // packetID
+	data = leb128.AppendUint(data, uint64(5))                //device
+	data = append(data, pack...)
+
+	data_len := make([]byte, 0)
+	data_len = leb128.AppendInt(data_len, int64(len(data))) // packet len
+	data_len = append(data_len, data...)
+
+	err = socket.client.WriteMessage(websocket.BinaryMessage, data_len)
 	if err != nil {
 		socket.setClosedRule(ERROR_SEND_CLOSE)
 		if socket.errorHandle != nil {
-			socket.errorHandle(err)
+			socket.errorHandle(socket, err)
 		}
 	}
+
+	socket.packetIndex++
 }
 
 func (socket *Socket) Close() {
 	socket.setClosedRule(NORMAL_CLOSE)
 	socket.close_connection()
+}
+
+func (socket *Socket) Wait() {
+	defer func() {
+		if socket.closeHandle != nil {
+			socket.closeHandle(socket, socket.rule_close, socket.getCloseRuleMsg())
+		}
+	}()
+	<-socket.done
+}
+
+func (socket *Socket) loop() {
+
+	defer func() {
+		// if recover() != nil {
+		// 	if socket.errorHandle != nil {
+		// 		socket.errorHandle(socket, fmt.Errorf("catch recover from loop"))
+		// 	}
+		// }
+	}()
+
+	for socket.client != nil {
+
+		_, msg, err := socket.client.ReadMessage()
+
+		if err != nil {
+			socket.setClosedRule(ERROR_READ_CLOSE)
+			if socket.errorHandle != nil {
+				socket.errorHandle(socket, err)
+			}
+			break
+		}
+
+		socket.read(bytes.NewReader(msg))
+	}
+}
+
+func (socket *Socket) read(reader io.Reader) {
+
+	//read packetLen
+	_, err := leb128.ReadUint(reader, 32)
+	if err != nil {
+		if socket.errorHandle != nil {
+			socket.errorHandle(socket, err)
+		}
+		return
+	}
+
+	//read packetIndex
+	_, err = leb128.ReadUint(reader, 32)
+	if err != nil {
+		if socket.errorHandle != nil {
+			socket.errorHandle(socket, err)
+		}
+		return
+	}
+
+	// read packetID
+	ID, err := leb128.ReadUint(reader, 32)
+	if err != nil {
+		if socket.errorHandle != nil {
+			socket.errorHandle(socket, err)
+		}
+		return
+	}
+
+	var packet interface{}
+
+	packetID := server.PacketServerType(ID)
+
+	switch packetID {
+	case server.LOGIN:
+		packet = &server.Login{}
+	case server.INFO:
+		packet = &server.Info{}
+	case server.BALANCE:
+		packet = &server.Balance{}
+	case server.BONUS:
+		packet = &server.Bonus{}
+	case server.REWARDS:
+		packet = &server.Rewards{}
+	case server.BALANCE_ITEMS:
+		packet = &server.BalanceItem{}
+	case server.COLLECTIONS_POINTS:
+		packet = &server.CollectionsPoints{}
+	case server.REWARD_GOT:
+		packet = &server.RewardGot{}
+	}
+
+	if packet != nil {
+		err = leb128.Unmarshal(reader, packet)
+		if err != nil {
+			if socket.errorHandle != nil {
+				socket.errorHandle(socket, err)
+			}
+			return
+		}
+
+		if socket.readHandle != nil {
+			socket.readHandle(socket, packetID, packet)
+		}
+	}
+}
+
+func (socket *Socket) close_connection() {
+	if socket.client != nil {
+		socket.client.Close()
+		socket.client = nil
+	}
+
+	close(socket.done)
+}
+
+func (socket *Socket) setClosedRule(rule byte) {
+	if socket.rule_close == 255 {
+		socket.rule_close = rule
+	}
 }
 
 func (socket *Socket) getCloseRuleMsg() string {
@@ -153,48 +294,4 @@ func (socket *Socket) timeoutToGame() {
 	<-time.After(time.Duration(socket.config.TimeInTheGame) * time.Second)
 	socket.setClosedRule(ERROR_TIMEOUT_CLOSE)
 	socket.close_connection()
-}
-
-func (socket *Socket) done() {
-	socket.wg.Wait()
-	if socket.closeHandle != nil {
-		socket.closeHandle(socket.rule_close, socket.getCloseRuleMsg())
-	}
-}
-
-func (socket *Socket) read() {
-
-	defer func() {
-		socket.wg.Done()
-	}()
-
-	for socket.client != nil {
-
-		_, msg, err := socket.client.ReadMessage()
-
-		if err != nil {
-			socket.setClosedRule(ERROR_READ_CLOSE)
-			if socket.errorHandle != nil {
-				socket.errorHandle(err)
-			}
-			break
-		}
-
-		if socket.readHandle != nil {
-			socket.readHandle(bytes.NewReader(msg))
-		}
-	}
-}
-
-func (socket *Socket) close_connection() {
-	if socket.client != nil {
-		socket.client.Close()
-		socket.client = nil
-	}
-}
-
-func (socket *Socket) setClosedRule(rule byte) {
-	if socket.rule_close == 255 {
-		socket.rule_close = rule
-	}
 }

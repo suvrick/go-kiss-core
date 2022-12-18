@@ -34,7 +34,7 @@ type Bot struct {
 	//Rewards
 	Rewards []server.Reward `json:"rewards"`
 	// BalanceItems
-	BalanceItems []server.BalanceItem `json:"balance_items"`
+	BalanceItems []server.BalanceItem `json:"-"`
 
 	CollectionsPoints uint16 `json:"collections_points"`
 

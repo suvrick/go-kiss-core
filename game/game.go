@@ -17,19 +17,14 @@ import (
 type Game struct {
 	socket *socket.Socket
 	msgID  int64
-	Done   chan bot.Bot
-
-	/* packets */
-	login *client.Login
-	buy   *client.Buy
-
-	bot *bot.Bot
+	done   chan struct{}
+	bot    *bot.Bot
 }
 
 func NewGame(config *GameConfig) *Game {
 
 	game := Game{
-		Done:  make(chan bot.Bot),
+		done:  make(chan struct{}),
 		msgID: 0,
 		bot: &bot.Bot{
 			Time:           time.Now(),
@@ -70,34 +65,13 @@ func (g *Game) ConnectionWithProxy(proxy *url.URL) error {
 	return g.socket.Connection()
 }
 
-func (game *Game) LoginSend(login *client.Login) {
-
-	if game.login == nil {
-		game.login = login
-
-		game.bot.ID = GetBotID(login)
-	}
-
-	game.Send(client.LOGIN, game.login)
-}
-
-func (game *Game) SetBuyPacket(buy *client.Buy) {
-	game.buy = buy
-}
-
-func (game *Game) BuySend() {
-	if game.buy != nil {
-		game.Send(client.BUY, game.buy)
-	}
-}
-
 func (game *Game) OpenHandler() {
 	game.Log("open connection.")
 }
 
 func (game *Game) CloseHandler(rule byte, msg string) {
 	game.Logf("game over. %s", msg)
-	game.Done <- *game.bot
+	close(game.done)
 }
 
 func (game *Game) ErrorHandler(err error) {
@@ -152,6 +126,10 @@ func (game *Game) ReadHandler(reader io.Reader) {
 
 func (game *Game) GameOver() {
 	game.socket.Close()
+}
+
+func (game *Game) Done() chan struct{} {
+	return game.done
 }
 
 func (game *Game) Send(packType client.PacketClientType, packet interface{}) {

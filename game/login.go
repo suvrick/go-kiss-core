@@ -37,7 +37,7 @@ func (game *Game) Login(reader io.Reader) {
 		//game.BuySend()
 
 	case server.Exist:
-		game.LoginSend(nil)
+		// game.LoginSend(nil)
 	default:
 		game.GameOver()
 	}
