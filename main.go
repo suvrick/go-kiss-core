@@ -63,12 +63,9 @@ func readHandler(game *socket.Socket, ID server.PacketServerType, packet interfa
 		p := packet.(*server.Login)
 		switch p.Result {
 		case server.Success:
-
 			selfID = p.GameID
-
-			game.Log("[read] game successed!")
-			// game.Send(client.BOTTLE_PLAY, &client.BottlePlay{ByteField: 0, ByteField2: 0})
-			game.Send(client.MOVE, &client.Move{PlayerID: tototo93, ByteField: 0})
+			game.Send(client.BOTTLE_PLAY, &client.BottlePlay{RoomID: 0, LangID: 0})
+			//game.Send(client.MOVE, &client.Move{PlayerID: tototo93, ByteField: 0})
 		default:
 			game.Close()
 		}
