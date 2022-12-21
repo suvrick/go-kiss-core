@@ -6,20 +6,23 @@ const INFO PacketServerType = 5
 
 // INFO(5) "BB"
 type Info struct {
-	ArrLen    types.I
-	ItemCount types.I
-	GameID    types.I
-	LoginID   types.I
-	NetType   types.B
-	Name      types.S
-	Sex       types.B
-	Tag       types.I
-	Referrer  types.I
-	Ddate     types.I
-	Avatar    types.S
-	AvatarID  types.B
-	Profile   types.S
-	Status    types.S
+	ArrLen  types.I
+	Players []PlayerInfo
+}
+
+type PlayerInfo struct {
+	GameID   types.I
+	LoginID  types.I
+	NetType  types.B
+	Name     types.S
+	Sex      types.B
+	Tag      types.I
+	Referrer types.I
+	Ddate    types.I
+	Avatar   types.S
+	AvatarID types.B
+	Profile  types.S
+	Status   types.S
 }
 
 type Avatar struct {

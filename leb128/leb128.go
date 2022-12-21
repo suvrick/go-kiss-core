@@ -127,6 +127,7 @@ func unmarshal(reader io.Reader, value reflect.Value) error {
 		}
 	default:
 	}
+
 	return nil
 }
 
@@ -189,19 +190,19 @@ func marshal(v reflect.Value) ([]byte, error) {
 			err = ErrMarshalClientPacket
 		}
 	case reflect.Int:
-		if i, ok := v.Interface().(int); ok {
+		if i, ok := v.Interface().(types.I); ok {
 			result = AppendInt(result, int64(i))
 		} else {
 			err = ErrMarshalClientPacket
 		}
 	case reflect.Uint:
-		if i, ok := v.Interface().(uint); ok {
+		if i, ok := v.Interface().(types.I); ok {
 			result = AppendUint(result, uint64(i))
 		} else {
 			err = ErrMarshalClientPacket
 		}
 	case reflect.Int32:
-		if i, ok := v.Interface().(int32); ok {
+		if i, ok := v.Interface().(types.I); ok {
 			result = AppendInt(result, int64(i))
 		} else {
 			err = ErrMarshalClientPacket
@@ -242,13 +243,10 @@ func marshal(v reflect.Value) ([]byte, error) {
 
 			val := v.Index(i)
 
-			var res []byte
-
-			switch val.Kind() {
-			case reflect.Uint64:
-				res = AppendUint(res, val.Interface().(uint64))
+			res, _err := marshal(val)
+			if err != nil {
+				return nil, _err
 			}
-
 			result = append(result, res...)
 		}
 	case reflect.Struct:

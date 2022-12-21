@@ -59,7 +59,7 @@ func errorHandler(game *socket.Socket, err error) {
 
 func readHandler(game *socket.Socket, ID server.PacketServerType, packet interface{}) {
 
-	game.Log(fmt.Sprintf("[read] %+v", packet))
+	game.Log(fmt.Sprintf("[read] %T %+v", packet, packet))
 
 	switch ID {
 	case server.LOGIN:
@@ -68,7 +68,7 @@ func readHandler(game *socket.Socket, ID server.PacketServerType, packet interfa
 		case server.Success:
 			selfID = p.GameID
 			game.Send(client.BOTTLE_PLAY, &client.BottlePlay{RoomID: 0, LangID: 0})
-			//game.Send(client.MOVE, &client.Move{PlayerID: tototo93, ByteField: 0})
+			game.Send(client.MOVE, &client.Move{PlayerID: types.I(tototo93), ByteField: 0})
 		default:
 			game.Close()
 		}
@@ -86,6 +86,14 @@ func readHandler(game *socket.Socket, ID server.PacketServerType, packet interfa
 				})
 				break
 			}
+		}
+	case server.BOTTLE_ROOM:
+		p := packet.(*server.BottleRoom)
+		for _, id := range p.Players {
+			game.Send(client.REQUEST, &client.Request{
+				Players: []types.I{id},
+				ID:      1114252,
+			})
 		}
 	case server.BOTTLE_LEADER:
 		p := packet.(*server.BottleLeader)

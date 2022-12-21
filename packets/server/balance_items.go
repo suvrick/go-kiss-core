@@ -10,13 +10,15 @@ type BalanceItems struct {
 }
 
 type BalanceItem struct {
-	BalanceType types.B
+	BalanceType BalanceType
 	A           types.I
 	B           types.I
 }
 
-func (b BalanceItem) String() string {
-	switch b.BalanceType {
+type BalanceType types.B
+
+func (b BalanceType) String() string {
+	switch b {
 	case 0:
 		return "Kicks"
 	case 1:
