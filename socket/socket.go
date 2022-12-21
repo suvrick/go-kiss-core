@@ -275,6 +275,10 @@ func (socket *Socket) read(reader io.Reader) {
 		packet = &server.BottleKiss{}
 	case server.BOTTLE_ENTER:
 		packet = &server.BottleEnter{}
+	case server.CHAT_MESSAGE:
+		packet = &server.ChatMessage{}
+	case server.CHAT_WHISPER:
+		packet = &server.ChatWhisper{}
 	}
 
 	if packet != nil {

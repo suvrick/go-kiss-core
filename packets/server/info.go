@@ -6,23 +6,27 @@ const INFO PacketServerType = 5
 
 // INFO(5) "BB"
 type Info struct {
-	ArrLen  types.I
+	ArrLen types.I
+	//ArrLen2 types.I
 	Players []PlayerInfo
 }
 
+const INFOMASK types.I = 328588
+
+//ISBSBBIIBIBIIBBIII
 type PlayerInfo struct {
-	GameID   types.I
-	LoginID  types.I
-	NetType  types.B
-	Name     types.S
-	Sex      types.B
-	Tag      types.I
-	Referrer types.I
-	Ddate    types.I
-	Avatar   types.S
-	AvatarID types.B
-	Profile  types.S
-	Status   types.S
+	GameID types.I
+	//NetType  types.B
+	Name types.S
+	Sex  types.B
+	//Tag      types.I
+	//Referrer types.I
+	//Ddate    types.I
+	Avatar  Avatar
+	Profile types.S
+	Status  types.S
+	Vip     types.B
+	Kisses  Kiss
 }
 
 type Avatar struct {
@@ -30,62 +34,42 @@ type Avatar struct {
 	AvatarID types.B
 }
 
+type Kiss struct {
+	IntField  types.I
+	IntField2 types.I
+}
+
 /*
-	nid?: string; // PlayerInfoParser.NET_ID; [I;
-	abstract type: NetType; // PlayerInfoParser.TYPE; [B;
-	name?: string; // PlayerInfoParser.NAME; [S;
-	sex?: Gender; // PlayerInfoParser.SEX; [B;
-	tag?: number; // PlayerInfoParser.TAG; [I;
-	referrer?: number; // PlayerInfoParser.REFERRER; [I;
-	bdate?: number; // PlayerInfoParser.BDAY; [I;
-	avatar?: string; // PlayerInfoParser.PHOTO; [SB;
-	avatar_status?: number;
-	profile?: string; // PlayerInfoParser.PROFILE; [S;
-	status?: string; // PlayerInfoParser.STATUS; [S;
-	countryId?: number; // PlayerInfoParser.COUNTRY_ID; [B;
-	online?: boolean; // PlayerInfoParser.ONLINE; [B;
-	admirer_id?: number; // PlayerInfoParser.ADMIRER_ID; [I;
-	admirer_price?: number; // PlayerInfoParser.ADMIRER_PRICE; [I;
-	admirer_time_finish?: number; // PlayerInfoParser.ADMIRER_LEFT; [I; it is timestamp
-	views?: number; // PlayerInfoParser.VIEWS; [I;
-	vip?: number; // PlayerInfoParser.IS_VIP; [B;
-	color?: number; // PlayerInfoParser.COLOR; [B;
-	kisses?: number; // PlayerInfoParser.KISSES; [II;
-	gifts?: number; // PlayerInfoParser.GIFTS; [II;
-	kisses_today?: number;
-	gifts_today?: number;
-	lastGifts?: [ number, number, number ][]; // PlayerInfoParser.PLAYER_GIFTS; ["[IIBI]"; // [source_id:I; gift_id:I; time:I]
-	device?: DeviceType; // PlayerInfoParser.DEVICE; [B;
-	wedding_id?: number; // PlayerInfoParser.WEDDING_ID; [I;
-	achievements?: [ number, number, number ][]; // PlayerInfoParser.ACHIEVEMENTS; ["[III]";
-	collections?: [ number, number ][]; // PlayerInfoParser.COLLECTIONS_SETS; ["[BI]";
-	avatar_id?: number; // PlayerInfoParser.AVATAR_ID; [B;
-	rights?: number; // PlayerInfoParser.RIGHTS; [B;
-	register_time?: number; // PlayerInfoParser.REGISTER_TIME; [I;
-	logout_time?: number; // PlayerInfoParser.LOGOUT_TIME; [I;
-	photos?: string[]; // PlayerInfoParser.PHOTOS; ["[S][B]";
-	photos_statuses?: PhotoStatus[];
-	frame_id?: number; // PlayerInfoParser.VIP_FRAM
-	mask 2
-	bridals_place?: number;
-	wedlocks_place?: number;
-	is_popular?: number;
-	rich_place?: number;
-	views_place?: number; // PlayerInfoParser.RATING_PLACES; [IIBBI;
-	level?: number; // PlayerInfoParser.LEVEL; [I;
-	ability_expire?: number;
-	ability_type?: number;	// PlayerInfoParser.ABILITY_EXPIRE, ["IB", "ability_expire, ability_type"]]
-	rolls_rewarded?: number; // PlayerInfoParser.ROLLS_REWARDED, ["B", "rolls_rewarded"]]
-	subscribe_past_days?: number; // PlayerInfoParser.SUBSCRIBE_PAST_DAYS, ["I", "subscribe_past_days"]]
-	vip_days_left?: number;
-	vip_trial_used?: number;
-	league?: number;
-	league_common_points?: number;
-	league_group_id?: number;
-	league_points?: number; // PlayerInfoParser.LEAGUES, ["BI"
-	last_complaint_date?: number; // PlayerInfoParser.LAST_COMPLAINT_DATE, "I"
-	admire_reward_timestamp?: number;
-	interests?: number;
-	professions?: number;
-	deleted?: boolean;
+0		.defineField("I", "nid")
+1		.defineField("B", "type")
+2		.defineField("S", "name")
+3		.defineField("B", "sex")
+4		.defineField("I", "tag")
+5		.defineField("I", "referrer")
+6		.defineField("I", "bdate")
+7		.defineField("SB", [ "avatar", "avatar_status" ])
+8		.defineField("S", "profile")
+9		.defineField("S", "status")
+10		.defineField("B", "countryId")
+11		.defineField("B", "online")
+12		.defineField("I", "admirer_id")
+13		.defineField("I", "admirer_price")
+14		.defineField("I", "admirer_time_finish")
+15		.defineField("I", "views")
+16		.defineField("B", "vip")
+17		.defineField("B", "color")
+18		.defineField("II", [ "kisses", "kisses_today" ])
+19		.defineField("II", [ "gifts", "gifts_today" ])
+20		.defineField("[III]", "lastGifts") //[source_id:I, gift_id:I, time:I]
+		.defineField("B", "device")
+		.defineField("I", "wedding_id")
+		.defineField("[III]", "achievements")
+		.defineField("[BI]", [ "collections" ])
+		.defineField("B", "avatar_id")
+		.defineField("B", "rights")
+		.defineField("I", "register_time")
+		.defineField("I", "logout_time")
+		.defineField("[S][B]", [ "photos", "photos_statuses" ])
+		.defineField("IIBII", [ "bridals_place", "wedlocks_place", "is_popular", "rich_place", "views_place" ])
+		.defineField("B", "frame_id");
 */

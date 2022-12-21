@@ -46,7 +46,7 @@ func main() {
 		return
 	}
 
-	var t = GetLoginPacket(2)
+	var t = GetLoginPacket(3)
 
 	game.Send(client.LOGIN, t)
 
@@ -67,7 +67,11 @@ func readHandler(game *socket.Socket, ID server.PacketServerType, packet interfa
 		switch p.Result {
 		case server.Success:
 			selfID = p.GameID
-			game.Send(client.BOTTLE_PLAY, &client.BottlePlay{RoomID: 0, LangID: 0})
+			game.Send(client.REQUEST, &client.Request{
+				Players: []types.I{p.GameID},
+				Mask:    server.INFOMASK,
+			})
+			//game.Send(client.BOTTLE_PLAY, &client.BottlePlay{RoomID: 0, LangID: 0})
 			game.Send(client.MOVE, &client.Move{PlayerID: types.I(tototo93), ByteField: 0})
 		default:
 			game.Close()
@@ -89,10 +93,10 @@ func readHandler(game *socket.Socket, ID server.PacketServerType, packet interfa
 		}
 	case server.BOTTLE_ROOM:
 		p := packet.(*server.BottleRoom)
-		for _, id := range p.Players {
+		for _, v := range p.Players {
 			game.Send(client.REQUEST, &client.Request{
-				Players: []types.I{id},
-				ID:      1114252,
+				Players: []types.I{v},
+				Mask:    server.INFOMASK,
 			})
 		}
 	case server.BOTTLE_LEADER:

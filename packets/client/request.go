@@ -7,5 +7,5 @@ const REQUEST PacketClientType = 8
 // REQUEST (8) ""
 type Request struct {
 	Players []types.I
-	ID      types.I
+	Mask    types.I
 }
