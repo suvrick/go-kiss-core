@@ -2,8 +2,11 @@ package leb128
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"reflect"
+
+	"github.com/suvrick/go-kiss-core/types"
 )
 
 var (
@@ -23,264 +26,254 @@ func Skip(v interface{}) bool {
 	return false
 }
 
-func Unmarshal(reader io.Reader, s interface{}) error {
+func Unmarshal(reader io.Reader, s interface{}) (err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(r)
+			err = fmt.Errorf("[unmarshal] %v", r)
+		}
+	}()
+
+	value := reflect.ValueOf(s)
+
+	err = unmarshal(reader, value)
+
+	return
+}
+
+func unmarshal(reader io.Reader, value reflect.Value) error {
 
 	var _err error = nil
 	var _uint uint64 = 0
 	var _int int64 = 0
 
-	//fmt.Printf("%v\n", reflect.TypeOf(s))
-
-	structure := reflect.ValueOf(s)
-
-	numfield := reflect.ValueOf(s).Elem().NumField()
-
-	var skip bool
-
-	for x := 0; x < numfield; x++ {
-
-		field := structure.Elem().Field(x)
-
-		el := structure.Elem().Interface()
-
-		tag := reflect.TypeOf(el).Field(x).Tag
-
-		if tag.Get("pack") == "skip" {
-			skip = true
+	switch value.Kind() {
+	case reflect.Bool:
+		if _int, _err = ReadInt(reader, 8); _err == nil {
+			if _int == 0 {
+				value.SetBool(false)
+			} else {
+				value.SetBool(true)
+			}
 		}
-
-		switch reflect.ValueOf(s).Elem().Field(x).Kind() {
-		case reflect.Bool:
-			if _int, _err = ReadInt(reader, 8); _err == nil {
-				if _int == 0 {
-					field.SetBool(false)
-				} else {
-					field.SetBool(true)
-				}
-			}
-		case reflect.Int8:
-			if _int, _err = ReadInt(reader, 8); _err == nil {
-				field.SetInt(_int)
-			}
-		case reflect.Uint8:
-			if _uint, _err = ReadUint(reader, 8); _err == nil {
-				field.SetUint(_uint)
-			}
-		case reflect.Int16:
-			if _int, _err = ReadInt(reader, 16); _err == nil {
-				field.SetInt(_int)
-			}
-		case reflect.Uint16:
-			if _uint, _err = ReadUint(reader, 16); _err == nil {
-				field.SetUint(_uint)
-			}
-		case reflect.Int:
-			if _int, _err = ReadInt(reader, 32); _err == nil {
-				field.SetInt(_int)
-			}
-		case reflect.Uint:
-			if _uint, _err = ReadUint(reader, 32); _err == nil {
-				field.SetUint(_uint)
-			}
-		case reflect.Int32:
-			if _int, _err = ReadInt(reader, 32); _err == nil {
-				field.SetInt(_int)
-			}
-		case reflect.Uint32:
-			if _uint, _err = ReadUint(reader, 32); _err == nil {
-				field.SetUint(_uint)
-			}
-		case reflect.Int64:
-			if _int, _err = ReadInt(reader, 64); _err == nil {
-				field.SetInt(_int)
-			}
-		case reflect.Uint64:
-			if _uint, _err = ReadUint(reader, 64); _err == nil {
-				field.SetUint(_uint)
-			}
-		case reflect.String:
-			_uint, _err = ReadUint(reader, 8)
-			if _err == nil {
-				str := make([]byte, _uint)
-				reader.Read(str)
-				field.SetString(string(str))
-			}
-		case reflect.Struct:
-
-			struct_type := reflect.TypeOf(field.Interface())
-
-			strct := reflect.New(struct_type)
-
-			_err = Unmarshal(reader, strct.Interface())
+	case reflect.Int8:
+		if _int, _err = ReadInt(reader, 8); _err == nil {
+			value.SetInt(_int)
+		}
+	case reflect.Uint8:
+		if _uint, _err = ReadUint(reader, 8); _err == nil {
+			value.SetUint(_uint)
+		}
+	case reflect.Int16:
+		if _int, _err = ReadInt(reader, 16); _err == nil {
+			value.SetInt(_int)
+		}
+	case reflect.Uint16:
+		if _uint, _err = ReadUint(reader, 16); _err == nil {
+			value.SetUint(_uint)
+		}
+	case reflect.Int:
+		if _int, _err = ReadInt(reader, 32); _err == nil {
+			value.SetInt(_int)
+		}
+	case reflect.Uint:
+		if _uint, _err = ReadUint(reader, 32); _err == nil {
+			value.SetUint(_uint)
+		}
+	case reflect.Int32:
+		if _int, _err = ReadInt(reader, 32); _err == nil {
+			value.SetInt(_int)
+		}
+	case reflect.Uint32:
+		if _uint, _err = ReadUint(reader, 32); _err == nil {
+			value.SetUint(_uint)
+		}
+	case reflect.Int64:
+		if _int, _err = ReadInt(reader, 64); _err == nil {
+			value.SetInt(_int)
+		}
+	case reflect.Uint64:
+		if _uint, _err = ReadUint(reader, 64); _err == nil {
+			value.SetUint(_uint)
+		}
+	case reflect.String:
+		_uint, _err = ReadUint(reader, 16)
+		if _err == nil {
+			str := make([]byte, _uint)
+			reader.Read(str)
+			value.SetString(string(str))
+		}
+	case reflect.Struct:
+		for i := 0; i < value.NumField(); i++ {
+			unmarshal(reader, getField(value, i))
+		}
+	case reflect.Slice:
+		length, _ := ReadUint(reader, 16)
+		struct_type := reflect.TypeOf(value.Interface()).Elem()
+		slice := reflect.MakeSlice(reflect.SliceOf(struct_type), 0, 0)
+		for w := 0; w < int(length); w++ {
+			item := reflect.New(struct_type)
+			_err = unmarshal(reader, item)
 			if _err != nil {
 				continue
 			}
-
-			field.Set(strct.Elem())
-
-		case reflect.Slice:
-			length, _ := ReadInt(reader, 32)
-
-			struct_type := reflect.TypeOf(field.Interface()).Elem()
-
-			slice := reflect.MakeSlice(reflect.SliceOf(struct_type), 0, 0)
-
-			for w := 0; w < int(length); w++ {
-
-				item := reflect.New(struct_type)
-
-				_err = Unmarshal(reader, item.Interface())
-				if _err != nil {
-					continue
-				}
-
-				slice = reflect.Append(slice, item.Elem())
-			}
-
-			field.Set(slice)
-		default:
-			_err = ErrUnmarshalServerPacket
+			slice = reflect.Append(slice, item.Elem())
 		}
-	}
-
-	if _err != nil {
-
-		if skip {
-			return nil
+		value.Set(slice)
+	case reflect.Pointer:
+		if value.Pointer() != 0 {
+			unmarshal(reader, value.Elem())
 		}
-
-		return ErrUnmarshalServerPacket
+	default:
 	}
-
 	return nil
 }
 
-func Marshal(s interface{}) ([]byte, error) {
+func getField(v reflect.Value, i int) reflect.Value {
+	val := v.Field(i)
+	if val.Kind() == reflect.Interface && !val.IsNil() {
+		val = val.Elem()
+	}
+	return val
+}
+
+func Marshal(s interface{}) (result []byte, err error) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(r)
+			err = fmt.Errorf("[marshal] %v", r)
+		}
+	}()
+
+	value := reflect.ValueOf(s)
+
+	return marshal(value)
+}
+
+func marshal(v reflect.Value) ([]byte, error) {
 
 	result := make([]byte, 0)
+	var err error
 
-	var err error = nil
-
-	structure := reflect.ValueOf(s)
-
-	if structure.IsZero() {
-		return nil, nil
-	}
-
-	numfield := reflect.ValueOf(s).Elem().NumField()
-
-	for x := 0; x < numfield; x++ {
-
-		if err != nil {
-			return nil, err
-		}
-
-		field := structure.Elem().Field(x)
-
-		switch reflect.ValueOf(s).Elem().Field(x).Kind() {
-		case reflect.Bool:
-			if i, ok := field.Interface().(bool); ok {
-				if i {
-					result = AppendInt(result, int64(1))
-				} else {
-					result = AppendInt(result, int64(0))
-				}
-			} else {
-				err = ErrMarshalClientPacket
-			}
-		case reflect.Int8:
-			if i, ok := field.Interface().(int8); ok {
-				result = AppendInt(result, int64(i))
-			} else {
-				err = ErrMarshalClientPacket
-			}
-		case reflect.Uint8:
-			if i, ok := field.Interface().(uint8); ok {
-				result = AppendUint(result, uint64(i))
-			} else {
-				err = ErrMarshalClientPacket
-			}
-		case reflect.Int16:
-			if i, ok := field.Interface().(int16); ok {
-				result = AppendInt(result, int64(i))
-			} else {
-				err = ErrMarshalClientPacket
-			}
-		case reflect.Uint16:
-			if i, ok := field.Interface().(uint16); ok {
-				result = AppendUint(result, uint64(i))
-			} else {
-				err = ErrMarshalClientPacket
-			}
-		case reflect.Int:
-			if i, ok := field.Interface().(int); ok {
-				result = AppendInt(result, int64(i))
-			} else {
-				err = ErrMarshalClientPacket
-			}
-		case reflect.Uint:
-			if i, ok := field.Interface().(uint); ok {
-				result = AppendUint(result, uint64(i))
-			} else {
-				err = ErrMarshalClientPacket
-			}
-		case reflect.Int32:
-			if i, ok := field.Interface().(int32); ok {
-				result = AppendInt(result, int64(i))
-			} else {
-				err = ErrMarshalClientPacket
-			}
-		case reflect.Uint32:
-			if i, ok := field.Interface().(uint32); ok {
-				result = AppendUint(result, uint64(i))
-			} else {
-				err = ErrMarshalClientPacket
-			}
-		case reflect.Int64:
-			if i, ok := field.Interface().(int64); ok {
-				result = AppendInt(result, int64(i))
-			} else {
-				err = ErrMarshalClientPacket
-			}
-		case reflect.Uint64:
-			if i, ok := field.Interface().(uint64); ok {
-				result = AppendUint(result, uint64(i))
-			} else {
-				err = ErrMarshalClientPacket
-			}
-		case reflect.String:
-			if i, ok := field.Interface().(string); ok {
-				str := []byte(i)
-				result = AppendInt(result, int64(len(str)))
-				result = append(result, str...)
-			} else {
-				err = ErrMarshalClientPacket
-			}
-		case reflect.Slice:
-
-			lenn := field.Len()
-
-			result = AppendInt(result, int64(lenn))
-
-			for i := 0; i < lenn; i++ {
-
-				val := field.Index(i)
-
-				var res []byte
-
-				switch val.Kind() {
-				case reflect.Uint64:
-					res = AppendUint(res, val.Interface().(uint64))
-				}
-
-				result = append(result, res...)
-			}
-		default:
+	switch v.Kind() {
+	case reflect.Bool:
+		if i, ok := v.Interface().(types.B); ok {
+			result = AppendInt(result, int64(i))
+		} else {
 			err = ErrMarshalClientPacket
 		}
+	case reflect.Int8:
+		if i, ok := v.Interface().(types.B); ok {
+			result = AppendInt(result, int64(i))
+		} else {
+			err = ErrMarshalClientPacket
+		}
+	case reflect.Uint8:
+		if i, ok := v.Interface().(types.B); ok {
+			result = AppendUint(result, uint64(i))
+		} else {
+			err = ErrMarshalClientPacket
+		}
+	case reflect.Int16:
+		if i, ok := v.Interface().(types.B); ok {
+			result = AppendInt(result, int64(i))
+		} else {
+			err = ErrMarshalClientPacket
+		}
+	case reflect.Uint16:
+		if i, ok := v.Interface().(types.B); ok {
+			result = AppendUint(result, uint64(i))
+		} else {
+			err = ErrMarshalClientPacket
+		}
+	case reflect.Int:
+		if i, ok := v.Interface().(int); ok {
+			result = AppendInt(result, int64(i))
+		} else {
+			err = ErrMarshalClientPacket
+		}
+	case reflect.Uint:
+		if i, ok := v.Interface().(uint); ok {
+			result = AppendUint(result, uint64(i))
+		} else {
+			err = ErrMarshalClientPacket
+		}
+	case reflect.Int32:
+		if i, ok := v.Interface().(int32); ok {
+			result = AppendInt(result, int64(i))
+		} else {
+			err = ErrMarshalClientPacket
+		}
+	case reflect.Uint32:
+		if i, ok := v.Interface().(types.I); ok {
+			result = AppendUint(result, uint64(i))
+		} else {
+			err = ErrMarshalClientPacket
+		}
+	case reflect.Int64:
+		if i, ok := v.Interface().(types.I); ok {
+			result = AppendInt(result, int64(i))
+		} else {
+			err = ErrMarshalClientPacket
+		}
+	case reflect.Uint64:
+		if i, ok := v.Interface().(types.I); ok {
+			result = AppendUint(result, uint64(i))
+		} else {
+			err = ErrMarshalClientPacket
+		}
+	case reflect.String:
+		if i, ok := v.Interface().(types.S); ok {
+			str := []byte(i)
+			result = AppendInt(result, int64(len(str)))
+			result = append(result, str...)
+		} else {
+			err = ErrMarshalClientPacket
+		}
+	case reflect.Slice:
+
+		lenn := v.Len()
+
+		result = AppendInt(result, int64(lenn))
+
+		for i := 0; i < lenn; i++ {
+
+			val := v.Index(i)
+
+			var res []byte
+
+			switch val.Kind() {
+			case reflect.Uint64:
+				res = AppendUint(res, val.Interface().(uint64))
+			}
+
+			result = append(result, res...)
+		}
+	case reflect.Struct:
+		for i := 0; i < v.NumField(); i++ {
+			r, _err := marshal(v.Field(i))
+			if err != nil {
+				err = _err
+			} else {
+				result = append(result, r...)
+			}
+		}
+	case reflect.Pointer:
+		if v.Pointer() != 0 {
+			r, _err := marshal(v.Elem())
+			if err != nil {
+				err = _err
+			} else {
+				result = append(result, r...)
+			}
+		}
+	default:
+		err = ErrMarshalClientPacket
 	}
 
-	return result, nil
+	return result, err
 }
 
 // AppendUleb128 appends v to b using unsigned LEB128 encoding.

@@ -1,20 +1,22 @@
 package server
 
+import "github.com/suvrick/go-kiss-core/types"
+
 const BALANCE_ITEMS PacketServerType = 310
 
-type BalanceItem struct {
-	BalanceType byte
-	A           int
-	B           int
-}
-
-// BALANCE_ITEMS(310) "bottles:I, reason:B"
+// BALANCE_ITEMS(310) "[BII]"
 type BalanceItems struct {
 	Items []BalanceItem
 }
 
-func GetBalanceItemName(t int64) string {
-	switch t {
+type BalanceItem struct {
+	BalanceType types.B
+	A           types.I
+	B           types.I
+}
+
+func (b BalanceItem) String() string {
+	switch b.BalanceType {
 	case 0:
 		return "Kicks"
 	case 1:

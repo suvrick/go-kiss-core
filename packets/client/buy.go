@@ -1,16 +1,18 @@
 package client
 
+import "github.com/suvrick/go-kiss-core/types"
+
 const BUY PacketClientType = 6
 
 // BONUS(6) "IIIIBI,B"
 type Buy struct {
-	BuyType  int
-	Coin     int
-	PlayerID uint64
-	PrizeID  int
-	XZ       byte
-	Count    int `pack:"skip"`
-	XZ2      byte
+	BuyType    types.I
+	Coin       types.I
+	PlayerID   types.I
+	PrizeID    types.I
+	ByteFiald  types.B
+	Count      types.I
+	ByteFiald2 types.B `pack:"optional"`
 }
 
 /*

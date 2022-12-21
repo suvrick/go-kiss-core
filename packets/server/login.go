@@ -1,13 +1,17 @@
 package server
 
+import "github.com/suvrick/go-kiss-core/types"
+
 const LOGIN PacketServerType = 4
 
 // LOGIN(4) "B,II"
 type Login struct {
-	Result  LoginResultType `pack:"skip"`
-	GameID  int64
-	Balance int
+	Result  LoginResultType
+	GameID  types.I `pack:"optional"`
+	Balance types.I `pack:"optional"`
 }
+
+type LoginResultType types.B
 
 // Login result response
 const (

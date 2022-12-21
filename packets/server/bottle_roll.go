@@ -1,11 +1,13 @@
 package server
 
+import "github.com/suvrick/go-kiss-core/types"
+
 const BOTTLE_ROLL PacketServerType = 29
 
 // BOTTLE_ROLL(29) "II,II"
 type BottleRoll struct {
-	LeaderID  int64
-	RollerID  int64
-	IntField  int64
-	IntField2 int64
+	LeaderID  types.I
+	RollerID  types.I
+	IntField  types.I `pack:"optional"`
+	IntField2 types.I `pack:"optional"`
 }

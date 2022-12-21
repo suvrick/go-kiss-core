@@ -1,9 +1,11 @@
 package client
 
+import "github.com/suvrick/go-kiss-core/types"
+
 const REQUEST PacketClientType = 8
 
 // REQUEST (8) ""
 type Request struct {
-	Players []uint64
-	ID      uint64
+	Players []types.I
+	ID      types.I
 }

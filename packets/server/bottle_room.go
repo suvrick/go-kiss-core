@@ -1,16 +1,14 @@
 package server
 
+import "github.com/suvrick/go-kiss-core/types"
+
 const BOTTLE_ROOM PacketServerType = 25
 
 // BOTTLE_ROOM(25) "III[I][I]"
 type BottleRoom struct {
-	IntField1 int64
-	IntField2 int64
-	IntField3 int64
-	Players   []player
-	IntArray2 []player
-}
-
-type player struct {
-	PlayerID int64
+	RoomID    types.I
+	IntField2 types.I
+	IntField3 types.I
+	Players   []types.I
+	IntArray2 []types.I
 }

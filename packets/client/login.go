@@ -1,21 +1,23 @@
 package client
 
+import "github.com/suvrick/go-kiss-core/types"
+
 const LOGIN PacketClientType = 4
 
 // LOGIN(4) "IBBS,BSIIBSBSBS"
 type Login struct {
-	ID           uint64
-	NetType      uint16
-	DeviceType   byte
-	Key          string
-	OAuth        byte
-	AccessToken  string
-	Referrer     int
-	Tag          int
-	FieldInt     byte
-	FieldString  string
-	RoomLanguage byte
-	FieldString2 string
-	Gender       byte
-	Captcha      string
+	ID           types.I
+	NetType      types.I
+	DeviceType   types.I
+	Key          types.S
+	OAuth        types.B `pack:"optional"`
+	AccessToken  types.S `pack:"optional"`
+	Referrer     types.I `pack:"optional"`
+	Tag          types.I `pack:"optional"`
+	FieldInt     types.B `pack:"optional"`
+	FieldString  types.S `pack:"optional"`
+	RoomLanguage types.B `pack:"optional"`
+	FieldString2 types.S `pack:"optional"`
+	Gender       types.B `pack:"optional"`
+	Captcha      types.S `pack:"optional"`
 }

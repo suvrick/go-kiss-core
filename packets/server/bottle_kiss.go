@@ -1,19 +1,26 @@
 package server
 
+import "github.com/suvrick/go-kiss-core/types"
+
 const BOTTLE_KISS PacketServerType = 30
 
 // BOTTLE_KISS(30) "IB"
 type BottleKiss struct {
-	PlayerID  int64
-	ByteField KissAnswer
+	PlayerID types.I
+	Answer   KissAnswer
 }
 
-type KissAnswer byte
+type KissAnswer types.B
 
 func (kiss KissAnswer) String() string {
-	if kiss == 0 {
+	switch kiss {
+	case 0:
 		return "NO"
-	} else {
+	case 1:
 		return "YES"
+	case 2:
+		return "SKIP"
+	default:
+		return "NO NAME FOR ACTION"
 	}
 }

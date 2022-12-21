@@ -1,28 +1,30 @@
 package server
 
+import "github.com/suvrick/go-kiss-core/types"
+
 const INFO PacketServerType = 5
 
 // INFO(5) "BB"
 type Info struct {
-	ArrLen    int
-	ItemCount uint16
-	GameID    int64
-	LoginID   int64
-	NetType   int8
-	Name      string
-	Sex       int8
-	Tag       int
-	Referrer  int
-	Ddate     int
-	Avatar    string
-	AvatarID  int8
-	Profile   string
-	Status    string
+	ArrLen    types.I
+	ItemCount types.I
+	GameID    types.I
+	LoginID   types.I
+	NetType   types.B
+	Name      types.S
+	Sex       types.B
+	Tag       types.I
+	Referrer  types.I
+	Ddate     types.I
+	Avatar    types.S
+	AvatarID  types.B
+	Profile   types.S
+	Status    types.S
 }
 
 type Avatar struct {
-	Avatar   string
-	AvatarID int8
+	Avatar   types.S
+	AvatarID types.B
 }
 
 /*

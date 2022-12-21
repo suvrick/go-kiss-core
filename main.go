@@ -8,6 +8,7 @@ import (
 	"github.com/suvrick/go-kiss-core/packets/client"
 	"github.com/suvrick/go-kiss-core/packets/server"
 	"github.com/suvrick/go-kiss-core/socket"
+	"github.com/suvrick/go-kiss-core/types"
 )
 
 //103786258
@@ -27,9 +28,9 @@ var urls = []string{
 	"view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=103786258&viewerId=103786258&isAppUser=1&isAppWidgetUser=0&sessionKey=5d09db98a83f25ff3885114f725c651022ee76138454ff&authKey=dc93c8e0c365ca792cf1198ab71c73e7&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1569558375&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?158&width=1000&height=690&sprites_version=83&useApiType=fs&",
 }
 
-var selfID int64
+var selfID types.I
 
-var tototo93 int64 = 22132982
+var tototo93 int32 = 22132982
 
 func main() {
 
@@ -45,7 +46,9 @@ func main() {
 		return
 	}
 
-	game.Send(client.LOGIN, GetLoginPacket(2))
+	var t = GetLoginPacket(2)
+
+	game.Send(client.LOGIN, t)
 
 	game.Wait()
 }
@@ -56,7 +59,7 @@ func errorHandler(game *socket.Socket, err error) {
 
 func readHandler(game *socket.Socket, ID server.PacketServerType, packet interface{}) {
 
-	game.Log(fmt.Sprintf("[read] %#v", packet))
+	game.Log(fmt.Sprintf("[read] %+v", packet))
 
 	switch ID {
 	case server.LOGIN:
@@ -71,7 +74,7 @@ func readHandler(game *socket.Socket, ID server.PacketServerType, packet interfa
 		}
 	case server.BONUS:
 		p := packet.(*server.Bonus)
-		if p.CanCollect {
+		if p.CanCollect == 1 {
 			game.Send(client.BONUS, &client.Bonus{})
 		}
 	case server.REWARDS:
@@ -100,7 +103,7 @@ func readHandler(game *socket.Socket, ID server.PacketServerType, packet interfa
 			game.Log("I am leader or rollerID!")
 			<-time.After(time.Second * 5)
 			game.Send(client.BOTTLE_KISS, &client.BottleKiss{
-				ByteField: 1,
+				Answer: 1,
 			})
 		}
 	}
@@ -123,10 +126,11 @@ func GetLoginPacket(index int) *client.Login {
 	}
 
 	return &client.Login{
-		ID:          frameDTO.ID,
-		NetType:     frameDTO.NetType,
+		ID:          types.I(frameDTO.ID),
+		NetType:     types.I(frameDTO.NetType),
 		DeviceType:  5,
-		Key:         frameDTO.Key,
-		AccessToken: frameDTO.AccessToken,
+		Key:         types.S(frameDTO.Key),
+		OAuth:       0,
+		AccessToken: types.S(frameDTO.AccessToken),
 	}
 }

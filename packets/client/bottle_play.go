@@ -1,9 +1,11 @@
 package client
 
+import "github.com/suvrick/go-kiss-core/types"
+
 const BOTTLE_PLAY PacketClientType = 26
 
 // BOTTLE_PLAY(26) "B,B"
 type BottlePlay struct {
-	RoomID byte
-	LangID byte
+	RoomID types.B
+	LangID types.B `pack:"optional"`
 }
