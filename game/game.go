@@ -17,6 +17,7 @@ type Game struct {
 	selfID    types.I
 	gameOver  chan struct{}
 	closeRole CloseRole
+	b         uint8
 }
 
 func NewGame() *Game {
@@ -31,7 +32,6 @@ func (g *Game) SetCloseRule(rule CloseRole) {
 func (g *Game) Connection() error {
 
 	g.gameOver = make(chan struct{})
-
 	ws := socket.NewSocket(socket.GetDefaultSocketConfig())
 	ws.SetOpenHandler(g.openHandler)
 	ws.SetErrorHandler(g.errorHandler)
@@ -43,6 +43,7 @@ func (g *Game) Connection() error {
 	}
 
 	g.ws = ws
+	g.b = 7
 
 	return nil
 }
@@ -71,14 +72,14 @@ func (g *Game) readHandler(ws *socket.Socket, ID server.PacketServerType, packet
 		switch p.Result {
 		case server.Success:
 			g.selfID = p.GameID
-			ws.Send(client.REQUEST, &client.Request{
-				Players: []types.I{p.GameID},
-				Mask:    server.INFOMASK,
-			})
-			ws.Send(client.BOTTLE_PLAY, &client.BottlePlay{RoomID: 0, LangID: 0})
-			//game.Send(client.MOVE, &client.Move{PlayerID: types.I(tototo93), ByteField: 0})
+			g.b &^= 1 // off
 		default:
-			ws.Close()
+		}
+	case server.INFO:
+		p := packet.(*server.Info)
+		if len(p.Players) > 0 && p.Players[0].GameID == g.selfID {
+			g.b &^= 4
+			// Fill info
 		}
 	case server.BONUS:
 		p := packet.(*server.Bonus)
@@ -87,14 +88,25 @@ func (g *Game) readHandler(ws *socket.Socket, ID server.PacketServerType, packet
 		}
 	case server.REWARDS:
 		p := packet.(*server.Rewards)
-		for _, reward := range p.Rewards {
+		for _, reward := range g.getRewards(p.Rewards) {
 			if reward.Count > 0 {
+				g.b |= 2 // off
 				ws.Send(client.GAME_REWARDS_GET, &client.GameRewardsGet{
 					RewardID: reward.ID,
 				})
-				break
+				return
 			}
 		}
+
+		if (g.b & 4) == 4 {
+			ws.Send(client.REQUEST, &client.Request{
+				Players: []types.I{g.selfID},
+				Mask:    server.INFOMASK,
+			})
+		}
+
+		g.b &^= 2 // on
+
 	case server.BOTTLE_ROOM:
 		p := packet.(*server.BottleRoom)
 		for _, v := range p.Players {
@@ -140,15 +152,20 @@ func (g *Game) readHandler(ws *socket.Socket, ID server.PacketServerType, packet
 	case server.BOTTLE_LEAVE:
 		//ws.Log("I am close game!")
 		//ws.Close()
-	case server.INFO:
-		p := packet.(*server.Info)
-		if len(p.Players) > 0 && p.Players[0].GameID == g.selfID {
-			//****
-			if g.closeRole == FAST {
-				ws.Close()
-			}
+	}
+
+	if g.b == 0 && g.closeRole == FAST {
+		g.ws.Close()
+	}
+}
+
+func (g *Game) getRewards(r []server.Reward) (rewards []server.Reward) {
+	for _, v := range r {
+		if v.ID > 0 && v.Count > 0 {
+			rewards = append(rewards, v)
 		}
 	}
+	return
 }
 
 func (g *Game) openHandler(game *socket.Socket) {

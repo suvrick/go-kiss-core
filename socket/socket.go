@@ -238,6 +238,10 @@ func (socket *Socket) read(reader io.Reader) {
 		return
 	}
 
+	if ID == 7 {
+		fmt.Printf("%#v\n", reader)
+	}
+
 	var packet interface{}
 
 	packetID := server.PacketServerType(ID)
