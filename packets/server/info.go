@@ -6,14 +6,14 @@ const INFO PacketServerType = 5
 
 // INFO(5) "BB"
 type Info struct {
-	ArrLen types.I
+	//ArrLen types.I
 	//ArrLen2 types.I
 	Players []PlayerInfo
 }
 
 const INFOMASK types.I = 328588
 
-//ISBSBBIIBIBIIBBIII
+// ISBSBBIIBIBIIBBIII
 type PlayerInfo struct {
 	GameID types.I
 	//NetType  types.B

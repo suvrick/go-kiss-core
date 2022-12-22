@@ -14,6 +14,7 @@ import (
 	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/packets/client"
 	"github.com/suvrick/go-kiss-core/packets/server"
+	"github.com/suvrick/go-kiss-core/types"
 )
 
 var (
@@ -107,6 +108,7 @@ func (socket *Socket) Connection() error {
 
 	go socket.timeoutToGame()
 	go socket.loop()
+	go socket.Wait()
 
 	return nil
 }
@@ -244,7 +246,16 @@ func (socket *Socket) read(reader io.Reader) {
 	case server.LOGIN:
 		packet = &server.Login{}
 	case server.INFO:
-		packet = &server.Info{}
+		len, err := leb128.ReadUint(reader, 16)
+		if err == nil {
+			msg := make([]byte, len)
+			reader.Read(msg)
+			mask, err := leb128.ReadInt(reader, 64)
+			if err == nil && types.I(mask) == server.INFOMASK {
+				reader = bytes.NewReader(msg)
+				packet = &server.Info{}
+			}
+		}
 	case server.BALANCE:
 		packet = &server.Balance{}
 	case server.CONTEST_ITEMS:
