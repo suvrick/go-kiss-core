@@ -1,5 +1,5 @@
 package types
 
-type B byte
+type B uint16
 type I uint64
 type S string

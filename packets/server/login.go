@@ -8,7 +8,7 @@ const LOGIN PacketServerType = 4
 type Login struct {
 	Result  LoginResultType
 	GameID  types.I `pack:"optional"`
-	Balance types.I `pack:"optional"`
+	Balance types.B `pack:"optional"`
 }
 
 type LoginResultType types.B

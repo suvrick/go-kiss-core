@@ -32,7 +32,7 @@ func main() {
 	if err := game.Connection(); err != nil {
 		log.Fatalln(err.Error())
 	}
-	game.Send(client.LOGIN, getLoginPacket(7))
+	game.Send(client.LOGIN, getLoginPacket(0))
 	<-game.GameOver()
 }
 

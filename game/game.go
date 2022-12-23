@@ -74,11 +74,12 @@ func (g *Game) readHandler(ws *socket.Socket, ID server.PacketServerType, packet
 			g.selfID = p.GameID
 			g.b &^= 1 // off
 		default:
+			g.ws.Close()
 		}
 	case server.INFO:
 		p := packet.(*server.Info)
 		if len(p.Players) > 0 && p.Players[0].GameID == g.selfID {
-			g.b &^= 4
+			g.b &^= 4 //off
 			// Fill info
 		}
 	case server.BONUS:
@@ -90,7 +91,7 @@ func (g *Game) readHandler(ws *socket.Socket, ID server.PacketServerType, packet
 		p := packet.(*server.Rewards)
 		for _, reward := range g.getRewards(p.Rewards) {
 			if reward.Count > 0 {
-				g.b |= 2 // off
+				g.b |= 2 // on
 				ws.Send(client.GAME_REWARDS_GET, &client.GameRewardsGet{
 					RewardID: reward.ID,
 				})
@@ -105,7 +106,7 @@ func (g *Game) readHandler(ws *socket.Socket, ID server.PacketServerType, packet
 			})
 		}
 
-		g.b &^= 2 // on
+		g.b &^= 2 // off
 
 	case server.BOTTLE_ROOM:
 		p := packet.(*server.BottleRoom)
@@ -155,7 +156,10 @@ func (g *Game) readHandler(ws *socket.Socket, ID server.PacketServerType, packet
 	}
 
 	if g.b == 0 && g.closeRole == FAST {
-		g.ws.Close()
+		go func() {
+			<-time.After(time.Millisecond * 500)
+			g.ws.Close()
+		}()
 	}
 }
 
