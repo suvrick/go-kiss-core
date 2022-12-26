@@ -25,13 +25,11 @@ func NewGame() *Game {
 	return &g
 }
 
-func (g *Game) SetCloseRule(rule CloseRole) {
-	g.closeRole = rule
-}
-
 func (g *Game) Connection() error {
 
+	g.closeRole = FAST
 	g.gameOver = make(chan struct{})
+
 	ws := socket.NewSocket(socket.GetDefaultSocketConfig())
 	ws.SetOpenHandler(g.openHandler)
 	ws.SetErrorHandler(g.errorHandler)
@@ -54,8 +52,15 @@ func (g *Game) Send(packetID client.PacketClientType, packet interface{}) {
 	}
 }
 
+func (g *Game) Login(packet interface{}) {
+	if g.ws != nil {
+		g.ws.Send(client.LOGIN, packet)
+	}
+}
+
 func (g *Game) GoRoom(roomID types.B) {
 	if g.ws != nil {
+		g.closeRole = NEVER
 		g.ws.Send(client.BOTTLE_PLAY, &client.BottlePlay{
 			RoomID: roomID,
 		})
@@ -64,6 +69,7 @@ func (g *Game) GoRoom(roomID types.B) {
 
 func (g *Game) GoRoomToPlayer(playerID types.I) {
 	if g.ws != nil {
+		g.closeRole = NEVER
 		g.ws.Send(client.MOVE, &client.Move{
 			PlayerID:  playerID,
 			ByteField: 0,
@@ -77,6 +83,7 @@ func (g *Game) GameOver() chan struct{} {
 
 func (g *Game) errorHandler(game *socket.Socket, err error) {
 	game.Log(fmt.Sprintf("[error] %v", err.Error()))
+	game.Close()
 }
 
 func (g *Game) readHandler(ws *socket.Socket, ID server.PacketServerType, packet interface{}) {

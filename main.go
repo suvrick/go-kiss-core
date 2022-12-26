@@ -28,11 +28,11 @@ var urls = []string{
 
 func main() {
 	g := game.NewGame()
-	g.SetCloseRule(game.NEVER)
+
 	if err := g.Connection(); err != nil {
 		log.Fatalln(err.Error())
 	}
-	g.Send(client.LOGIN, getLoginPacket(5))
+	g.Login(getLoginPacket(0))
 	g.GoRoom(0)
 
 	<-g.GameOver()
