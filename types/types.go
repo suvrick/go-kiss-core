@@ -1,5 +1,6 @@
 package types
 
-type B uint16
-type I uint64
+type B byte
+type I uint32
 type S string
+type L uint64

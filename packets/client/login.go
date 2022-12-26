@@ -6,7 +6,7 @@ const LOGIN PacketClientType = 4
 
 // LOGIN(4) "IBBS,BSIIBSBSBS"
 type Login struct {
-	ID           types.I
+	ID           types.L
 	NetType      types.I
 	DeviceType   types.I
 	Key          types.S

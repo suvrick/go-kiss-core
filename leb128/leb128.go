@@ -220,7 +220,7 @@ func marshal(v reflect.Value) ([]byte, error) {
 			err = ErrMarshalClientPacket
 		}
 	case reflect.Uint64:
-		if i, ok := v.Interface().(types.I); ok {
+		if i, ok := v.Interface().(types.L); ok {
 			result = AppendUint(result, uint64(i))
 		} else {
 			err = ErrMarshalClientPacket

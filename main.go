@@ -27,13 +27,15 @@ var urls = []string{
 }
 
 func main() {
-	game := game.NewGame()
-
-	if err := game.Connection(); err != nil {
+	g := game.NewGame()
+	g.SetCloseRule(game.NEVER)
+	if err := g.Connection(); err != nil {
 		log.Fatalln(err.Error())
 	}
-	game.Send(client.LOGIN, getLoginPacket(0))
-	<-game.GameOver()
+	g.Send(client.LOGIN, getLoginPacket(5))
+	g.GoRoom(0)
+
+	<-g.GameOver()
 }
 
 func getLoginPacket(index int) *client.Login {
@@ -45,7 +47,7 @@ func getLoginPacket(index int) *client.Login {
 	}
 
 	return &client.Login{
-		ID:          types.I(frameDTO.ID),
+		ID:          types.L(frameDTO.ID),
 		NetType:     types.I(frameDTO.NetType),
 		DeviceType:  5,
 		Key:         types.S(frameDTO.Key),

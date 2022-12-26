@@ -10,7 +10,7 @@ import (
 	"github.com/suvrick/go-kiss-core/types"
 )
 
-const tototo93 types.I = 22132982
+const Tototo93 types.I = 22132982
 
 type Game struct {
 	ws        *socket.Socket
@@ -51,6 +51,23 @@ func (g *Game) Connection() error {
 func (g *Game) Send(packetID client.PacketClientType, packet interface{}) {
 	if g.ws != nil {
 		g.ws.Send(packetID, packet)
+	}
+}
+
+func (g *Game) GoRoom(roomID types.B) {
+	if g.ws != nil {
+		g.ws.Send(client.BOTTLE_PLAY, &client.BottlePlay{
+			RoomID: roomID,
+		})
+	}
+}
+
+func (g *Game) GoRoomToPlayer(playerID types.I) {
+	if g.ws != nil {
+		g.ws.Send(client.MOVE, &client.Move{
+			PlayerID:  playerID,
+			ByteField: 0,
+		})
 	}
 }
 
