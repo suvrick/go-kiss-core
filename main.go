@@ -32,7 +32,7 @@ func main() {
 	if err := g.Connection(); err != nil {
 		log.Fatalln(err.Error())
 	}
-	g.Login(getLoginPacket(0))
+	g.Login(getLoginPacket(1))
 	g.GoRoom(0)
 
 	<-g.GameOver()
@@ -51,7 +51,7 @@ func getLoginPacket(index int) *client.Login {
 		NetType:     types.I(frameDTO.NetType),
 		DeviceType:  5,
 		Key:         types.S(frameDTO.Key),
-		OAuth:       0,
+		OAuth:       1,
 		AccessToken: types.S(frameDTO.AccessToken),
 	}
 }
