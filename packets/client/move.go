@@ -2,7 +2,7 @@ package client
 
 import "github.com/suvrick/go-kiss-core/types"
 
-const MOVE PacketClientType = 21
+const MOVE types.PacketClientType = 21
 
 // MOVE(21) "IB"
 type Move struct {

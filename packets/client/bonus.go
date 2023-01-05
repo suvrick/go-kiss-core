@@ -1,6 +1,8 @@
 package client
 
-const BONUS PacketClientType = 61
+import "github.com/suvrick/go-kiss-core/types"
+
+const BONUS types.PacketClientType = 61
 
 // BONUS(61) ""
 type Bonus struct{}

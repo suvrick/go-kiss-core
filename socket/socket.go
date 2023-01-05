@@ -11,8 +11,9 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/suvrick/go-kiss-core/interfaces"
 	"github.com/suvrick/go-kiss-core/leb128"
-	"github.com/suvrick/go-kiss-core/packets/client"
+	"github.com/suvrick/go-kiss-core/models"
 	"github.com/suvrick/go-kiss-core/packets/server"
 	"github.com/suvrick/go-kiss-core/types"
 )
@@ -35,9 +36,15 @@ type Socket struct {
 	proxy       *url.URL
 	done        chan struct{}
 
+	Self *models.Bot
+	Room *models.Room
+
+	updateSelfHandle func(sender *Socket, self *models.Bot)
+	updateRoomHandle func(sender *Socket, room *models.Room)
+
 	openHandle  func(sender *Socket)
 	closeHandle func(sender *Socket, rule byte, caption string)
-	readHandle  func(sender *Socket, packetID server.PacketServerType, packet interface{})
+	readHandle  func(sender *Socket, packetID types.PacketServerType, packet interface{})
 	errorHandle func(sender *Socket, err error)
 }
 
@@ -60,13 +67,16 @@ var closed_rules = map[byte]string{
 func NewSocket(config *SocketConfig) *Socket {
 	return &Socket{
 		config:     config,
+		logger:     config.Logger,
 		done:       make(chan struct{}),
 		rule_close: 255,
+		Self:       &models.Bot{},
+		Room:       &models.Room{},
 	}
 }
 
 func (s *Socket) Log(msg string) {
-	s.config.Logger.Println(msg)
+	s.logger.Println(msg)
 }
 
 func (socket *Socket) Connection() error {
@@ -113,7 +123,15 @@ func (socket *Socket) Connection() error {
 	return nil
 }
 
-func (socket *Socket) SetOpenHandler(handler func(*Socket)) {
+func (socket *Socket) SetUpdateSelfHandler(handler func(sender *Socket, self *models.Bot)) {
+	socket.updateSelfHandle = handler
+}
+
+func (socket *Socket) SetUpdateRoomHandler(handler func(sender *Socket, self *models.Room)) {
+	socket.updateRoomHandle = handler
+}
+
+func (socket *Socket) SetOpenHandler(handler func(sender *Socket)) {
 	socket.openHandle = handler
 }
 
@@ -121,15 +139,11 @@ func (socket *Socket) SetCloseHandler(handler func(sender *Socket, rule byte, ms
 	socket.closeHandle = handler
 }
 
-func (socket *Socket) SetReadHandler(handler func(*Socket, server.PacketServerType, interface{})) {
-	socket.readHandle = handler
-}
-
-func (socket *Socket) SetErrorHandler(handler func(socket *Socket, err error)) {
+func (socket *Socket) SetErrorHandler(handler func(sender *Socket, err error)) {
 	socket.errorHandle = handler
 }
 
-func (socket *Socket) Send(packetID client.PacketClientType, packet interface{}) {
+func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) {
 
 	socket.Log(fmt.Sprintf("[send] %#v", packet))
 
@@ -244,7 +258,7 @@ func (socket *Socket) read(reader io.Reader) {
 
 	var packet interface{}
 
-	packetID := server.PacketServerType(ID)
+	packetID := types.PacketServerType(ID)
 
 	switch packetID {
 	case server.LOGIN:
@@ -298,6 +312,7 @@ func (socket *Socket) read(reader io.Reader) {
 
 	if packet != nil {
 		err = leb128.Unmarshal(reader, packet)
+
 		if err != nil {
 			if socket.errorHandle != nil {
 				socket.errorHandle(socket, err)
@@ -305,8 +320,14 @@ func (socket *Socket) read(reader io.Reader) {
 			return
 		}
 
-		if socket.readHandle != nil {
-			socket.readHandle(socket, packetID, packet)
+		if pack, ok := packet.(interfaces.IServerPacket); ok {
+			err = pack.Use(socket.Self, socket)
+			if err != nil {
+				if socket.errorHandle != nil {
+					socket.errorHandle(socket, err)
+				}
+				return
+			}
 		}
 	}
 }
@@ -334,4 +355,16 @@ func (socket *Socket) timeoutToGame() {
 	<-time.After(time.Duration(socket.config.TimeInTheGame) * time.Second)
 	socket.setClosedRule(ERROR_TIMEOUT_CLOSE)
 	socket.close_connection()
+}
+
+func (socket *Socket) UpdateSelfEmit() {
+	if socket.updateSelfHandle != nil {
+		socket.updateSelfHandle(socket, socket.Self)
+	}
+}
+
+func (socket *Socket) UpdateRoomEmit() {
+	if socket.updateRoomHandle != nil {
+		socket.updateRoomHandle(socket, socket.Room)
+	}
 }

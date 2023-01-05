@@ -2,7 +2,7 @@ package client
 
 import "github.com/suvrick/go-kiss-core/types"
 
-const BOTTLE_SAVE PacketClientType = 30
+const BOTTLE_SAVE types.PacketClientType = 30
 
 // BOTTLE_SAVE(30) "I"
 type BottleSave struct {

@@ -1,7 +1,5 @@
 package client
 
-type PacketClientType uint
-
 /*
 	ADMIN_REQUEST = 1,
 	ADMIN_EDIT = 2,

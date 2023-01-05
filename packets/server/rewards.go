@@ -1,15 +1,18 @@
 package server
 
-import "github.com/suvrick/go-kiss-core/types"
+import (
+	"github.com/suvrick/go-kiss-core/interfaces"
+	"github.com/suvrick/go-kiss-core/models"
+	"github.com/suvrick/go-kiss-core/types"
+)
 
-const REWARDS PacketServerType = 13
+const REWARDS types.PacketServerType = 13
 
 // REWARDS(13) "[BB]"
 type Rewards struct {
-	Rewards []Reward
+	Rewards []models.Reward
 }
 
-type Reward struct {
-	ID    types.B
-	Count types.B
+func (packet *Rewards) Use(self *models.Bot, game interfaces.IGame) error {
+	return nil
 }

@@ -1,8 +1,14 @@
 package server
 
-import "github.com/suvrick/go-kiss-core/types"
+import (
+	"fmt"
 
-const INFO PacketServerType = 5
+	"github.com/suvrick/go-kiss-core/interfaces"
+	"github.com/suvrick/go-kiss-core/models"
+	"github.com/suvrick/go-kiss-core/types"
+)
+
+const INFO types.PacketServerType = 5
 
 // INFO(5) "BB"
 type Info struct {
@@ -22,21 +28,16 @@ type PlayerInfo struct {
 	//Tag      types.I
 	//Referrer types.I
 	//Ddate    types.I
-	Avatar  Avatar
+	Avatar  models.Avatar
 	Profile types.S
 	Status  types.S
 	Vip     types.B
-	Kisses  Kiss
+	Kisses  models.Kiss
 }
 
-type Avatar struct {
-	Avatar   types.S
-	AvatarID types.B
-}
-
-type Kiss struct {
-	IntField  types.I
-	IntField2 types.I
+func (packer *Info) Use(self *models.Bot, game interfaces.IGame) error {
+	//game.Close()
+	return fmt.Errorf("call error")
 }
 
 /*

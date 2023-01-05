@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/suvrick/go-kiss-core/frame"
-	"github.com/suvrick/go-kiss-core/game"
+	"github.com/suvrick/go-kiss-core/models"
 	"github.com/suvrick/go-kiss-core/packets/client"
+	"github.com/suvrick/go-kiss-core/socket"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -27,15 +29,44 @@ var urls = []string{
 }
 
 func main() {
-	g := game.NewGame()
+	g := socket.NewSocket(socket.GetDefaultSocketConfig())
+	g.SetOpenHandler(openHandle)
+	g.SetCloseHandler(closeHandle)
+	g.SetErrorHandler(errorHandle)
+	g.SetUpdateSelfHandler(updateSelfHandler)
+	g.SetUpdateRoomHandler(updateRoomHandler)
 
 	if err := g.Connection(); err != nil {
 		log.Fatalln(err.Error())
 	}
-	g.Login(getLoginPacket(1))
-	g.GoRoom(0)
 
-	<-g.GameOver()
+	g.Send(client.LOGIN, getLoginPacket(2))
+	//g.Login(getLoginPacket(2))
+	// g.GoRoom(0)
+	g.Wait()
+}
+
+func openHandle(sender *socket.Socket) {
+	fmt.Println("Open connection")
+}
+
+func closeHandle(sender *socket.Socket, rule byte, msg string) {
+	fmt.Printf("Close connection. Rule: %v, %s\n", rule, msg)
+}
+
+func errorHandle(sender *socket.Socket, err error) {
+	if err != nil {
+		fmt.Printf("Error: %v\n", err.Error())
+		sender.Close()
+	}
+}
+
+func updateSelfHandler(sender *socket.Socket, self *models.Bot) {
+	fmt.Printf("[update self]: %v,\n", self)
+}
+
+func updateRoomHandler(sender *socket.Socket, room *models.Room) {
+	fmt.Printf("[update room]: %v, %v\n", room, room.Players)
 }
 
 func getLoginPacket(index int) *client.Login {

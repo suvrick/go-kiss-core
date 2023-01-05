@@ -1,7 +1,5 @@
 package server
 
-type PacketServerType uint16
-
 /*
 	NULL = 0,
 	HELLO = 1,

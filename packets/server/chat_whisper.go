@@ -1,8 +1,12 @@
 package server
 
-import "github.com/suvrick/go-kiss-core/types"
+import (
+	"github.com/suvrick/go-kiss-core/interfaces"
+	"github.com/suvrick/go-kiss-core/models"
+	"github.com/suvrick/go-kiss-core/types"
+)
 
-const CHAT_WHISPER PacketServerType = 38
+const CHAT_WHISPER types.PacketServerType = 38
 
 // CHAT_WHISPER(38) "ISBIB"
 type ChatWhisper struct {
@@ -11,4 +15,8 @@ type ChatWhisper struct {
 	ByteField  types.B
 	IntField2  types.I
 	ByteField2 types.B
+}
+
+func (packet *ChatWhisper) Use(self *models.Bot, game interfaces.IGame) error {
+	return nil
 }

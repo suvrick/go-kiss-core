@@ -2,7 +2,7 @@ package client
 
 import "github.com/suvrick/go-kiss-core/types"
 
-const BOTTLE_PLAY PacketClientType = 26
+const BOTTLE_PLAY types.PacketClientType = 26
 
 // BOTTLE_PLAY(26) "B,B"
 type BottlePlay struct {

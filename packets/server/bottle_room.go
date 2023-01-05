@@ -1,8 +1,12 @@
 package server
 
-import "github.com/suvrick/go-kiss-core/types"
+import (
+	"github.com/suvrick/go-kiss-core/interfaces"
+	"github.com/suvrick/go-kiss-core/models"
+	"github.com/suvrick/go-kiss-core/types"
+)
 
-const BOTTLE_ROOM PacketServerType = 25
+const BOTTLE_ROOM types.PacketServerType = 25
 
 // BOTTLE_ROOM(25) "III[I][I]"
 type BottleRoom struct {
@@ -11,4 +15,8 @@ type BottleRoom struct {
 	IntField3 types.I
 	Players   []types.I
 	IntArray2 []types.I
+}
+
+func (packet *BottleRoom) Use(self *models.Bot, game interfaces.IGame) error {
+	return nil
 }

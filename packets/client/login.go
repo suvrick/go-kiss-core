@@ -2,7 +2,7 @@ package client
 
 import "github.com/suvrick/go-kiss-core/types"
 
-const LOGIN PacketClientType = 4
+const LOGIN types.PacketClientType = 4
 
 // LOGIN(4) "IBBS,BSIIBSBSBS"
 type Login struct {

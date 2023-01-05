@@ -2,7 +2,7 @@ package client
 
 import "github.com/suvrick/go-kiss-core/types"
 
-const BUY PacketClientType = 6
+const BUY types.PacketClientType = 6
 
 // BONUS(6) "IIIIBI,B"
 type Buy struct {

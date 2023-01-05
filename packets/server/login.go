@@ -1,55 +1,40 @@
 package server
 
-import "github.com/suvrick/go-kiss-core/types"
+import (
+	"github.com/suvrick/go-kiss-core/interfaces"
+	"github.com/suvrick/go-kiss-core/models"
+	"github.com/suvrick/go-kiss-core/packets/client"
+	"github.com/suvrick/go-kiss-core/types"
+)
 
-const LOGIN PacketServerType = 4
+const LOGIN types.PacketServerType = 4
 
 // LOGIN(4) "B,II"
 type Login struct {
-	Result  LoginResultType
+	Result  models.LoginResultType
 	GameID  types.I `pack:"optional"`
-	Balance types.B `pack:"optional"`
+	Balance types.I `pack:"optional"`
 }
 
-type LoginResultType types.B
+func (packet *Login) Use(self *models.Bot, game interfaces.IGame) error {
 
-// Login result response
-const (
-	Success       LoginResultType = 0
-	Failed        LoginResultType = 1
-	Exist         LoginResultType = 2
-	Blocked       LoginResultType = 3
-	WronngVersion LoginResultType = 4
-	NoSex         LoginResultType = 5
-	Captcha       LoginResultType = 6
-	BlockedByAge  LoginResultType = 7
-	NeedVerify    LoginResultType = 8
-	Deleted       LoginResultType = 9
-)
+	self.Result = packet.Result
+	self.SelfID = packet.GameID
+	self.Balance = packet.Balance
 
-func (r LoginResultType) String() string {
-	switch r {
+	game.UpdateSelfEmit()
+
+	switch self.Result {
 	case 0:
-		return "Success"
-	case 1:
-		return "Failed"
-	case 2:
-		return "Exist"
-	case 3:
-		return "Blocked"
-	case 4:
-		return "WronngVersion"
-	case 5:
-		return "NoSex"
-	case 6:
-		return "Captcha"
-	case 7:
-		return "BlockedByAge"
-	case 8:
-		return "NeedVerify"
-	case 9:
-		return "Deleted"
+		game.Send(client.REQUEST, client.Request{
+			Players: []types.I{
+				self.SelfID,
+			},
+			Mask: 328588,
+		})
 	default:
-		return "Error"
+		game.Close()
 	}
+
+	return nil
 }
