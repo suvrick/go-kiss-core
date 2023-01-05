@@ -13,7 +13,7 @@ func Test_marshal(t *testing.T) {
 	data := []interface{}{
 		222,
 		[]interface{}{
-			"aaaaaa",
+			// "aaaaaa",
 			"bbbbbb",
 			[]interface{}{
 				1,

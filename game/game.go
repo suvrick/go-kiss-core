@@ -35,9 +35,10 @@ func NewGame() *Game {
 	g := Game{
 		end:          make(chan struct{}),
 		stop_packets: make([]int, 0),
-		s_buffer:     new(bytes.Buffer),
-		r_buffer:     new(bytes.Buffer),
 	}
+
+	g.s_buffer = bytes.NewBuffer(make([]byte, 512))
+	g.r_buffer = bytes.NewBuffer(make([]byte, 512))
 
 	g.ctx, g.cancel = context.WithCancel(context.Background())
 
@@ -58,7 +59,8 @@ func (g *Game) Send(id packets.ClientPacketType, data []any) error {
 	if err != nil {
 		return err
 	}
-	_ = b
+	g.s_buffer.Reset()
+	g.s_buffer.Write(b)
 	g.send()
 	return nil
 }
@@ -113,6 +115,7 @@ func (g *Game) send() {
 	g.s_buffer.Reset()
 
 	leb128.Write(g.s_buffer, len(b1)+len(b2)) // len
+	leb128.Write(g.s_buffer, 5)               // device type
 	g.s_buffer.Write(b2)
 	g.s_buffer.Write(b1)
 
@@ -164,7 +167,7 @@ func (g *Game) loop() {
 			continue
 		}
 
-		packetID, err = leb128.ReadInt(g.r_buffer, 8)
+		packetID, err = leb128.ReadInt(g.r_buffer, 32)
 		if err != nil {
 			//s.emitErrorHandler(err)
 			continue

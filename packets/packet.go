@@ -22,9 +22,6 @@ type ClientPacketType int
 
 const (
 	C_LOGIN ClientPacketType = 4
-)
-
-const (
 	S_LOGIN ServerPacketType = 4
 )
 
@@ -85,21 +82,24 @@ func marshal(w io.ByteWriter, formats []rune, data []any) error {
 		}
 
 		if dPointer >= len(data) {
-			err = fmt.Errorf("miss value of index: %d for data: %v", dPointer, data)
+			err = fmt.Errorf("marshal: miss value of index: %d for data: %v", dPointer, data)
 			continue
 		}
 
 		value := data[dPointer]
 
 		if isArray {
-			subFormats := getSubFormat(cPointer, formats)
-			if newData, ok := value.([]interface{}); ok {
-				if err = leb128.Write(w, len(newData)); err == nil {
-					err = marshal(w, subFormats, newData)
-					cPointer += len(subFormats) - 1 //прибавляем вычитанную длину группы
+			subFormats, err2 := getSubFormat(cPointer, formats)
+			err = err2
+			if err == nil {
+				if newData, ok := value.([]interface{}); ok {
+					if err = leb128.Write(w, len(newData)); err == nil {
+						err = marshal(w, subFormats, newData)
+						cPointer += len(subFormats) - 1 //прибавляем вычитанную длину группы
+					}
+				} else {
+					err = fmt.Errorf("marshal: params %T not cast to slice", value)
 				}
-			} else {
-				err = fmt.Errorf("params %T not cast of slice", value)
 			}
 		} else {
 			switch char {
@@ -114,20 +114,19 @@ func marshal(w io.ByteWriter, formats []rune, data []any) error {
 			case 'A':
 				// TODO: imnplement for array ...
 			default:
-				err = fmt.Errorf("unsupported code %v", char)
+				err = fmt.Errorf("marshal: unsupported code %v", char)
 				continue
 			}
 		}
 
 		dPointer++
 		cPointer++
-
 	}
 
 	return err
 }
 
-func getSubFormat(index int, formats []rune) []rune {
+func getSubFormat(index int, formats []rune) ([]rune, error) {
 	r := make([]rune, 0)
 	dep := 0
 	for i := index; i < len(formats); i++ {
@@ -145,10 +144,13 @@ func getSubFormat(index int, formats []rune) []rune {
 		}
 
 		r = append(r, c)
-
 	}
 
-	return r
+	if dep != 0 {
+		return nil, fmt.Errorf("[getSubFormat] invalid packet format")
+	}
+
+	return r, nil
 }
 
 func NewServerPacket(id ServerPacketType, r io.ByteReader) ([]any, error) {
