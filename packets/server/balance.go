@@ -15,5 +15,6 @@ type Balance struct {
 }
 
 func (packet *Balance) Use(self *models.Bot, game interfaces.IGame) error {
+	self.Balance = packet.Bottles
 	return nil
 }

@@ -1,8 +1,6 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/suvrick/go-kiss-core/interfaces"
 	"github.com/suvrick/go-kiss-core/models"
 	"github.com/suvrick/go-kiss-core/types"
@@ -35,9 +33,31 @@ type PlayerInfo struct {
 	Kisses  models.Kiss
 }
 
-func (packer *Info) Use(self *models.Bot, game interfaces.IGame) error {
-	//game.Close()
-	return fmt.Errorf("call error")
+func (packet *Info) Use(self *models.Bot, game interfaces.IGame) error {
+	// if len(packet.Players) > 0 {
+	// 	player.PlayerID = packet.Players[0].GameID
+	// 	player.Name = packet.Players[0].Name
+	// 	player.Avatar = packet.Players[0].Avatar.Avatar
+	// 	player.Profile = packet.Players[0].Profile
+	// 	player.Sex = packet.Players[0].Sex
+	// 	player.Vip = packet.Players[0].Vip
+	// 	player.Kissed = packet.Players[0].Kisses.Kissed
+	// 	player.KissedDay = packet.Players[0].Kisses.KissedDay
+	// }
+
+	// for _, v := range g.room.Players {
+	// 	if v.PlayerID == player.PlayerID {
+	// 		g.room.Players[player.PlayerID] = player
+	// 		g.updateRoomEmit()
+	// 	}
+	// }
+
+	// if g.self.SelfID == player.PlayerID {
+	// 	g.self.Player = *player
+	// 	g.updateSelfEmit()
+	// 	g.b &^= 4 //off
+	// }
+	return nil
 }
 
 /*
