@@ -37,10 +37,8 @@ type Socket struct {
 	done        chan struct{}
 
 	Self *models.Bot
-	Room *models.Room
 
 	updateSelfHandle func(sender *Socket, self *models.Bot)
-	updateRoomHandle func(sender *Socket, room *models.Room)
 
 	openHandle  func(sender *Socket)
 	closeHandle func(sender *Socket, rule byte, caption string)
@@ -71,7 +69,6 @@ func NewSocket(config *SocketConfig) *Socket {
 		done:       make(chan struct{}),
 		rule_close: 255,
 		Self:       &models.Bot{},
-		Room:       &models.Room{},
 	}
 }
 
@@ -125,10 +122,6 @@ func (socket *Socket) Connection() error {
 
 func (socket *Socket) SetUpdateSelfHandler(handler func(sender *Socket, self *models.Bot)) {
 	socket.updateSelfHandle = handler
-}
-
-func (socket *Socket) SetUpdateRoomHandler(handler func(sender *Socket, self *models.Room)) {
-	socket.updateRoomHandle = handler
 }
 
 func (socket *Socket) SetOpenHandler(handler func(sender *Socket)) {
@@ -252,9 +245,9 @@ func (socket *Socket) read(reader io.Reader) {
 		return
 	}
 
-	if ID == 7 {
-		fmt.Printf("%#v\n", reader)
-	}
+	// if ID == 7 {
+	// 	fmt.Printf("%#v\n", reader)
+	// }
 
 	var packet interface{}
 
@@ -311,6 +304,7 @@ func (socket *Socket) read(reader io.Reader) {
 	}
 
 	if packet != nil {
+
 		err = leb128.Unmarshal(reader, packet)
 
 		if err != nil {
@@ -319,6 +313,8 @@ func (socket *Socket) read(reader io.Reader) {
 			}
 			return
 		}
+
+		socket.Log(fmt.Sprintf("[read] %#v", packet))
 
 		if pack, ok := packet.(interfaces.IServerPacket); ok {
 			err = pack.Use(socket.Self, socket)
@@ -360,11 +356,5 @@ func (socket *Socket) timeoutToGame() {
 func (socket *Socket) UpdateSelfEmit() {
 	if socket.updateSelfHandle != nil {
 		socket.updateSelfHandle(socket, socket.Self)
-	}
-}
-
-func (socket *Socket) UpdateRoomEmit() {
-	if socket.updateRoomHandle != nil {
-		socket.updateRoomHandle(socket, socket.Room)
 	}
 }

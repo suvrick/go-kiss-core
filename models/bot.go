@@ -12,7 +12,8 @@ type Bot struct {
 	BonusDay        types.B
 	CollectionPoint types.I
 
-	Player
+	Room *Room
+	Info *Player
 }
 
 // type Bot struct {

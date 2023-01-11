@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -11,9 +12,10 @@ import (
 	"github.com/suvrick/go-kiss-core/types"
 )
 
-//103786258
-//sessionKey=5d09db98a83f25ff3885114f725c651022ee76138454ff
-//dc93c8e0c365ca792cf1198ab71c73e7
+// 103786258
+// sessionKey=5d09db98a83f25ff3885114f725c651022ee76138454ff
+// dc93c8e0c365ca792cf1198ab71c73e7
+const Tototo93 types.I = 22132982
 
 var urls = []string{
 	"https://bottle2.itsrealgames.com/mobile/build/v1593/?social_api=mm&type=mm&record_first_session=1&6=&is_app_user=1&session_key=f53f650cd57b6bc75da0b65af0d0c028&vid=13402962412699287699&oid=13402962412699287699&app_id=543574&authentication_key=e1de7d6b1b9a18e124331d1a8e7a6709&session_expire=1623248257&ext_perm=notifications%2Cemails%2Cpayments&sig=d38fca257b4651d5fc2bbc3e2531842f&window_id=CometName_74be9f9e99659ab7f65e85f2a31d3d3b&referer_type=left_menu&version=1593",
@@ -34,15 +36,21 @@ func main() {
 	g.SetCloseHandler(closeHandle)
 	g.SetErrorHandler(errorHandle)
 	g.SetUpdateSelfHandler(updateSelfHandler)
-	g.SetUpdateRoomHandler(updateRoomHandler)
 
 	if err := g.Connection(); err != nil {
 		log.Fatalln(err.Error())
 	}
 
 	g.Send(client.LOGIN, getLoginPacket(2))
-	//g.Login(getLoginPacket(2))
-	// g.GoRoom(0)
+
+	// g.Send(client.BOTTLE_PLAY, client.BottlePlay{
+	// 	RoomID: 0,
+	// })
+
+	g.Send(client.MOVE, client.Move{
+		PlayerID: Tototo93,
+	})
+
 	g.Wait()
 }
 
@@ -62,11 +70,12 @@ func errorHandle(sender *socket.Socket, err error) {
 }
 
 func updateSelfHandler(sender *socket.Socket, self *models.Bot) {
-	fmt.Printf("[update self]: %v,\n", self)
-}
+	_, err := json.Marshal(self)
+	if err != nil {
+		fmt.Printf("[update self]: %v,\n", err)
+	}
 
-func updateRoomHandler(sender *socket.Socket, room *models.Room) {
-	fmt.Printf("[update room]: %v, %v\n", room, room.Players)
+	//fmt.Println(string(bytes))
 }
 
 func getLoginPacket(index int) *client.Login {

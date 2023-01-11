@@ -14,5 +14,7 @@ type BottleLeave struct {
 }
 
 func (packet *BottleLeave) Use(self *models.Bot, game interfaces.IGame) error {
+	delete(self.Room.Players, packet.PlayerID)
+	game.UpdateSelfEmit()
 	return nil
 }

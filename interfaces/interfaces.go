@@ -8,7 +8,6 @@ import (
 type IGame interface {
 	Send(packetID types.PacketClientType, packet interface{})
 	UpdateSelfEmit()
-	UpdateRoomEmit()
 	Connection() error
 	Close()
 	//ConnectionWithProxy() error

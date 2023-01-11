@@ -22,8 +22,6 @@ func (packet *Login) Use(self *models.Bot, game interfaces.IGame) error {
 	self.SelfID = packet.GameID
 	self.Balance = packet.Balance
 
-	game.UpdateSelfEmit()
-
 	switch self.Result {
 	case 0:
 		game.Send(client.REQUEST, client.Request{
@@ -33,6 +31,7 @@ func (packet *Login) Use(self *models.Bot, game interfaces.IGame) error {
 			Mask: 328588,
 		})
 	default:
+		game.UpdateSelfEmit()
 		game.Close()
 	}
 

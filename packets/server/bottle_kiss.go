@@ -15,5 +15,20 @@ type BottleKiss struct {
 }
 
 func (packet *BottleKiss) Use(self *models.Bot, game interfaces.IGame) error {
+	if packet.PlayerID == self.Room.LeaderID {
+		self.Room.KissAnswerLeader = packet.Answer
+	} else if packet.PlayerID == self.Room.RollerID {
+		self.Room.KissAnswerRoller = packet.Answer
+	}
+
+	if currentPlayer, ok := self.Room.Players[packet.PlayerID]; ok {
+		if packet.Answer == 1 {
+			currentPlayer.KissedRoom += 1
+			currentPlayer.KissedDay += 1
+			currentPlayer.Kissed += 1
+		}
+	}
+
+	game.UpdateSelfEmit()
 	return nil
 }
