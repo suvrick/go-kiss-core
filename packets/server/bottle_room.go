@@ -1,6 +1,9 @@
 package server
 
 import (
+	"log"
+	"time"
+
 	"github.com/suvrick/go-kiss-core/interfaces"
 	"github.com/suvrick/go-kiss-core/models"
 	"github.com/suvrick/go-kiss-core/packets/client"
@@ -34,6 +37,16 @@ func (packet *BottleRoom) Use(self *models.Bot, game interfaces.IGame) error {
 			Players: []types.I{p},
 			Mask:    INFOMASK,
 		})
+	}
+
+	if !self.Find() {
+		time.Sleep(1000)
+
+		game.Send(client.MOVE, client.Move{
+			PlayerID: self.HiroID,
+		})
+
+		log.Printf("[%d] I am start search hiro %d\n", self.SelfID, self.HiroID)
 	}
 
 	game.UpdateSelfEmit()

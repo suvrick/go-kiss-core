@@ -35,9 +35,10 @@ type Socket struct {
 	logger      *log.Logger
 	proxy       *url.URL
 	done        chan struct{}
+	Role        byte
+	Self        *models.Bot
 
-	Self *models.Bot
-
+	//openHandle  func(sender *Socket)
 	updateSelfHandle func(sender *Socket, self *models.Bot)
 
 	openHandle  func(sender *Socket)
@@ -68,7 +69,10 @@ func NewSocket(config *SocketConfig) *Socket {
 		logger:     config.Logger,
 		done:       make(chan struct{}),
 		rule_close: 255,
-		Self:       &models.Bot{},
+		Self: &models.Bot{
+			Room: &models.Room{},
+			Info: &models.Player{},
+		},
 	}
 }
 
@@ -118,6 +122,11 @@ func (socket *Socket) Connection() error {
 	go socket.Wait()
 
 	return nil
+}
+
+func (socket *Socket) ConnectionWithProxy(proxy *url.URL) error {
+	socket.proxy = proxy
+	return socket.Connection()
 }
 
 func (socket *Socket) SetUpdateSelfHandler(handler func(sender *Socket, self *models.Bot)) {

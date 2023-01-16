@@ -12,8 +12,22 @@ type Bot struct {
 	BonusDay        types.B
 	CollectionPoint types.I
 
+	//IsFind bool
+
+	HiroID types.I
+
 	Room *Room
 	Info *Player
+}
+
+func (b *Bot) Find() bool {
+	for _, p := range b.Room.Players {
+		if p.PlayerID == b.HiroID {
+			return true
+		}
+	}
+
+	return false
 }
 
 // type Bot struct {
