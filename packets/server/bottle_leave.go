@@ -10,6 +10,8 @@ import (
 	"github.com/suvrick/go-kiss-core/types"
 )
 
+const BOTTLE_LEAVE types.PacketServerType = 27
+
 // BOTTLE_LEAVE(27) "I"
 type BottleLeave struct {
 	PlayerID types.I
@@ -26,7 +28,7 @@ func (packet *BottleLeave) Use(self *models.Bot, game interfaces.IGame) error {
 		})
 
 		log.Printf("[%d] I am start search hiro %d\n", self.SelfID, self.HiroID)
-	}э
+	}
 
 	game.UpdateSelfEmit()
 	return nil
