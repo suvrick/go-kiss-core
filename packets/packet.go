@@ -1,7 +1,6 @@
 package packets
 
 import (
-	"bytes"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -34,31 +33,27 @@ func init() {
 	json.Unmarshal(f, &schemes)
 }
 
-func NewClientPacket(id ClientPacketType, data []any) ([]byte, error) {
+func NewClientPacket(id ClientPacketType, values []any) (data []byte, err error) {
 
 	p := getClientScheme(id)
 
-	w := new(bytes.Buffer)
-
-	err := marshal(w, []rune(p.Format), data)
-
-	return w.Bytes(), err
+	return marshal(data, []rune(p.Format), values)
 }
 
-func marshal(w io.ByteWriter, formats []rune, data []any) error {
+func marshal(buffer []byte, formats []rune, values []any) ([]byte, error) {
 
 	var skip bool
 	var char rune
 	var err error
 	var cPointer int
 	var dPointer int
-	var isArray bool
+	//var isArray bool
 
 	for cPointer < len(formats) {
 
 		if err != nil {
 			if skip {
-				return nil
+				return nil, nil
 			} else {
 				break
 			}
@@ -72,58 +67,43 @@ func marshal(w io.ByteWriter, formats []rune, data []any) error {
 			cPointer++
 			continue
 		case '[':
-			isArray = true
+			//isArray = true
 			cPointer++
 			continue
 		case ']':
-			isArray = false
+			//isArray = false
 			cPointer++
 			continue
 		}
 
-		if dPointer >= len(data) {
-			err = fmt.Errorf("marshal: miss value of index: %d for data: %v", dPointer, data)
+		if dPointer >= len(values) {
+			err = fmt.Errorf("marshal: miss value of index: %d for data: %v", dPointer, values)
 			continue
 		}
 
-		value := data[dPointer]
+		value := values[dPointer]
 
-		if isArray {
-			subFormats, err2 := getSubFormat(cPointer, formats)
-			err = err2
-			if err == nil {
-				if newData, ok := value.([]interface{}); ok {
-					if err = leb128.Write(w, len(newData)); err == nil {
-						err = marshal(w, subFormats, newData)
-						cPointer += len(subFormats) - 1 //прибавляем вычитанную длину группы
-					}
-				} else {
-					err = fmt.Errorf("marshal: params %T not cast to slice", value)
-				}
-			}
-		} else {
-			switch char {
-			case 'B':
-				err = leb128.Write(w, value)
-			case 'I':
-				err = leb128.Write(w, value)
-			case 'L':
-				err = leb128.Write(w, value)
-			case 'S':
-				err = leb128.Write(w, value)
-			case 'A':
-				// TODO: imnplement for array ...
-			default:
-				err = fmt.Errorf("marshal: unsupported code %v", char)
-				continue
-			}
+		switch char {
+		case 'B':
+			buffer, err = leb128.WriteByte(buffer, value)
+		case 'I':
+			buffer, err = leb128.WriteInt(buffer, value)
+		case 'L':
+			buffer, err = leb128.WriteLong(buffer, value)
+		case 'S':
+			buffer, err = leb128.WriteString(buffer, value)
+		case 'A':
+			// TODO: imnplement for array ...
+		default:
+			err = fmt.Errorf("marshal: unsupported code %v", char)
+			continue
 		}
-
-		dPointer++
-		cPointer++
 	}
 
-	return err
+	dPointer++
+	cPointer++
+
+	return buffer, err
 }
 
 func getSubFormat(index int, formats []rune) ([]rune, error) {

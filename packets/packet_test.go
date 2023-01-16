@@ -1,29 +1,22 @@
 package packets
 
 import (
-	"bytes"
 	_ "embed"
 	"fmt"
 	"testing"
+
+	"github.com/suvrick/go-kiss-core/types"
 )
 
 func Test_marshal(t *testing.T) {
-	w := new(bytes.Buffer)
+	buffer := make([]byte, 0)
 	format := "I[SS[I]],I"
 	data := []interface{}{
-		222,
-		[]interface{}{
-			// "aaaaaa",
-			"bbbbbb",
-			[]interface{}{
-				1,
-				2,
-			},
-		},
-		55,
+		types.I(123),
+		types.B(123),
 	}
 
-	err := marshal(w, []rune(format), data)
+	buffer, err := marshal(buffer, []rune(format), data)
 
-	fmt.Printf("%v, %v\n", w.Bytes(), err)
+	fmt.Printf("%v, %v\n", buffer, err)
 }

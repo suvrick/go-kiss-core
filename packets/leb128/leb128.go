@@ -1,239 +1,152 @@
 package leb128
 
 import (
-	"errors"
 	"fmt"
-	"io"
-	"strings"
+
+	"github.com/suvrick/go-kiss-core/types"
 )
 
-// type Number interface {
-// 	bool | int8 | *int8 | int16 | *int16 | int32 | *int32 | int64 | *int64
-// 	uint8 | *uint8 | uint16 | *uint16 | uint32 | *uint32 | uint64 | *uint64
-// 	float32 | *float32 | float64 | *float64
-// }
-
-func Write(buffer io.ByteWriter, v any) (err error) {
-
-	var value any
-
-	switch x := v.(type) {
-	case int8:
-		value = int64(x)
-	case *int8:
-		value = int64(*x)
-	case uint8:
-		value = uint64(x)
-	case *uint8:
-		value = uint64(*x)
-	case int16:
-		value = int64(x)
-	case *int16:
-		value = int64(*x)
-	case uint16:
-		value = uint64(x)
-	case *uint16:
-		value = uint64(*x)
-	case int:
-		value = int64(x)
-	case *int:
-		value = int64(*x)
-	case uint:
-		value = uint64(x)
-	case *uint:
-		value = uint64(*x)
-	case int32:
-		value = int64(x)
-	case *int32:
-		value = int64(*x)
-	case uint32:
-		value = uint64(x)
-	case *uint32:
-		value = uint64(*x)
-	case int64:
-		value = int64(x)
-	case *uint64:
-		value = uint64(*x)
-	case uint64:
-		value = uint64(x)
-	case *int64:
-		value = int64(*x)
-	case float32:
-		value = int64(x)
-	case *float32:
-		value = int64(*x)
-	case float64:
-		value = int64(x)
-	case *float64:
-		value = int64(*x)
-	case bool:
-		if x {
-			value = uint64(1)
-		} else {
-			value = int64(0)
-		}
-	case *bool:
-		if *x {
-			value = uint64(1)
-		} else {
-			value = int64(0)
-		}
-	case string:
-		value = int64(len(x))
-	case *string:
-		value = int64(len(*x))
-	default:
-		err = fmt.Errorf("leb128: unsupported type %T", x)
-		return
-	}
-
-	switch x := value.(type) {
-	case int64:
-		WriteInt(buffer, x)
-	case uint64:
-		WriteUint(buffer, x)
-	}
-
-	if s, ok := v.(string); ok {
-		if value.(int64) > 0 {
-			for _, c := range []byte(s) {
-				err = buffer.WriteByte(c)
-				if err != nil {
-					return
-				}
-			}
-		}
-	}
-
-	return
-}
-
-func WriteInt(w io.ByteWriter, v int64) {
-	for {
-		c := uint8(v & 0x7f) // берем первых 7 бит
-		s := uint8(v & 0x40)
-		v >>= 7 // сдвигайем на 7 бит вправо
-		if (v != int64(-1) || s == 0) && (v != 0 || s != 0) {
-			c |= 0x80 // дописываем 8 бит
-		}
-		w.WriteByte(c)
-		if c&0x80 == 0 {
-			break
-		}
+func WriteByte(buffer []byte, value any) ([]byte, error) {
+	if v, ok := value.(types.B); ok {
+		return appendSleb128(buffer, int64(v)), nil
+	} else {
+		return buffer, fmt.Errorf("[WriteByte] fail cast %T of types.B", value)
 	}
 }
 
-func WriteUint(w io.ByteWriter, v uint64) {
+func WriteInt(buffer []byte, value any) ([]byte, error) {
+	if v, ok := value.(types.I); ok {
+		return appendSleb128(buffer, int64(v)), nil
+	} else {
+		return buffer, fmt.Errorf("[WriteInt] fail cast %T of types.I", value)
+	}
+}
+
+func WriteLong(buffer []byte, value any) ([]byte, error) {
+	if v, ok := value.(types.L); ok {
+		return appendUleb128(buffer, uint64(v)), nil
+	} else {
+		return buffer, fmt.Errorf("[WriteLong] fail cast %T of types.L", value)
+	}
+}
+
+func WriteString(buffer []byte, value any) ([]byte, error) {
+	if v, ok := value.(types.S); ok {
+		buffer = append(buffer, appendSleb128(buffer, int64(len(v)))...)
+		return append(buffer, []byte(v)...), nil
+	} else {
+		return buffer, fmt.Errorf("[WriteString] fail cast %T of types.S", value)
+	}
+}
+
+var sevenbits = [...]byte{
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+	0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+	0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f,
+	0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f,
+	0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f,
+	0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f,
+	0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d, 0x7e, 0x7f,
+}
+
+// appendUleb128 appends v to b using unsigned LEB128 encoding.
+func appendUleb128(b []byte, v uint64) []byte {
+	// If it's less than or equal to 7-bit
+	if v < 0x80 {
+		return append(b, sevenbits[v])
+	}
+
 	for {
 		c := uint8(v & 0x7f)
 		v >>= 7
+
 		if v != 0 {
 			c |= 0x80
 		}
-		w.WriteByte(c)
+
+		b = append(b, c)
+
 		if c&0x80 == 0 {
 			break
 		}
 	}
+
+	return b
 }
 
-func ReadString(r io.ByteReader) (result string, err error) {
-
-	var slen int64
-	slen, err = ReadInt(r, 32)
-	if err != nil {
-		return
+// appendSleb128 appends v to b using signed LEB128 encoding.
+func appendSleb128(b []byte, v int64) []byte {
+	// If it's less than or equal to 7-bit
+	if v >= 0 && v <= 0x3f {
+		return append(b, sevenbits[v])
+	} else if v < 0 && v >= ^0x3f {
+		return append(b, sevenbits[0x80+v])
 	}
 
-	str := strings.Builder{}
-	var b byte
+	for {
+		c := uint8(v & 0x7f)
+		s := uint8(v & 0x40)
+		v >>= 7
 
-	for slen > 0 {
-		b, err = r.ReadByte()
-		if err != nil {
+		if (v != -1 || s == 0) && (v != 0 || s != 0) {
+			c |= 0x80
+		}
+
+		b = append(b, c)
+
+		if c&0x80 == 0 {
+			break
+		}
+	}
+
+	return b
+}
+
+// DecodeUleb128 decodes b to u with unsigned LEB128 encoding and returns the
+// number of bytes read. On error (bad encoded b), n will be 0 and therefore u
+// must not be trusted.
+func DecodeUleb128(b []byte) (u uint64, n uint8) {
+	l := uint8(len(b) & 0xff)
+	// The longest LEB128 encoded sequence is 10 byte long (9 0xff's and 1 0x7f)
+	// so make sure we won't overflow.
+	if l > 10 {
+		l = 10
+	}
+
+	var i uint8
+	for i = 0; i < l; i++ {
+		u |= uint64(b[i]&0x7f) << (7 * i)
+		if b[i]&0x80 == 0 {
+			n = uint8(i + 1)
 			return
 		}
-		str.WriteByte(b)
-		slen--
-	}
-
-	result = str.String()
-	return
-}
-
-func ReadBool(r io.ByteReader) (result bool, err error) {
-	v, e := ReadUint(r, 8)
-	if e != nil {
-		err = e
-		return
-	}
-
-	if v != 0 {
-		result = true
 	}
 
 	return
 }
 
-func ReadUint(r io.ByteReader, n uint) (uint64, error) {
-	if n > 64 {
-		return 0, errors.New("leb128: invalid uint")
+// DecodeSleb128 decodes b to s with signed LEB128 encoding and returns the
+// number of bytes read. On error (bad encoded b), n will be 0 and therefore s
+// must not be trusted.
+func DecodeSleb128(b []byte) (s int64, n uint8) {
+	l := uint8(len(b) & 0xff)
+	if l > 10 {
+		l = 10
 	}
 
-	var res uint64
-	var shift uint
-
-	for {
-		p, err := r.ReadByte()
-		if err != nil {
-			return 0, err
-		}
-
-		b := uint64(p)
-
-		if n == 8 {
-			return b, nil
-		}
-
-		switch {
-		case b < 1<<7 && b < 1<<n:
-			res += (1 << shift) * b
-			return res, nil
-		case b >= 1<<7 && n > 7:
-			res += (1 << shift) * (b - 1<<7)
-			shift += 7
-			n -= 7
-		default:
-			return 0, errors.New("leb128: invalid uint")
+	var i uint8
+	for i = 0; i < l; i++ {
+		s |= int64(b[i]&0x7f) << (7 * i)
+		if b[i]&0x80 == 0 {
+			// If it's signed
+			if b[i]&0x40 != 0 {
+				s |= ^0 << (7 * (i + 1))
+			}
+			n = uint8(i + 1)
+			return
 		}
 	}
-}
 
-func ReadInt(r io.ByteReader, n uint) (int64, error) {
-	if n > 64 {
-		panic(errors.New("leb128: n must <= 64"))
-	}
-	var res int64
-	var shift uint
-	for {
-		p, err := r.ReadByte()
-		if err != nil {
-			return 0, err
-		}
-		b := int64(p)
-		switch {
-		case b < 1<<6 && uint64(b) < uint64(1<<(n-1)):
-			res += (1 << shift) * b
-			return res, nil
-		case b >= 1<<6 && b < 1<<7 && uint64(b)+1<<(n-1) >= 1<<7:
-			res += (1 << shift) * (b - 1<<7)
-			return res, nil
-		case b >= 1<<7 && n > 7:
-			res += (1 << shift) * (b - 1<<7)
-			shift += 7
-			n -= 7
-		default:
-			return 0, errors.New("leb128: invalid int")
-		}
-	}
+	return
 }
