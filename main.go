@@ -84,7 +84,10 @@ func main() {
 
 		login := getLoginPacket(url)
 
-		g := socket.NewSocket(socket.GetDefaultSocketConfig())
+		config := socket.GetDefaultSocketConfig()
+		config.TimeInTheGame = 5
+
+		g := socket.NewSocket(config)
 		g.SetOpenHandler(openHandle)
 		g.SetCloseHandler(closeHandle)
 		g.SetErrorHandler(errorHandle)

@@ -341,9 +341,8 @@ func (socket *Socket) close_connection() {
 	if socket.client != nil {
 		socket.client.Close()
 		socket.client = nil
+		close(socket.done)
 	}
-
-	close(socket.done)
 }
 
 func (socket *Socket) setClosedRule(rule byte) {
