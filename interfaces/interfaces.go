@@ -17,5 +17,5 @@ type IGame interface {
 }
 
 type IServerPacket interface {
-	Use(self *models.Bot, game IGame) error
+	Use(self *models.Hiro, room *models.Room, game IGame) error
 }

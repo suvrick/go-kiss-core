@@ -35,7 +35,7 @@ type PlayerInfo struct {
 	Kisses  models.Kiss
 }
 
-func (packet *Info) Use(self *models.Bot, game interfaces.IGame) error {
+func (packet *Info) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
 
 	player := models.Player{}
 
@@ -50,19 +50,17 @@ func (packet *Info) Use(self *models.Bot, game interfaces.IGame) error {
 		player.KissedDay = packet.Players[0].Kisses.KissedDay
 	}
 
-	for _, v := range self.Room.Players {
+	for _, v := range room.Players {
 		if v.PlayerID == player.PlayerID {
-			self.Room.Players[player.PlayerID] = &player
+			room.Players[player.PlayerID] = &player
 		}
 	}
 
-	if self.SelfID == player.PlayerID {
-		self.Info = &player
-		log.Printf("I`m %s, ID: %d\n", self.Info.Name, self.SelfID)
-		// g.b &^= 4 //off
+	if hiro.ID == player.PlayerID {
+		hiro.Info = &player
+		log.Printf("I`m %s, ID: %d\n", hiro.Info.Name, hiro.ID)
 	}
 
-	game.UpdateSelfEmit()
 	return nil
 }
 

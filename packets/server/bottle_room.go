@@ -1,9 +1,6 @@
 package server
 
 import (
-	"log"
-	"time"
-
 	"github.com/suvrick/go-kiss-core/interfaces"
 	"github.com/suvrick/go-kiss-core/models"
 	"github.com/suvrick/go-kiss-core/packets/client"
@@ -21,15 +18,13 @@ type BottleRoom struct {
 	IntArray2 []types.I
 }
 
-func (packet *BottleRoom) Use(self *models.Bot, game interfaces.IGame) error {
+func (packet *BottleRoom) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
 
-	self.Room = &models.Room{
-		RoomID:  packet.RoomID,
-		Players: make(map[types.I]*models.Player),
-	}
+	room.RoomID = packet.RoomID
+	room.Players = make(map[types.I]*models.Player)
 
 	for _, p := range packet.Players {
-		self.Room.Players[p] = &models.Player{
+		room.Players[p] = &models.Player{
 			PlayerID: p,
 		}
 
@@ -39,16 +34,5 @@ func (packet *BottleRoom) Use(self *models.Bot, game interfaces.IGame) error {
 		})
 	}
 
-	if !self.Find() {
-		time.Sleep(1000)
-
-		game.Send(client.MOVE, client.Move{
-			PlayerID: self.HiroID,
-		})
-
-		log.Printf("[%d] I am start search hiro %d\n", self.SelfID, self.HiroID)
-	}
-
-	game.UpdateSelfEmit()
 	return nil
 }

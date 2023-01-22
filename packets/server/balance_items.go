@@ -13,6 +13,6 @@ type BalanceItems struct {
 	Items []models.BalanceItem
 }
 
-func (packet *BalanceItems) Use(self *models.Bot, game interfaces.IGame) error {
+func (packet *BalanceItems) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
 	return nil
 }

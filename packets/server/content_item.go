@@ -14,6 +14,6 @@ type ContestItems struct {
 	ByteField2 types.B `pack:"optional"`
 }
 
-func (packet *ContestItems) Use(self *models.Bot, game interfaces.IGame) error {
+func (packet *ContestItems) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
 	return nil
 }

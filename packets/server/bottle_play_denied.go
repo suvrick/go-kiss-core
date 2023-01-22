@@ -13,6 +13,6 @@ type BottlePlayDenied struct {
 	ByteField types.B
 }
 
-func (packet *BottlePlayDenied) Use(self *models.Bot, game interfaces.IGame) error {
+func (packet *BottlePlayDenied) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
 	return nil
 }

@@ -16,22 +16,21 @@ type Login struct {
 	Balance types.I `pack:"optional"`
 }
 
-func (packet *Login) Use(self *models.Bot, game interfaces.IGame) error {
+func (packet *Login) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
 
-	self.Result = packet.Result
-	self.SelfID = packet.GameID
-	self.Balance = packet.Balance
+	hiro.Result = packet.Result
+	hiro.ID = packet.GameID
+	hiro.Balance = packet.Balance
 
-	switch self.Result {
+	switch hiro.Result {
 	case 0:
 		game.Send(client.REQUEST, client.Request{
 			Players: []types.I{
-				self.SelfID,
+				hiro.ID,
 			},
 			Mask: 328588,
 		})
 	default:
-		game.UpdateSelfEmit()
 		game.Close()
 	}
 

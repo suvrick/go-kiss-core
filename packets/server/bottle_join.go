@@ -15,8 +15,8 @@ type BottleJoin struct {
 	Position types.B
 }
 
-func (packet *BottleJoin) Use(self *models.Bot, game interfaces.IGame) error {
-	self.Room.Players[packet.PlayerID] = &models.Player{
+func (packet *BottleJoin) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
+	room.Players[packet.PlayerID] = &models.Player{
 		PlayerID: packet.PlayerID,
 	}
 
@@ -25,6 +25,5 @@ func (packet *BottleJoin) Use(self *models.Bot, game interfaces.IGame) error {
 		Mask:    INFOMASK,
 	})
 
-	game.UpdateSelfEmit()
 	return nil
 }

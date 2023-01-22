@@ -13,6 +13,6 @@ type Rewards struct {
 	Rewards []models.Reward
 }
 
-func (packet *Rewards) Use(self *models.Bot, game interfaces.IGame) error {
+func (packet *Rewards) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
 	return nil
 }

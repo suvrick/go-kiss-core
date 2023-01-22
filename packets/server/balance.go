@@ -14,7 +14,7 @@ type Balance struct {
 	Reason  types.B `pack:"optional"`
 }
 
-func (packet *Balance) Use(self *models.Bot, game interfaces.IGame) error {
-	self.Balance = packet.Bottles
+func (packet *Balance) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
+	hiro.Balance = packet.Bottles
 	return nil
 }

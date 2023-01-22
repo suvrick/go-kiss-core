@@ -36,10 +36,10 @@ type Socket struct {
 	proxy       *url.URL
 	done        chan struct{}
 	Role        byte
-	Self        *models.Bot
-
+	Self        *models.Hiro
+	Room        *models.Room
 	//openHandle  func(sender *Socket)
-	updateSelfHandle func(sender *Socket, self *models.Bot)
+	updateSelfHandle func(sender *Socket, self *models.Hiro)
 
 	openHandle  func(sender *Socket)
 	closeHandle func(sender *Socket, rule byte, caption string)
@@ -69,10 +69,10 @@ func NewSocket(config *SocketConfig) *Socket {
 		logger:     config.Logger,
 		done:       make(chan struct{}),
 		rule_close: 255,
-		Self: &models.Bot{
-			Room: &models.Room{},
+		Self: &models.Hiro{
 			Info: &models.Player{},
 		},
+		Room: &models.Room{},
 	}
 }
 
@@ -129,7 +129,7 @@ func (socket *Socket) ConnectionWithProxy(proxy *url.URL) error {
 	return socket.Connection()
 }
 
-func (socket *Socket) SetUpdateSelfHandler(handler func(sender *Socket, self *models.Bot)) {
+func (socket *Socket) SetUpdateSelfHandler(handler func(sender *Socket, self *models.Hiro)) {
 	socket.updateSelfHandle = handler
 }
 
@@ -326,7 +326,7 @@ func (socket *Socket) read(reader io.Reader) {
 		socket.Log(fmt.Sprintf("[read] %#v", packet))
 
 		if pack, ok := packet.(interfaces.IServerPacket); ok {
-			err = pack.Use(socket.Self, socket)
+			err = pack.Use(socket.Self, socket.Room, socket)
 			if err != nil {
 				if socket.errorHandle != nil {
 					socket.errorHandle(socket, err)

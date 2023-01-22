@@ -13,7 +13,7 @@ type CollectionsPoints struct {
 	Points types.I
 }
 
-func (packet *CollectionsPoints) Use(self *models.Bot, game interfaces.IGame) error {
-	self.CollectionPoint = packet.Points
+func (packet *CollectionsPoints) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
+	hiro.CollectionPoint = packet.Points
 	return nil
 }

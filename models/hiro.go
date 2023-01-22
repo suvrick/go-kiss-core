@@ -4,30 +4,15 @@ import (
 	"github.com/suvrick/go-kiss-core/types"
 )
 
-type Bot struct {
-	SelfID          types.I
+type Hiro struct {
+	ID              types.I
 	Result          LoginResultType
 	Balance         types.I
 	CanCollect      types.B
 	BonusDay        types.B
 	CollectionPoint types.I
 
-	//IsFind bool
-
-	HiroID types.I
-
-	Room *Room
 	Info *Player
-}
-
-func (b *Bot) Find() bool {
-	for _, p := range b.Room.Players {
-		if p.PlayerID == b.HiroID {
-			return true
-		}
-	}
-
-	return false
 }
 
 // type Bot struct {

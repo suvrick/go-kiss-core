@@ -1,12 +1,8 @@
 package server
 
 import (
-	"log"
-	"time"
-
 	"github.com/suvrick/go-kiss-core/interfaces"
 	"github.com/suvrick/go-kiss-core/models"
-	"github.com/suvrick/go-kiss-core/packets/client"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -17,19 +13,11 @@ type BottleLeave struct {
 	PlayerID types.I
 }
 
-func (packet *BottleLeave) Use(self *models.Bot, game interfaces.IGame) error {
-	delete(self.Room.Players, packet.PlayerID)
+func (packet *BottleLeave) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
 
-	if !self.Find() {
-		time.Sleep(1000)
-
-		game.Send(client.MOVE, client.Move{
-			PlayerID: self.HiroID,
-		})
-
-		log.Printf("[%d] I am start search hiro %d\n", self.SelfID, self.HiroID)
+	if room != nil && len(room.Players) > 0 {
+		delete(room.Players, packet.PlayerID)
 	}
 
-	game.UpdateSelfEmit()
 	return nil
 }

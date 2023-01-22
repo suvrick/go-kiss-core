@@ -17,9 +17,9 @@ type BottleLeader struct {
 	LeaderID types.I
 }
 
-func (packet *BottleLeader) Use(self *models.Bot, game interfaces.IGame) error {
-	self.Room.LeaderID = packet.LeaderID
-	if packet.LeaderID == self.SelfID {
+func (packet *BottleLeader) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
+	room.LeaderID = packet.LeaderID
+	if packet.LeaderID == hiro.ID {
 		go func() {
 			log.Println("I am leader!")
 			<-time.After(time.Second * time.Duration(5))
@@ -30,6 +30,5 @@ func (packet *BottleLeader) Use(self *models.Bot, game interfaces.IGame) error {
 		}()
 	}
 
-	game.UpdateSelfEmit()
 	return nil
 }

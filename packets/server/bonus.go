@@ -15,14 +15,13 @@ type Bonus struct {
 	Day        types.B
 }
 
-func (packet *Bonus) Use(self *models.Bot, game interfaces.IGame) error {
+func (packet *Bonus) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
 
-	self.CanCollect = packet.CanCollect
-	self.BonusDay = packet.Day
+	hiro.CanCollect = packet.CanCollect
 
-	game.UpdateSelfEmit()
+	hiro.BonusDay = packet.Day
 
-	if self.CanCollect == 1 {
+	if hiro.CanCollect == 1 {
 		game.Send(client.BONUS, &client.Bonus{})
 	}
 

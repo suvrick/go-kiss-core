@@ -17,6 +17,6 @@ type ChatWhisper struct {
 	ByteField2 types.B
 }
 
-func (packet *ChatWhisper) Use(self *models.Bot, game interfaces.IGame) error {
+func (packet *ChatWhisper) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
 	return nil
 }

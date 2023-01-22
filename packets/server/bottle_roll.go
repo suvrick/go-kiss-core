@@ -20,12 +20,16 @@ type BottleRoll struct {
 	IntField2 types.I `pack:"optional"`
 }
 
-func (packet *BottleRoll) Use(self *models.Bot, game interfaces.IGame) error {
-	self.Room.LeaderID = packet.LeaderID
-	self.Room.RollerID = packet.RollerID
-	if packet.LeaderID == self.SelfID || packet.RollerID == self.SelfID {
+func (packet *BottleRoll) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
+
+	room.LeaderID = packet.LeaderID
+
+	room.RollerID = packet.RollerID
+
+	if packet.LeaderID == hiro.ID || packet.RollerID == hiro.ID {
 		go func() {
-			if packet.RollerID == self.SelfID {
+
+			if packet.RollerID == hiro.ID {
 				log.Println("I am kissed as roller!")
 			} else {
 				log.Println("I am kissed as leader!")
@@ -39,6 +43,5 @@ func (packet *BottleRoll) Use(self *models.Bot, game interfaces.IGame) error {
 		}()
 	}
 	// 3.2 MB
-	game.UpdateSelfEmit()
 	return nil
 }

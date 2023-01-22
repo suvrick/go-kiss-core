@@ -18,6 +18,6 @@ type ChatMessage struct {
 	IntField4 types.I `pack:"optional"`
 }
 
-func (packet *ChatMessage) Use(self *models.Bot, game interfaces.IGame) error {
+func (packet *ChatMessage) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
 	return nil
 }

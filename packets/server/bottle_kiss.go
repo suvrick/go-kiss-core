@@ -14,14 +14,15 @@ type BottleKiss struct {
 	Answer   models.KissAnswer
 }
 
-func (packet *BottleKiss) Use(self *models.Bot, game interfaces.IGame) error {
-	if packet.PlayerID == self.Room.LeaderID {
-		self.Room.KissAnswerLeader = packet.Answer
-	} else if packet.PlayerID == self.Room.RollerID {
-		self.Room.KissAnswerRoller = packet.Answer
+func (packet *BottleKiss) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
+
+	if packet.PlayerID == room.LeaderID {
+		room.KissAnswerLeader = packet.Answer
+	} else if packet.PlayerID == room.RollerID {
+		room.KissAnswerRoller = packet.Answer
 	}
 
-	if currentPlayer, ok := self.Room.Players[packet.PlayerID]; ok {
+	if currentPlayer, ok := room.Players[packet.PlayerID]; ok {
 		if packet.Answer == 1 {
 			currentPlayer.KissedRoom += 1
 			currentPlayer.KissedDay += 1
@@ -29,6 +30,5 @@ func (packet *BottleKiss) Use(self *models.Bot, game interfaces.IGame) error {
 		}
 	}
 
-	game.UpdateSelfEmit()
 	return nil
 }

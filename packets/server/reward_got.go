@@ -14,6 +14,6 @@ type RewardGot struct {
 	RewardID types.I
 }
 
-func (packet *RewardGot) Use(self *models.Bot, game interfaces.IGame) error {
+func (packet *RewardGot) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
 	return nil
 }

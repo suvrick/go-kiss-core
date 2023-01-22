@@ -12,6 +12,6 @@ const BOTTLE_ENTER types.PacketServerType = 35
 type BottleEnter struct {
 }
 
-func (packet *BottleEnter) Use(self *models.Bot, game interfaces.IGame) error {
+func (packet *BottleEnter) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
 	return nil
 }
