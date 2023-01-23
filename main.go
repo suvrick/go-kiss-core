@@ -72,11 +72,13 @@ var ids = []types.I{
 	43591386, // Ж
 }
 
+var wg sync.WaitGroup
+
 func main() {
 
 	games = make([]*socket.Socket, 0)
 
-	wg := sync.WaitGroup{}
+	wg = sync.WaitGroup{}
 
 	for i, url := range urls2 {
 
@@ -115,6 +117,7 @@ func openHandle(sender *socket.Socket) {
 
 func closeHandle(sender *socket.Socket, rule byte, msg string) {
 	fmt.Printf("Close connection. Rule: %v, %s\n", rule, msg)
+	wg.Done()
 }
 
 func errorHandle(sender *socket.Socket, err error) {
