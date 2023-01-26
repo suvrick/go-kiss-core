@@ -36,7 +36,7 @@ type Socket struct {
 	proxy       *url.URL
 	done        chan struct{}
 	Role        byte
-	Self        *models.Hiro
+	Hiro        *models.Hiro
 	Room        *models.Room
 	//openHandle  func(sender *Socket)
 	updateSelfHandle func(sender *Socket, self *models.Hiro)
@@ -69,7 +69,7 @@ func NewSocket(config *SocketConfig) *Socket {
 		logger:     config.Logger,
 		done:       make(chan struct{}),
 		rule_close: 255,
-		Self: &models.Hiro{
+		Hiro: &models.Hiro{
 			Info: &models.Player{},
 		},
 		Room: &models.Room{},
@@ -326,7 +326,7 @@ func (socket *Socket) read(reader io.Reader) {
 		socket.Log(fmt.Sprintf("[read] %#v", packet))
 
 		if pack, ok := packet.(interfaces.IServerPacket); ok {
-			err = pack.Use(socket.Self, socket.Room, socket)
+			err = pack.Use(socket.Hiro, socket.Room, socket)
 			if err != nil {
 				if socket.errorHandle != nil {
 					socket.errorHandle(socket, err)
@@ -358,11 +358,13 @@ func (socket *Socket) getCloseRuleMsg() string {
 func (socket *Socket) timeoutToGame() {
 	<-time.After(time.Duration(socket.config.TimeInTheGame) * time.Second)
 	socket.setClosedRule(ERROR_TIMEOUT_CLOSE)
-	socket.close_connection()
+	if socket.errorHandle != nil {
+		socket.errorHandle(socket, ErrTimeoutTheGame)
+	}
 }
 
 func (socket *Socket) UpdateSelfEmit() {
 	if socket.updateSelfHandle != nil {
-		socket.updateSelfHandle(socket, socket.Self)
+		socket.updateSelfHandle(socket, socket.Hiro)
 	}
 }

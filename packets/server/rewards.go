@@ -1,6 +1,8 @@
 package server
 
 import (
+	"time"
+
 	"github.com/suvrick/go-kiss-core/interfaces"
 	"github.com/suvrick/go-kiss-core/models"
 	"github.com/suvrick/go-kiss-core/packets/client"
@@ -18,6 +20,7 @@ func (packet *Rewards) Use(hiro *models.Hiro, room *models.Room, game interfaces
 
 	for _, reward := range packet.getRewards() {
 		if reward.Count > 0 {
+			time.Sleep(time.Microsecond * 100)
 			game.Send(client.GAME_REWARDS_GET, &client.GameRewardsGet{
 				RewardID: reward.ID,
 			})

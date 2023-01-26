@@ -103,9 +103,9 @@ func main() {
 
 		g.Send(client.LOGIN, login)
 
-		g.Send(client.BOTTLE_PLAY, client.BottlePlay{
-			RoomID: 0,
-		})
+		// g.Send(client.BOTTLE_PLAY, client.BottlePlay{
+		// 	RoomID: 0,
+		// })
 	}
 
 	wg.Wait()
