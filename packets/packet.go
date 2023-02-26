@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/suvrick/go-kiss-core/packets/leb128"
+	"github.com/suvrick/go-kiss-core/types"
 )
 
 type Scheme struct {
@@ -33,33 +34,38 @@ func init() {
 	json.Unmarshal(f, &schemes)
 }
 
-func NewClientPacket(id ClientPacketType, values []any) (data []byte, err error) {
+func NewClientPacket(id ClientPacketType, values any) (data []byte, err error) {
 
 	p := getClientScheme(id)
 
 	return marshal(data, []rune(p.Format), values)
 }
 
-func marshal(buffer []byte, formats []rune, values []any) ([]byte, error) {
+func marshal(buffer []byte, formats []rune, values1 any) ([]byte, error) {
 
 	var skip bool
 	var char rune
 	var err error
 	var cPointer int
 	var dPointer int
-	//var isArray bool
+	var subFormat []rune
+	var values []any
+
+	if v, ok := values1.([]any); ok {
+		values = v
+	} else {
+		values = []any{values1}
+	}
 
 	for cPointer < len(formats) {
 
 		if err != nil {
-			if skip {
-				return nil, nil
-			} else {
-				break
-			}
+			break
 		}
 
 		char = formats[cPointer]
+		r := string(char)
+		_ = r
 
 		switch char {
 		case ',':
@@ -67,12 +73,27 @@ func marshal(buffer []byte, formats []rune, values []any) ([]byte, error) {
 			cPointer++
 			continue
 		case '[':
-			//isArray = true
-			cPointer++
-			continue
-		case ']':
-			//isArray = false
-			cPointer++
+			// "I[SS[I]]" -> "I SS[I] SS[I]" -> "I SS III SS II"
+			subFormat, err = getSubFormat(cPointer, formats)
+			if err == nil {
+				// конвертим к []any
+				if data, ok := values[dPointer].([]any); ok {
+					// Записываем длину массива
+					buffer, err = leb128.WriteInt(buffer, types.I(len(data)))
+					if err == nil {
+						// обходим массив
+						for _, v := range data {
+							buffer, err = marshal(buffer, subFormat, v)
+							if err != nil {
+								return buffer, err
+							}
+						}
+					}
+				}
+			}
+
+			cPointer += len(subFormat) + 2
+			dPointer++
 			continue
 		}
 
@@ -83,25 +104,15 @@ func marshal(buffer []byte, formats []rune, values []any) ([]byte, error) {
 
 		value := values[dPointer]
 
-		switch char {
-		case 'B':
-			buffer, err = leb128.WriteByte(buffer, value)
-		case 'I':
-			buffer, err = leb128.WriteInt(buffer, value)
-		case 'L':
-			buffer, err = leb128.WriteLong(buffer, value)
-		case 'S':
-			buffer, err = leb128.WriteString(buffer, value)
-		case 'A':
-			// TODO: imnplement for array ...
-		default:
-			err = fmt.Errorf("marshal: unsupported code %v", char)
-			continue
-		}
+		buffer, err = writeData(char, value, buffer)
+
+		dPointer++
+		cPointer++
 	}
 
-	dPointer++
-	cPointer++
+	if skip {
+		err = nil
+	}
 
 	return buffer, err
 }
@@ -109,7 +120,7 @@ func marshal(buffer []byte, formats []rune, values []any) ([]byte, error) {
 func getSubFormat(index int, formats []rune) ([]rune, error) {
 	r := make([]rune, 0)
 	dep := 0
-	for i := index; i < len(formats); i++ {
+	for i := index + 1; i < len(formats); i++ {
 		c := formats[i]
 
 		if c == '[' {
@@ -126,11 +137,33 @@ func getSubFormat(index int, formats []rune) ([]rune, error) {
 		r = append(r, c)
 	}
 
-	if dep != 0 {
+	if dep != -1 {
 		return nil, fmt.Errorf("[getSubFormat] invalid packet format")
 	}
 
 	return r, nil
+}
+
+func writeData(char rune, value any, buffer []byte) ([]byte, error) {
+
+	var err error
+
+	switch char {
+	case 'B':
+		buffer, err = leb128.WriteByte(buffer, value)
+	case 'I':
+		buffer, err = leb128.WriteInt(buffer, value)
+	case 'L':
+		buffer, err = leb128.WriteLong(buffer, value)
+	case 'S':
+		buffer, err = leb128.WriteString(buffer, value)
+	case 'A':
+		// TODO: imnplement for array ...
+	default:
+		err = fmt.Errorf("[writeData]: unsupported code %v", char)
+	}
+
+	return buffer, err
 }
 
 func NewServerPacket(id ServerPacketType, r io.ByteReader) ([]any, error) {
