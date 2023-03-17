@@ -6,6 +6,53 @@ import (
 	"github.com/suvrick/go-kiss-core/types"
 )
 
+func ReadByte(buffer []byte) (types.B, error) {
+
+	v, n := decodeSleb128(buffer)
+
+	if n == 0 {
+		return 0, fmt.Errorf("[ReadByte] fail cast %T of types.B", v)
+	} else {
+		return types.B(v), nil
+	}
+}
+
+func ReadInt(buffer []byte) (types.I, error) {
+
+	v, n := decodeSleb128(buffer)
+
+	if n == 0 {
+		return 0, fmt.Errorf("[ReadInt] fail cast %T of types.I", v)
+	} else {
+		return types.I(v), nil
+	}
+}
+
+func ReadLong(buffer []byte) (types.L, error) {
+
+	v, n := decodeSleb128(buffer)
+
+	if n == 0 {
+		return 0, fmt.Errorf("[ReadLong] fail cast %T of types.L", v)
+	} else {
+		return types.L(v), nil
+	}
+}
+
+func ReadString(buffer []byte) (types.S, error) {
+	l, err := ReadInt(buffer)
+	if err != nil {
+		return types.S(""), fmt.Errorf("[ReadString] fail cast %T of types.S", l)
+	} else {
+		if int(l) >= len(buffer) {
+			return types.S(""), fmt.Errorf("[ReadString] fail cast %T of types.S", l)
+		} else {
+			str := string(buffer[:int(l)])
+			return types.S(str), nil
+		}
+	}
+}
+
 func WriteByte(buffer []byte, value any) ([]byte, error) {
 	if v, ok := value.(types.B); ok {
 		return appendSleb128(buffer, int64(v)), nil
@@ -106,7 +153,7 @@ func appendSleb128(b []byte, v int64) []byte {
 // DecodeUleb128 decodes b to u with unsigned LEB128 encoding and returns the
 // number of bytes read. On error (bad encoded b), n will be 0 and therefore u
 // must not be trusted.
-func DecodeUleb128(b []byte) (u uint64, n uint8) {
+func decodeUleb128(b []byte) (u uint64, n uint8) {
 	l := uint8(len(b) & 0xff)
 	// The longest LEB128 encoded sequence is 10 byte long (9 0xff's and 1 0x7f)
 	// so make sure we won't overflow.
@@ -129,7 +176,7 @@ func DecodeUleb128(b []byte) (u uint64, n uint8) {
 // DecodeSleb128 decodes b to s with signed LEB128 encoding and returns the
 // number of bytes read. On error (bad encoded b), n will be 0 and therefore s
 // must not be trusted.
-func DecodeSleb128(b []byte) (s int64, n uint8) {
+func decodeSleb128(b []byte) (s int64, n uint8) {
 	l := uint8(len(b) & 0xff)
 	if l > 10 {
 		l = 10
