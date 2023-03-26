@@ -80,14 +80,14 @@ func main() {
 
 	wg = sync.WaitGroup{}
 
-	for i, url := range urls2 {
+	for _, url := range urls2 {
 
 		wg.Add(1)
 
 		login := getLoginPacket(url)
 
 		config := socket.GetDefaultSocketConfig()
-		config.TimeInTheGame = 5
+		//config.TimeInTheGame = 5
 
 		g := socket.NewSocket(config)
 		g.SetOpenHandler(openHandle)
@@ -96,16 +96,16 @@ func main() {
 		g.SetUpdateSelfHandler(updateSelfHandler)
 
 		games = append(games, g)
-
-		if err := g.ConnectionWithProxy(getProxy(proxies[i])); err != nil {
+		//prx := getProxy(proxies[i])
+		if err := g.ConnectionWithProxy(nil); err != nil {
 			log.Fatalln(err.Error())
 		}
 
 		g.Send(client.LOGIN, login)
 
-		// g.Send(client.BOTTLE_PLAY, client.BottlePlay{
-		// 	RoomID: 0,
-		// })
+		g.Send(client.BOTTLE_PLAY, client.BottlePlay{
+			RoomID: 0,
+		})
 	}
 
 	wg.Wait()
