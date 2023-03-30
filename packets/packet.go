@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"io"
 
 	"github.com/suvrick/go-kiss-core/packets/leb128"
 	"github.com/suvrick/go-kiss-core/types"
@@ -34,80 +33,87 @@ func init() {
 	json.Unmarshal(f, &schemes)
 }
 
-func NewClientPacket(id ClientPacketType, values any) (data []byte, err error) {
+func NewClientPacket(id ClientPacketType, data any) ([]byte, error) {
 
 	p := getClientScheme(id)
 
-	return marshal(data, []rune(p.Format), values)
+	return marshal([]rune(p.Format), data)
 }
 
-func marshal(buffer []byte, formats []rune, values1 any) ([]byte, error) {
+func marshal(formats []rune, data any) ([]byte, error) {
 
 	var skip bool
 	var char rune
 	var err error
-	var cPointer int
-	var dPointer int
+	var charPointer int
+	var dataPointer int
 	var subFormat []rune
 	var values []any
+	var buffer []byte
 
-	if v, ok := values1.([]any); ok {
+	if v, ok := data.([]any); ok {
 		values = v
 	} else {
-		values = []any{values1}
+		values = []any{data}
 	}
 
-	for cPointer < len(formats) {
+	if len(formats) > 0 && len(values) == 0 {
+		return nil, fmt.Errorf("[marshal] Empty data. Want format: %s", string(formats))
+	}
+
+	for charPointer < len(formats) {
 
 		if err != nil {
 			break
 		}
 
-		char = formats[cPointer]
+		char = formats[charPointer]
 		r := string(char)
 		_ = r
 
 		switch char {
 		case ',':
 			skip = true
-			cPointer++
+			charPointer++
 			continue
 		case '[':
 			// "I[SS[I]]" -> "I SS[I] SS[I]" -> "I SS III SS II"
-			subFormat, err = getSubFormat(cPointer, formats)
+			subFormat, err = getSubFormat(charPointer, formats)
 			if err == nil {
 				// конвертим к []any
-				if data, ok := values[dPointer].([]any); ok {
+				if subData, ok := values[dataPointer].([]any); ok {
 					// Записываем длину массива
-					buffer, err = leb128.WriteInt(buffer, types.I(len(data)))
+					buffer, err = leb128.WriteInt(buffer, types.I(len(subData)))
 					if err == nil {
 						// обходим массив
-						for _, v := range data {
-							buffer, err = marshal(buffer, subFormat, v)
+						for _, v := range subData {
+							newBuffer := make([]byte, 0)
+							newBuffer, err = marshal(subFormat, v)
 							if err != nil {
 								return buffer, err
 							}
+							buffer = append(buffer, newBuffer...)
 						}
 					}
 				}
 			}
 
-			cPointer += len(subFormat) + 2
-			dPointer++
+			charPointer += len(subFormat) + 2
+			dataPointer++
 			continue
 		}
 
-		if dPointer >= len(values) {
-			err = fmt.Errorf("marshal: miss value of index: %d for data: %v", dPointer, values)
+		if dataPointer >= len(values) {
+			err = fmt.Errorf("[marshal] miss value of index: %d for data: %v", dataPointer, values)
 			continue
 		}
 
-		value := values[dPointer]
+		value := values[dataPointer]
 
 		buffer, err = writeData(char, value, buffer)
 
-		dPointer++
-		cPointer++
+		dataPointer++
+		charPointer++
 	}
 
 	if skip {
@@ -157,8 +163,8 @@ func writeData(char rune, value any, buffer []byte) ([]byte, error) {
 		buffer, err = leb128.WriteLong(buffer, value)
 	case 'S':
 		buffer, err = leb128.WriteString(buffer, value)
-	case 'A':
-		// TODO: imnplement for array ...
+	//case 'A':
+	// TODO: imnplement for array ...
 	default:
 		err = fmt.Errorf("[writeData]: unsupported code %v", char)
 	}
@@ -166,12 +172,13 @@ func writeData(char rune, value any, buffer []byte) ([]byte, error) {
 	return buffer, err
 }
 
-func NewServerPacket(id ServerPacketType, r io.ByteReader) ([]any, error) {
+func NewServerPacket(id ServerPacketType, buffer []byte) ([]any, error) {
 	p := getServerScheme(id)
-	return unmarshal(p, r)
+	return unmarshal([]rune(p.Format), buffer)
 }
 
-func unmarshal(p *Scheme, r io.ByteReader) ([]any, error) {
+func unmarshal(format []rune, buffer []byte) ([]any, error) {
+
 	return nil, nil
 }
 

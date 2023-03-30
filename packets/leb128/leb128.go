@@ -40,14 +40,14 @@ func ReadLong(buffer []byte) (types.L, error) {
 }
 
 func ReadString(buffer []byte) (types.S, error) {
-	l, err := ReadInt(buffer)
+	stringLen, err := ReadInt(buffer)
 	if err != nil {
-		return types.S(""), fmt.Errorf("[ReadString] fail cast %T of types.S", l)
+		return types.S(""), fmt.Errorf("[ReadString] fail cast %T of types.S", stringLen)
 	} else {
-		if int(l) >= len(buffer) {
-			return types.S(""), fmt.Errorf("[ReadString] fail cast %T of types.S", l)
+		if stringLen >= types.I(len(buffer)) {
+			return types.S(""), fmt.Errorf("[ReadString] very much len of string %v", stringLen)
 		} else {
-			str := string(buffer[:int(l)])
+			str := string(buffer[:int(stringLen)])
 			return types.S(str), nil
 		}
 	}
@@ -57,7 +57,7 @@ func WriteByte(buffer []byte, value any) ([]byte, error) {
 	if v, ok := value.(types.B); ok {
 		return appendSleb128(buffer, int64(v)), nil
 	} else {
-		return buffer, fmt.Errorf("[WriteByte] fail cast %T of types.B", value)
+		return buffer, fmt.Errorf("[WriteByte] fail cast %T to types.B", value)
 	}
 }
 
@@ -65,7 +65,7 @@ func WriteInt(buffer []byte, value any) ([]byte, error) {
 	if v, ok := value.(types.I); ok {
 		return appendSleb128(buffer, int64(v)), nil
 	} else {
-		return buffer, fmt.Errorf("[WriteInt] fail cast %T of types.I", value)
+		return buffer, fmt.Errorf("[WriteInt] fail cast %T to types.I", value)
 	}
 }
 
@@ -73,16 +73,16 @@ func WriteLong(buffer []byte, value any) ([]byte, error) {
 	if v, ok := value.(types.L); ok {
 		return appendUleb128(buffer, uint64(v)), nil
 	} else {
-		return buffer, fmt.Errorf("[WriteLong] fail cast %T of types.L", value)
+		return buffer, fmt.Errorf("[WriteLong] fail cast %T to types.L", value)
 	}
 }
 
 func WriteString(buffer []byte, value any) ([]byte, error) {
 	if v, ok := value.(types.S); ok {
-		buffer = append(buffer, appendSleb128(buffer, int64(len(v)))...)
+		buffer = appendSleb128(buffer, int64(len(v)))
 		return append(buffer, []byte(v)...), nil
 	} else {
-		return buffer, fmt.Errorf("[WriteString] fail cast %T of types.S", value)
+		return buffer, fmt.Errorf("[WriteString] fail cast %T to types.S", value)
 	}
 }
 
