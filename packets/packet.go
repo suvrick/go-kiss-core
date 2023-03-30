@@ -68,8 +68,6 @@ func marshal(formats []rune, data any) ([]byte, error) {
 		}
 
 		char = formats[charPointer]
-		r := string(char)
-		_ = r
 
 		switch char {
 		case ',':
@@ -90,16 +88,21 @@ func marshal(formats []rune, data any) ([]byte, error) {
 							newBuffer := make([]byte, 0)
 							newBuffer, err = marshal(subFormat, v)
 							if err != nil {
-								return buffer, err
+								return nil, err
 							}
 							buffer = append(buffer, newBuffer...)
 						}
 					}
+
+					charPointer += len(subFormat) + 2 // +2 []
+					dataPointer++
+					continue
+
+				} else {
+					err = fmt.Errorf("[marshal] fail cast %T to []any", values[dataPointer])
+					continue
 				}
 			}
-
-			charPointer += len(subFormat) + 2
-			dataPointer++
 			continue
 		}
 
