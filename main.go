@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/suvrick/go-kiss-core/frame"
 	"github.com/suvrick/go-kiss-core/game"
-	"github.com/suvrick/go-kiss-core/types"
 )
 
 //103786258
@@ -32,32 +32,15 @@ func main() {
 }
 
 func CreateGame() {
-	// data, err := frame.Parse3(urls[0])
+	data, err := frame.Parse3(urls[0])
 
-	// if err != nil {
-	// 	fmt.Println(err.Error())
-	// 	return
-	// }
-
-	data := []interface{}{
-		types.L(83908794),
-		types.B(30),
-		types.B(5),
-		types.S("8ad52d5e75a3a16bff2a7b839d977d6c"),
-		types.B(0),
-		types.S(""),
-		types.I(0),
-		types.I(0),
-		types.B(0),
-		types.S(""),
-		types.B(0),
-		types.S(""),
-		types.B(0),
-		types.S(""),
+	if err != nil {
+		fmt.Println(err.Error())
+		return
 	}
 
 	g := game.NewGame()
-	err := g.Connect(nil)
+	err = g.Connect(nil)
 	if err != nil {
 		fmt.Println(err.Error())
 		return

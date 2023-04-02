@@ -110,8 +110,8 @@ func Parse3(input string) ([]interface{}, error) {
 	// }
 
 	result = append(result, types.L(login["login_id"].(uint64)))
-	result = append(result, types.B(login["device"].(byte)))
 	result = append(result, types.B(login["frame_type"].(byte)))
+	result = append(result, types.B(login["device"].(byte)))
 	result = append(result, types.S(login["key"].(string)))
 	oauth := types.B(0)
 	if login["oauth"].(bool) {

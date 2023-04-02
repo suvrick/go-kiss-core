@@ -138,7 +138,7 @@ func (g *Game) loop() {
 	}()
 
 	var err error
-	var packetID types.I
+	var packetID types.L
 	var pack []any
 	var msg []byte
 
@@ -155,20 +155,20 @@ func (g *Game) loop() {
 		g.r_buffer.Write(msg)
 
 		// read length packet
-		_, err = packets.ReadInt(g.r_buffer)
+		_, err = packets.ReadLong(g.r_buffer)
 		if err != nil {
 			//s.emitErrorHandler(err)
 			continue
 		}
 
 		//read massege id
-		_, err = packets.ReadInt(g.r_buffer)
+		_, err = packets.ReadLong(g.r_buffer)
 		if err != nil {
 			//s.emitErrorHandler(err)
 			continue
 		}
 
-		packetID, err = packets.ReadInt(g.r_buffer)
+		packetID, err = packets.ReadLong(g.r_buffer)
 		if err != nil {
 			//s.emitErrorHandler(err)
 			continue

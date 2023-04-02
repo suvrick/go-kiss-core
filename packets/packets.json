@@ -12,6 +12,18 @@
         "format": "AI,I"
     },
     {
+        "type": 0,
+        "id": 13,
+        "name": "REWARDS",
+        "format": "[II]"
+    },
+    {
+        "type": 0,
+        "id": 17,
+        "name": "BONUS",
+        "format": "BB"
+    },
+    {
         "type": 1,
         "id": 4,
         "name": "LOGIN",
