@@ -4,8 +4,9 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"io"
 
-	"github.com/suvrick/go-kiss-core/packets/leb128"
+	"github.com/jcalabro/leb128"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -33,14 +34,14 @@ func init() {
 	json.Unmarshal(f, &schemes)
 }
 
-func NewClientPacket(id ClientPacketType, data any) ([]byte, error) {
+func NewClientPacket(id ClientPacketType, data any, w io.Writer) error {
 
 	p := getClientScheme(id)
 
-	return marshal([]rune(p.Format), data)
+	return marshal([]rune(p.Format), data, w)
 }
 
-func marshal(formats []rune, data any) ([]byte, error) {
+func marshal(formats []rune, data any, w io.Writer) error {
 
 	var skip bool
 	var char rune
@@ -49,7 +50,6 @@ func marshal(formats []rune, data any) ([]byte, error) {
 	var dataPointer int
 	var subFormat []rune
 	var values []any
-	var buffer []byte
 
 	if v, ok := data.([]any); ok {
 		values = v
@@ -58,7 +58,7 @@ func marshal(formats []rune, data any) ([]byte, error) {
 	}
 
 	if len(formats) > 0 && len(values) == 0 {
-		return nil, fmt.Errorf("[marshal] Empty data. Want format: %s", string(formats))
+		return fmt.Errorf("[marshal] Empty data. Want format: %s", string(formats))
 	}
 
 	for charPointer < len(formats) {
@@ -81,26 +81,21 @@ func marshal(formats []rune, data any) ([]byte, error) {
 				// конвертим к []any
 				if subData, ok := values[dataPointer].([]any); ok {
 					// Записываем длину массива
-					buffer, err = leb128.WriteInt(buffer, types.I(len(subData)))
+					err = WriteInt(w, types.I(len(subData)))
 					if err == nil {
 						// обходим массив
 						for _, v := range subData {
-							newBuffer := make([]byte, 0)
-							newBuffer, err = marshal(subFormat, v)
+							err = marshal(subFormat, v, w)
 							if err != nil {
-								return nil, err
+								goto end
 							}
-							buffer = append(buffer, newBuffer...)
 						}
+
+						charPointer += len(subFormat) + 2 // +2 []
+						dataPointer++
 					}
-
-					charPointer += len(subFormat) + 2 // +2 []
-					dataPointer++
-					continue
-
 				} else {
 					err = fmt.Errorf("[marshal] fail cast %T to []any", values[dataPointer])
-					continue
 				}
 			}
 			continue
@@ -113,17 +108,17 @@ func marshal(formats []rune, data any) ([]byte, error) {
 
 		value := values[dataPointer]
 
-		buffer, err = writeData(char, value, buffer)
+		err = writeData(char, value, w)
 
 		dataPointer++
 		charPointer++
 	}
-
+end:
 	if skip {
 		err = nil
 	}
 
-	return buffer, err
+	return err
 }
 
 func getSubFormat(index int, formats []rune) ([]rune, error) {
@@ -153,36 +148,108 @@ func getSubFormat(index int, formats []rune) ([]rune, error) {
 	return r, nil
 }
 
-func writeData(char rune, value any, buffer []byte) ([]byte, error) {
-
-	var err error
-
+func writeData(char rune, value any, w io.Writer) error {
 	switch char {
 	case 'B':
-		buffer, err = leb128.WriteByte(buffer, value)
+		return WriteByte(w, value)
 	case 'I':
-		buffer, err = leb128.WriteInt(buffer, value)
+		return WriteInt(w, value)
 	case 'L':
-		buffer, err = leb128.WriteLong(buffer, value)
+		return WriteLong(w, value)
 	case 'S':
-		buffer, err = leb128.WriteString(buffer, value)
+		return WriteString(w, value)
 	//case 'A':
 	// TODO: imnplement for array ...
 	default:
-		err = fmt.Errorf("[writeData]: unsupported code %v", char)
+		return fmt.Errorf("[writeData]: unsupported code %v", char)
+	}
+}
+
+func NewServerPacket(id ServerPacketType, r io.Reader) ([]any, error) {
+	p := getServerScheme(id)
+	return unmarshal([]rune(p.Format), r)
+}
+
+func unmarshal(formats []rune, r io.Reader) ([]any, error) {
+
+	var skip bool
+	var char rune
+	var err error
+	var charPointer int
+	var subFormat []rune
+	var value any
+	var values []any
+
+	for charPointer < len(formats) {
+
+		if err != nil {
+			break
+		}
+
+		char = formats[charPointer]
+
+		switch char {
+		case ',':
+			skip = true
+			charPointer++
+			continue
+		case '[':
+			subFormat, err = getSubFormat(charPointer, formats)
+			subValue := make([]any, 0)
+			if err == nil {
+				var lenArr types.I
+				lenArr, err = ReadInt(r)
+				for lenArr > 0 {
+					value, err = unmarshal(subFormat, r)
+					if err != nil {
+						goto end
+					}
+
+					if len(subFormat) == 1 {
+						subValue = append(subValue, value.([]any)[0])
+					} else {
+						subValue = append(subValue, value)
+					}
+					lenArr--
+				}
+
+				values = append(values, subValue)
+				charPointer += len(subFormat) + 2
+			}
+			continue
+		}
+		// 2202 2061 6324 9316
+		value, err = readData(char, r)
+		if err != nil {
+			continue
+		}
+
+		values = append(values, value)
+		charPointer++
+	}
+end:
+	if skip {
+		err = nil
 	}
 
-	return buffer, err
+	return values, err
 }
 
-func NewServerPacket(id ServerPacketType, buffer []byte) ([]any, error) {
-	p := getServerScheme(id)
-	return unmarshal([]rune(p.Format), buffer)
-}
-
-func unmarshal(format []rune, buffer []byte) ([]any, error) {
-
-	return nil, nil
+func readData(char rune, r io.Reader) (any, error) {
+	switch char {
+	case 'B':
+		return ReadByte(r)
+	case 'I':
+		return ReadInt(r)
+	case 'L':
+		return ReadLong(r)
+	case 'S':
+		return ReadString(r)
+	//case 'A':
+	// TODO: imnplement for array ...
+	default:
+		return nil, fmt.Errorf("[readData]: unsupported code %v", char)
+	}
 }
 
 func getClientScheme(id ClientPacketType) *Scheme {
@@ -202,5 +269,99 @@ func getServerScheme(id ServerPacketType) *Scheme {
 		}
 	}
 
+	return nil
+}
+
+func ReadByte(r io.Reader) (types.B, error) {
+	value, err := leb128.DecodeU64(r)
+	if err != nil {
+		return 0, fmt.Errorf("[ReadByte] fail cast %T of types.B", value)
+	} else {
+		return types.B(value), nil
+	}
+}
+
+func ReadInt(r io.Reader) (types.I, error) {
+	value, err := leb128.DecodeS64(r)
+	if err != nil {
+		return 0, fmt.Errorf("[ReadInt] fail cast %T of types.I", value)
+	} else {
+		return types.I(value), nil
+	}
+}
+
+func ReadLong(r io.Reader) (types.L, error) {
+	value, err := leb128.DecodeU64(r)
+	if err != nil {
+		return 0, fmt.Errorf("[ReadLong] fail cast %T of types.L", value)
+	} else {
+		return types.L(value), nil
+	}
+}
+
+func ReadString(r io.Reader) (types.S, error) {
+	stringLen, err := leb128.DecodeU64(r)
+	if err != nil {
+		return types.S(""), fmt.Errorf("[ReadString] fail cast %T of types.S", stringLen)
+	} else {
+		str := make([]byte, stringLen)
+		_, err := r.Read(str)
+		if err != nil {
+			return types.S(""), fmt.Errorf("[ReadString] very much len of string %v", stringLen)
+		} else {
+			return types.S(str), nil
+		}
+	}
+}
+
+func WriteByte(w io.Writer, value any) error {
+	if v, ok := value.(types.B); !ok {
+		return fmt.Errorf("[WriteByte] fail cast %T to types.B", value)
+	} else {
+		_, err := w.Write(leb128.EncodeU64(uint64(v)))
+		if err != nil {
+			return fmt.Errorf("[WriteByte] fail cast %T to types.B", value)
+		}
+	}
+	return nil
+}
+
+func WriteInt(w io.Writer, value any) error {
+	if v, ok := value.(types.I); !ok {
+		return fmt.Errorf("[WriteInt] fail cast %T to types.I", value)
+	} else {
+		_, err := w.Write(leb128.EncodeS64(int64(v)))
+		if err != nil {
+			return fmt.Errorf("[WriteInt] fail cast %T to types.I", value)
+		}
+	}
+	return nil
+}
+
+func WriteLong(w io.Writer, value any) error {
+	if v, ok := value.(types.L); !ok {
+		return fmt.Errorf("[WriteLong] fail cast %T to types.L", value)
+	} else {
+		_, err := w.Write(leb128.EncodeU64(uint64(v)))
+		if err != nil {
+			return fmt.Errorf("[WriteLong] fail cast %T to types.L", value)
+		}
+	}
+	return nil
+}
+
+func WriteString(w io.Writer, value any) error {
+	if v, ok := value.(types.S); !ok {
+		return fmt.Errorf("[WriteString] fail cast %T to types.S", value)
+	} else {
+		_, err := w.Write(leb128.EncodeU64(uint64(len(v))))
+		if err != nil {
+			return fmt.Errorf("[WriteString] fail cast %T to types.S", value)
+		}
+		_, err = w.Write([]byte(v))
+		if err != nil {
+			return fmt.Errorf("[WriteString] fail cast %T to types.S", value)
+		}
+	}
 	return nil
 }

@@ -1,5 +1,7 @@
 github.com/gorilla/websocket v1.5.0 h1:PPwGk2jz7EePpoHN/+ClbZu8SPxiqlu12wZP/3sWmnc=
 github.com/gorilla/websocket v1.5.0/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
+github.com/jcalabro/leb128 v1.0.2 h1:I8gRU1BLxBvBtrdlc51w9lemEvIDIF3w6xRzXZb5+tU=
+github.com/jcalabro/leb128 v1.0.2/go.mod h1:sFCvumupMy7uUrKgPmPipgyM8HifD51l9L8aQtgp6/Q=
 github.com/suvrick/go-leb128 v0.0.0-20221203125713-042b51a4f894 h1:5VDt2KYeCwjeDvzjTV+zlEfALGNAXvAYgslLwjPhY60=
 github.com/suvrick/go-leb128 v0.0.0-20221203125713-042b51a4f894/go.mod h1:H9cDG34hbgDIG2o/3RQExfn2rkCzFEzqcMlt+RlcEYo=
 golang.org/x/exp v0.0.0-20230321023759-10a507213a29 h1:ooxPy7fPvB4kwsA2h+iBNHkAbp/4JxTSwCmvdjEYmug=
