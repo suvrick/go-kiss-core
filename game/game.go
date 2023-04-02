@@ -116,7 +116,6 @@ func (g *Game) send() {
 
 	packets.WriteLong(g.s_buffer, types.L(len(b1)+len(b2))) // len
 	g.s_buffer.Write(b2)
-	packets.WriteByte(g.s_buffer, types.B(5)) // device type
 
 	g.s_buffer.Write(b1)
 
@@ -177,7 +176,7 @@ func (g *Game) loop() {
 
 		pack, err = packets.NewServerPacket(packets.ServerPacketType(packetID), g.r_buffer)
 		if err != nil {
-			//s.emitErrorHandler(err)
+			fmt.Println(err.Error())
 			continue
 		}
 

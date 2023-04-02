@@ -92,11 +92,32 @@ func Parse3(input string) ([]interface{}, error) {
 		return nil, fmt.Errorf("[Parse3] %v", login["error"])
 	}
 
+	// data := []interface{}{
+	// 	types.L(105345504),
+	// 	types.B(30),
+	// 	types.B(5),
+	// 	types.S("7b0a077a088b9e5169bcfc0bf2ee9ae8"),
+	// 	types.B(1),
+	// 	types.S("5d5b1908c2bae78eeb199db47fc327ac935ccfbd914a38"),
+	// 	types.I(0),
+	// 	types.I(0),
+	// 	types.B(0),
+	// 	types.S(""),
+	// 	types.B(0),
+	// 	types.S(""),
+	// 	types.B(0),
+	// 	types.S(""),
+	// }
+
 	result = append(result, types.L(login["login_id"].(uint64)))
 	result = append(result, types.B(login["device"].(byte)))
 	result = append(result, types.B(login["frame_type"].(byte)))
 	result = append(result, types.S(login["key"].(string)))
-	result = append(result, types.B(1))
+	oauth := types.B(0)
+	if login["oauth"].(bool) {
+		oauth = types.B(1)
+	}
+	result = append(result, oauth)
 	result = append(result, types.S(login["access_token"].(string)))
 	result = append(result, types.I(0))
 	result = append(result, types.I(0))

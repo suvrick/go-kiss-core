@@ -1,10 +1,10 @@
 package main
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/suvrick/go-kiss-core/game"
-	"github.com/suvrick/go-kiss-core/packets"
+	"github.com/suvrick/go-kiss-core/types"
 )
 
 //103786258
@@ -12,6 +12,9 @@ import (
 //dc93c8e0c365ca792cf1198ab71c73e7
 
 var urls = []string{
+	"https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=83908794&viewerId=83908794&isAppUser=1&isAppWidgetUser=0&sessionKey=5d28ffe5b89a5030be1188c910d74503ebaa1f2a84e50c&authKey=8ad52d5e75a3a16bff2a7b839d977d6c&apiSettings=227&silentBilling=1&lang=ru&fromServiceBlock=0&ls=0&pos=1&is_global=1&from_id=left.menu.service&from=left.menu.service&hasNotifications=1&_v=1&isOfferWallEnabled=0&appManage=0&connId=1571560169&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1",
+	"https://m.inspin.me/build/v431/?type=vk&user_id=205226070&api_url=https%3A%2F%2Fapi.vk.com%2Fapi.php&api_id=1930071&api_settings=8207&viewer_id=205226070&viewer_type=2&access_token=e5d59fb7b7a476dc0b129724cc2040f330d6a0014294442f2804acbac9437124f490ed9de1fd76ea25dad&is_app_user=1&auth_key=437455c7c77d0506af6ac9c48319d46f&language=0&parent_language=0&is_secure=1&sid=c954a62fd780f73bc7eb67d8e6d00bf3bd849226fa1bbac1ae155d07a150cc801bba5c20b95c8d7e2efa3&secret=c06f122141&stats_hash=882761eec0e774f10e&lc_name=eddb5306&api_script=https%3A%2F%2Fapi.vk.com%2Fapi.php&referrer=unknown&ads_app_id=1930071_d0d503a623afabab5b&platform=html5_android&hash=",
+	"https://bottle2.itsrealgames.com/www/ok.html?api=ok&5&container=true&web_server=https%3A%2F%2Fok.ru&first_start=0&logged_user_id=917434085754&sig=76f0970b24b99c27f84147fbe4148f6a&refplace=vitrine_user_apps_portlet&new_sig=1&apiconnection=83735040_1563210992233&authorized=1&session_key=-s-4d2fRuOe622bNtSeb3e2z.q142c2NwRzc265xyP2-466Tvs6b343LURe75aeQvw20755MxRda2fbOvP6z2d3SVS35a4-Nvs60a37Pxa&clientLog=0&session_secret_key=01889d7e1c81173aeb74b34580a81c60&auth_sig=3324c256fc7578c5092335f7dcfa7008&api_server=https%3A%2F%2Fapi.ok.ru%2F&ip_geo_location=RU%2C90%2CPerm&application_key=CBADLOPFABABABABA",
 	"https://bottle2.itsrealgames.com/mobile/build/v1593/?social_api=mm&type=mm&record_first_session=1&6=&is_app_user=1&session_key=f53f650cd57b6bc75da0b65af0d0c028&vid=13402962412699287699&oid=13402962412699287699&app_id=543574&authentication_key=e1de7d6b1b9a18e124331d1a8e7a6709&session_expire=1623248257&ext_perm=notifications%2Cemails%2Cpayments&sig=d38fca257b4651d5fc2bbc3e2531842f&window_id=CometName_74be9f9e99659ab7f65e85f2a31d3d3b&referer_type=left_menu&version=1593",
 	"https://m.inspin.me/build/v431/?type=vk&user_id=292003911&api_url=https%3A%2F%2Fapi.vk.com%2Fapi.php&api_id=1930071&api_settings=8207&viewer_id=292003911&viewer_type=2&access_token=a0ce925b6322055cd7c291e7577bb363fb21ddd1c1026076d2ae71d1dd7e0e1416b68617869e6d20d6078&is_app_user=1&auth_key=2ff87aebac3ec78d0dc0fa5c55efda33&language=0&parent_language=0&is_secure=1&sid=e2048d62a447474d27fa6c5b862035e9d87cce7c8aba0affd06f06353c91280e416f39adf2f5d62abf77c&secret=46f45eb797&stats_hash=f1304753fffaf8bec8&lc_name=9791cbb4&api_script=https%3A%2F%2Fapi.vk.com%2Fapi.php&referrer=unknown&ads_app_id=1930071_7f55035857df794ec1&platform=html5_android&hash=",
 	"https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=100046693&viewerId=100046693&isAppUser=1&isAppWidgetUser=0&sessionKey=5d121ddedbef9721fc0fc02d33a2011a6938773f38a853&authKey=dd52b12107363624100e77b8b5160b02&apiSettings=743&silentBilling=1&lang=ru&fromServiceBlock=0&ls=0&pos=2&is_global=1&from_id=left.menu.service&from=left.menu.service&hasNotifications=1&_v=1&isOfferWallEnabled=0&appManage=0&connId=1563080077&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1",
@@ -29,23 +32,37 @@ func main() {
 }
 
 func CreateGame() {
-	game := game.NewGame()
-	err := game.Connect(nil)
+	// data, err := frame.Parse3(urls[0])
+
+	// if err != nil {
+	// 	fmt.Println(err.Error())
+	// 	return
+	// }
+
+	data := []interface{}{
+		types.L(83908794),
+		types.B(30),
+		types.B(5),
+		types.S("8ad52d5e75a3a16bff2a7b839d977d6c"),
+		types.B(0),
+		types.S(""),
+		types.I(0),
+		types.I(0),
+		types.B(0),
+		types.S(""),
+		types.B(0),
+		types.S(""),
+		types.B(0),
+		types.S(""),
+	}
+
+	g := game.NewGame()
+	err := g.Connect(nil)
 	if err != nil {
-		log.Fatalln(err.Error())
+		fmt.Println(err.Error())
+		return
 	}
 
-	login := CreateLoginPacket()
-	game.Send(packets.C_LOGIN, login)
-
-	<-game.End()
-}
-
-func CreateLoginPacket() []any {
-	return []any{
-		103786258,
-		32,
-		5,
-		"dc93c8e0c365ca792cf1198ab71c73e7",
-	}
+	g.Send(4, data)
+	<-g.End()
 }

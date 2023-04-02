@@ -43,6 +43,11 @@ func NewClientPacket(id ClientPacketType, data any, w io.Writer) error {
 		return err
 	}
 
+	err = WriteByte(w, types.B(5))
+	if err != nil {
+		return err
+	}
+
 	return marshal([]rune(p.Format), data, w)
 }
 
@@ -172,6 +177,9 @@ func writeData(char rune, value any, w io.Writer) error {
 
 func NewServerPacket(id ServerPacketType, r io.Reader) ([]any, error) {
 	p := getServerScheme(id)
+	if p == nil {
+		return nil, fmt.Errorf("[NewServerPacket] not found server packet (%d)", id)
+	}
 	return unmarshal([]rune(p.Format), r)
 }
 
