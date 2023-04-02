@@ -38,6 +38,11 @@ func NewClientPacket(id ClientPacketType, data any, w io.Writer) error {
 
 	p := getClientScheme(id)
 
+	err := WriteByte(w, types.B(id))
+	if err != nil {
+		return err
+	}
+
 	return marshal([]rune(p.Format), data, w)
 }
 

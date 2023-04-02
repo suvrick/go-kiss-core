@@ -8,21 +8,23 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/suvrick/go-kiss-core/types"
 )
 
 const (
-	VK int = 0
-	MM int = 1
-	OK int = 4
-	FS int = 30
-	SA int = 32
-	GS int = 41
-	NN int = 255
+	VK byte = 0
+	MM byte = 1
+	OK byte = 4
+	FS byte = 30
+	SA byte = 32
+	GS byte = 41
+	NN byte = 255
 )
 
 // Названия ключей для каждого типа соц.сети
 type Key struct {
-	FrameType int    `json:"frame_type"`
+	FrameType byte   `json:"frame_type"`
 	LoginID   string `json:"id"`
 	Token     string `json:"token"`
 	Token2    string `json:"token2"`
@@ -81,6 +83,33 @@ var KEIS = []Key{
 	},
 }
 
+func Parse3(input string) ([]interface{}, error) {
+
+	result := make([]any, 0)
+	login := Parse2(input)
+
+	if login["error"] != nil {
+		return nil, fmt.Errorf("[Parse3] %v", login["error"])
+	}
+
+	result = append(result, types.L(login["login_id"].(uint64)))
+	result = append(result, types.B(login["device"].(byte)))
+	result = append(result, types.B(login["frame_type"].(byte)))
+	result = append(result, types.S(login["key"].(string)))
+	result = append(result, types.B(1))
+	result = append(result, types.S(login["access_token"].(string)))
+	result = append(result, types.I(0))
+	result = append(result, types.I(0))
+	result = append(result, types.B(0))
+	result = append(result, types.S(""))
+	result = append(result, types.B(0))
+	result = append(result, types.S(""))
+	result = append(result, types.B(0))
+	result = append(result, types.S(""))
+
+	return result, nil
+}
+
 func Parse2(input string) map[string]interface{} {
 	return Parse(input, KEIS)
 }
@@ -131,8 +160,8 @@ func Parse(input string, keis []Key) map[string]interface{} {
 		}
 
 		result["login_id"] = id
-		result["device"] = 5
-		result["frame_type"] = keis[i].FrameType
+		result["device"] = byte(5)
+		result["frame_type"] = byte(keis[i].FrameType)
 		result["frame_type_name"] = getFrameTypeName(keis[i].FrameType)
 		result["key"] = q.Get(keis[i].Token)
 		result["oauth"] = q.Has(keis[i].OAuth)
@@ -146,7 +175,7 @@ func Parse(input string, keis []Key) map[string]interface{} {
 
 // getFrameTypeName возращает строковое представления FrameType.
 // Если не удалось определить тип frame, то "nn"
-func getFrameTypeName(t int) string {
+func getFrameTypeName(t byte) string {
 	switch t {
 	case VK:
 		return "vk"
