@@ -122,9 +122,6 @@ func Parse3(input string) ([]interface{}, error) {
 	result = append(result, types.I(0))
 	result = append(result, types.I(0))
 	result = append(result, types.B(0))
-	result = append(result, types.S(""))
-	result = append(result, types.B(0))
-	result = append(result, types.S(""))
 	result = append(result, types.B(0))
 	result = append(result, types.S(""))
 

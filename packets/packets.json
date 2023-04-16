@@ -27,6 +27,6 @@
         "type": 1,
         "id": 4,
         "name": "LOGIN",
-        "format": "LBBS,BSIIBSBSBS"
+        "format": "LBBS,BSIIBBS"
     }
 ]
