@@ -180,6 +180,7 @@ func NewServerPacket(id ServerPacketType, r io.Reader) ([]any, error) {
 	if p == nil {
 		return nil, fmt.Errorf("[NewServerPacket] not found server packet (%d)", id)
 	}
+
 	return unmarshal([]rune(p.Format), r)
 }
 
@@ -231,7 +232,7 @@ func unmarshal(formats []rune, r io.Reader) ([]any, error) {
 			}
 			continue
 		}
-		// 2202 2061 6324 9316
+
 		value, err = readData(char, r)
 		if err != nil {
 			continue
@@ -240,6 +241,7 @@ func unmarshal(formats []rune, r io.Reader) ([]any, error) {
 		values = append(values, value)
 		charPointer++
 	}
+
 end:
 	if skip {
 		err = nil

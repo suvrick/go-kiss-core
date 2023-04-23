@@ -203,7 +203,12 @@
         "name": "REWARD_GOT",
         "format": "II"
     },
-
+    {
+        "type": 0,
+        "id": 502,
+        "name": "INFO2",
+        "format": "[ISBSBS]"
+    },
     {
         "type": 1,
         "id": 4,

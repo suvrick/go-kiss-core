@@ -1,0 +1,57 @@
+    public nid?: string; // PlayerInfoParser.NET_ID; [I;
+	public abstract type: NetType; // PlayerInfoParser.TYPE; [B;
+	public name?: string; // PlayerInfoParser.NAME; [S;
+	public sex?: Gender; // PlayerInfoParser.SEX; [B;
+	public tag?: number; // PlayerInfoParser.TAG; [I;
+	public referrer?: number; // PlayerInfoParser.REFERRER; [I;
+	public bdate?: number; // PlayerInfoParser.BDAY; [I;
+	public avatar?: string; // PlayerInfoParser.PHOTO; [SB;
+	public avatar_status?: number;
+	public profile?: string; // PlayerInfoParser.PROFILE; [S;
+	public status?: string; // PlayerInfoParser.STATUS; [S;
+	public countryId?: number; // PlayerInfoParser.COUNTRY_ID; [B;
+	public online?: boolean; // PlayerInfoParser.ONLINE; [B;
+	public admirer_id?: number; // PlayerInfoParser.ADMIRER_ID; [I;
+	public admirer_price?: number; // PlayerInfoParser.ADMIRER_PRICE; [I;
+	public admirer_time_finish?: number; // PlayerInfoParser.ADMIRER_LEFT; [I; it is timestamp
+	public views?: number; // PlayerInfoParser.VIEWS; [I;
+	public vip?: boolean; // PlayerInfoParser.IS_VIP; [B;
+	public color?: number; // PlayerInfoParser.COLOR; [B;
+	public kisses?: number; // PlayerInfoParser.KISSES; [II;
+	public gifts?: number; // PlayerInfoParser.GIFTS; [II;
+	public kisses_today?: number;
+	public gifts_today?: number;
+	public last_gifts?: [ number, number, number ][]; // PlayerInfoParser.PLAYER_GIFTS; ["[IIBI]"; // [source_id:I; gift_id:I; time:I]
+	public device?: DeviceType; // PlayerInfoParser.DEVICE; [B;
+	public wedding_id?: number; // PlayerInfoParser.WEDDING_ID; [I;
+	public achievements?: [ number, number, number ][]; // PlayerInfoParser.ACHIEVEMENTS; ["[III]";
+	public collections?: [ number, number ][]; // PlayerInfoParser.COLLECTIONS_SETS; ["[BI]";
+	public avatar_id?: number; // PlayerInfoParser.AVATAR_ID; [B;
+	public rights?: number; // PlayerInfoParser.RIGHTS; [B;
+	public register_time?: number; // PlayerInfoParser.REGISTER_TIME; [I;
+	public logout_time?: number; // PlayerInfoParser.LOGOUT_TIME; [I;
+	public photos?: string[]; // PlayerInfoParser.PHOTOS; ["[S][B]";
+	public photos_statuses?: PhotoStatus[];
+	public frame_id?: number; // PlayerInfoParser.VIP_FRAME; [B;
+
+	// Mask2
+	public bridals_place?: number;
+	public wedlocks_place?: number;
+	public is_popular?: number;
+	public rich_place?: number;
+	public views_place?: number; // PlayerInfoParser.RATING_PLACES; [IIBBI;
+	public level?: number; // PlayerInfoParser.LEVEL; [I;
+	public ability_expire?: number;
+	public ability_type?: number;	// PlayerInfoParser.ABILITY_EXPIRE, ["IB", "ability_expire, ability_type"]]
+	public rolls_rewarded?: number; // PlayerInfoParser.ROLLS_REWARDED, ["B", "rolls_rewarded"]]
+	public subscribe_past_days?: number; // PlayerInfoParser.SUBSCRIBE_PAST_DAYS, ["I", "subscribe_past_days"]]
+	public vip_days_left?: number;
+	public vip_trial_used?: number;
+	public league?: number;
+	public league_common_points?: number;
+	public league_group_id?: number;
+	public league_points?: number; // PlayerInfoParser.LEAGUES, ["BI"
+	public league_shields_count?: number;
+	public last_complaint_date?: number; // PlayerInfoParser.LAST_COMPLAINT_DATE, "I"
+	public admire_reward_timestamp?: number;
+	public deleted?: boolean;

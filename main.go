@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/suvrick/go-kiss-core/frame"
 	"github.com/suvrick/go-kiss-core/game"
@@ -49,9 +50,17 @@ func CreateGame() {
 
 	_ = data
 
-	g.Send(4, GetData())
+	g.Send(4, data)
 
 	g.Send(202, []interface{}{types.I(5)})
+
+	go func() {
+		<-time.After(time.Second * 3)
+		g.Send(8, []interface{}{
+			[]interface{}{types.I(38287098)},
+			types.I(game.INFO_MASK),
+		})
+	}()
 
 	<-g.End()
 }

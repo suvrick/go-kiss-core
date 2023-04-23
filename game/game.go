@@ -107,11 +107,13 @@ func (g *Game) send() {
 
 	b1 := make([]byte, len(g.s_buffer.Bytes()))
 	copy(b1, g.s_buffer.Bytes()) //пакет
+
 	g.s_buffer.Reset()
 
 	packets.WriteLong(g.s_buffer, types.L(g.msgID))
 	b2 := make([]byte, len(g.s_buffer.Bytes()))
 	copy(b2, g.s_buffer.Bytes()) // msgID
+
 	g.s_buffer.Reset()
 
 	packets.WriteLong(g.s_buffer, types.L(len(b1)+len(b2))) // len
@@ -191,9 +193,21 @@ func (g *Game) loop() {
 	fmt.Println("Close")
 }
 
+const INFO_MASK = 908
+
 func (g *Game) use(s *packets.Scheme, p []interface{}) {
 	switch s.ID {
 	case 17:
 		g.Send(61, nil)
+	case 5:
+		if p[1].(types.I) == INFO_MASK {
+			p2, err := packets.NewServerPacket(packets.ServerPacketType(502), bytes.NewBuffer(p[0].(types.A)))
+			if err == nil {
+				scheme := packets.GetServerScheme(packets.ServerPacketType(502))
+				if scheme != nil {
+					fmt.Printf("[read] %s(%d), format: %#v, data: %v, error: %v\n", scheme.Name, scheme.ID, scheme.Format, p2, err)
+				}
+			}
+		}
 	}
 }
