@@ -1,9 +1,10 @@
 package types
 
-type B byte
-type I int32
+type B uint8
+type I uint32
 type L uint64
 type S string
+type A []byte
 
 type Value interface {
 	B | I | L | S

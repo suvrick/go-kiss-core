@@ -1,0 +1,464 @@
+import type { ByteArray } from "/framework/net/ByteArray";
+import { PacketParser } from "/protocol/PacketParser";
+import type { ServerPacketType } from "/protocol/ServerPacketType";
+
+export class PacketServer extends Array<any>
+{
+	private static readonly FORMATS: string[] = [
+		"",							// MIN_TYPE;
+
+		"",							// HELLO(1);
+
+		"IIIIIII[BII]IIBBIBIIII[BBBII]S",			// ADMIN_INFO(2); inner_id:I, ligout_time:I, balance_paid:I, balance_free:I, subscribe:I, kisses:I, gifts:I, [type:B, value:I, daily_value:I], bridals_place:I, wedlocks_place:I, is_popular:B, is_rich:B, views_place:I, league:B, common_points:I, group_id:I, group_points:I, league_saves: I, [ban_type:B, ban_reason:B, ban_repeated:B, ban_moderator:I, ban_finish:I], auth_key:S
+		"S",							// ADMIN_MESSAGE(3); message:S
+
+		"B,IIII[B]IIIISBBIIBBS",				// LOGIN(4); status:B, inner_id:I, balance:I, inviter_id:I, logout_time:I, [flags:B], games_count:I, kisses_daily_count:I, last_payment_time:I, subscribe_expires:I, params:S, sex_set:B, tutorial:B, tag:I, server_time:I, first_login:B, is_top_player:B, photos_hash:S
+
+		"AI,I",							// INFO(5); data:A, mask1:I, mask2:I
+		"AI,I",							// INFO_NET(6); data:A, mask1:I, mask2:I
+		"I,B",							// BALANCE(7); bottles:I, reason:B
+		"",							//
+		"BIIIIII",						// BUY(9); result:B, sender_id:I, good_id:I, price:I, target_id:I, data:I, count:I
+		"B,B",							// CONTEST_ITEMS(10); status:B, item_type:B
+		"[IFI]",						// ADMIN_ORDERS_INFO(11); [offer_id:I, revenue:F, time:I]
+		"[BIIII]",						// EVENTS(12); [type:B, actor_id:I, data:I, time:I, count:I]
+		"[II]",							// REWARDS(13); [id:I, count:I]
+		"[III]",						// ADMIRERS(14); [player_id:I, cost:I, expired:I]
+		"",							// (15);
+		"IIII",							// GIFT(16); target_id:I, sender_id:I, data:I, count:I
+		"B",							// BONUS(17); daily_bonus_type:B
+		"BBI[II]",						// LEADERBOARDS(18); leaderboard:B, period_type:B, season:I, [player_id:I, points:I]
+		"IB",							// VIP_COLOR(19); player_id:I, color:B
+		"I,B",							// VIP(20); time:I, reason:B
+		"I",							// ROOM_INVITE(21); player_id: number
+		"B,I",							// MOVE(22); status:B, room_id:I
+		"II",							// ADMIRE_BID(23); admired_id:I, rival_id:I
+
+		// Bottle
+		"B",							// BOTTLE_PLAY_DENIED(24); status:B
+		"III[I][I]",					// BOTTLE_ROOM(25); id:I, table_id:W, bottle_id:W, [player_id:I], [spectator_id:I]
+		"IB",							// BOTTLE_JOIN(26); inner_id:I, index:B
+		"I",							// BOTTLE_LEAVE(27); inner_id:I
+		"I",							// BOTTLE_LEADER(28); leader_id:I
+		"II,II",						// BOTTLE_ROLL(29); leader:I, rolled_id:I, speed:I, time:I,
+		"IB",							// BOTTLE_KISS(30); player:I, answer:B
+		"II",							// BOTTLE_TABLE(31); actor_id:I, table_id:I
+		"II",							// BOTTLE_BOTTLE(32); actor_id:I, bottle_id:I
+		"IIBB",							// BOMB_HURL(33); source_id:I, catcher_id:I, is_new:B, room_type:B
+		"IB",							// BOMB_EXPLODE(34); player_id:I, room_type:B
+		"",							    // BOTTLE_ENTER(35);
+
+		"",							// CHAT_LEAVE(36);
+		"BIIS,II",						// CHAT_MESSAGE(37); chat_type:B, message_id:I, player_id:I, message:S, complain_target:I, complain_data:I
+		"ISBIB",						// CHAT_WHISPER(38); player_id:I, message:S, direction:B, history_id:I, is_new: B
+
+		"[IIIB]",						// HISTORY_CONTACTS(39); [target_id:I, total:I, last:I, count_new:B]
+		"IIIS",							// VALENTINE_DATA(40); valentine_id:I, gift_id:I, count: I, text: string
+
+		// Ignore
+		"[IBI]",						// IGNORE_LIST(41); [targed_id:I, type:B, time:I]
+		"BBB",							// CHAMPION_CHEST(42); currentPoints:B, needPoints:B, boughtTodayCount:B
+
+		"[II][II][II]",						// BEST(43); [wedding_id:I, value:I], [popular_player_id:I, value:I], [forbes_player_id:I, value:I]
+		"IB",							// MONEY_BOX(44); coins_spent:I, count_bought:B
+		"[IB]",							// FRIENDS(45); [friend_id:I, removed:B]
+		"[I]",							// TOP(46); [topId:I]
+
+		"[II]",							// LEAGUES_RATING(47); [player_id:I, common_points:I]
+		"BI[II]",						// LEAGUE_GROUP(48); state:B, group_id:I [player_id:I, group_points:I]
+		"BIIII",						// LEAGUE_INFO(49); league:B, common_points:I, group_id:I, group_points:I, league_shields_count: I
+		"[I]I",							// SEARCH(50); ids:[I], offset:I
+		"I,IBSIBII",						// LAST_MESSAGE(51); player_id:I, message_id:I, event_type:B, message:S, data:I, is_my:B, count:I, time:I
+		"I",							// LEAGUES_TIMEOUTS(52); seconds_left: I
+
+		"IB",							// PUZZLE_AWARD(53); target_id:I, award:B
+		"[I]",							// BOTTLE_LEAVING_ROOMS(54); [roomId:number]
+		"[B]",							// ADVENT_CALENDAR(55); [state:B]
+		"BIIIB",						// MESSAGE_REACTION(56); chat_type:B, message_id:I, player_id:I, reaction:I, action_type:B
+		"[BI]",							// PUZZLE_STATS(57); [type:B, count:I]
+
+		"[B]",							// EVENTS_IGNORE(58); [ignore:B]
+
+		"",							// (59); Removed
+
+		// Anonym
+		"",							// (60); Removed
+		"",							// (61); Removed
+		"",							// (62); Removed
+		"",							// (63); Removed
+		"",							// (64); Removed
+		"[II]",							// GIFTS_FOR_ACTIONS_STATS(65); [gift_id:I, count_actions:I]
+
+		"BI",							// RATING_SIZE(66); type:B, count:I
+
+		// Wedding
+		"BII,I",						// WEDDING_PROPOSAL_ANSWER(67); status:B, target_id:I, source_id:I, wedding_id:I
+		"BII",							// WEDDING_PROPOSAL_CANCEL(68); status:B, client_id:I, target_id:I
+		"BI",							// WEDDING_PROPOSAL_MAKE(69); status:B, target_id:I
+		"I",							// WEDDING_PROPOSAL_REFUSE(70); player_id:I
+
+		"[IIBSBI]",						// WEDDING_PROPOSAL_INFO(71); [owner_id:I, sender_id:I, ring_id:B, message:S, status:B, delay:I]
+		"[IB]",							// WEDDING_ADMISSIONS(72); [wedding_id:I, type:B]
+
+		"[IIIBIIIIIIB]",					// WEDDING_INFO(73); [id:I, groom_id:I, bride_id:I, status:B, delay:I, elapsed:I, admire:I, happy:I, happyRating:I, place:I, ring_id:B]
+		"[I[BIII]]",						// WEDDING_STATS(74); [id:I, [type:B, count:I, value:I, time:I]]
+
+		"I[B]",							// WEDDING_ITEMS(75); wedding_id:I, [item_id:B]
+		"IBB",							// WEDDING_SETTLED(76); buyer_id:I, type:B, item_id:B
+		"[II]",							// WEDDING_GUESTS(77); [invited_id:I, inviter_id:I]
+
+		"",							// WEDDING_ENTER(78);
+		"",							// (79); Removed
+		"BI,[II]",						// WEDDING_CONTEST(80); state:B, finish_time: I, [player_id:I, points:I]
+		"IB",							// WEDDING_JOIN(81); player_id:I, sex:B
+		"IB",							// WEDDING_KISS(82); player_id:I, answer:B
+		"I",							// WEDDING_LEADER(83); player_id:I
+		"I",							// WEDDING_LEAVE(84); player_id:I
+		"B",							// WEDDING_PLAY_DENIED(85); status:B
+		"II,I",							// WEDDING_ROLL(86); leader:I, rolled:I, time:I
+		"III[IB]",						// WEDDING_ROOM(87); wedding_id:I, groom_id:I, bride_id:I, [player_id:I, sex:B]
+		"B",							// WEDDING_STATUS(88); status:B
+
+		"I",							// WEDDING_VOW(89); player_id:I
+		"BI",							// WEDDING_GARTER(90); status:B, player_id:I
+		"BI",							// WEDDING_BOUQUET(91); status:B, player_id:I
+		"",							// (92); Removed
+		"II",							// WEDDING_HAPPY(93); happy:I, happyRating:I
+		"II",							// WEDDING_DIVORCE(94); client_id:I, wedding_id:I
+
+		"I[II]",						// WEDDING_RATING_HAPPY(95); page:I, [wedding_id:I, value:I]
+
+		"II",							// WEDDING_CANCEL(96); client_id:I, wedding_id:I
+		"I",							// WEDDING_START_TIME(97); time:I
+
+		// House
+		"AI",							// HOUSE_INFO_REQUEST(98); data:A, mask:I
+		"I[IBI]",						// HOUSE_ACCESS(99); houseId:I, [player_id:I, type:B, actor_id:I]
+		"IB",							// HOUSE_PUBLIC(100); room_id:I, type:B
+		"IB",							// HOUSE_KEYS(101); room_id:I, type:B
+
+		"",							// Removed(102);
+
+		"[IIIBIIBB]",						// HOUSE_ITEMS(103); [id:I, type:W, pack_id:I, sector:B, pos_x:W, pos_y:W, rotation:B, boxroom:B]
+		"BIIIII",						// HOUSE_GIFT(104); status:B, player_id:I, type:W, price:I, target:I, room_id:I
+		"[IBIIB]",						// HOUSE_ITEM_MOVE(105); [id:I, sector:B, pos_x:W, pos_y:W, rotation:B]
+		"II",							// ACHIEVEMENT_GET(106); player_id:I, achievement_id:I
+		"[I]B",							// HOUSE_ITEM_BOXROOM(107); [id:I], state:B
+
+		"",							// HOUSE_ENTER(108);
+		"I",							// HOUSE_JOIN(109); player_id:I
+		"I",							// HOUSE_LEAVE(110); player_id:I
+		"IBIIB",						// HOUSE_MOVE(111); player_id:I, sector:B, pos_x:W, pos_y:W, type:B
+		"B",							// HOUSE_PLAY(112); status:B
+		"IIIB[IBII]",						// HOUSE_ROOM(113); id:I, owner_id:I, room_count:W, attic:B, [id:I, sector:B, pos_x:W, pos_y:W]
+		"",							// (114); Removed
+		"",							// (115); Removed
+
+		"BI[II]",						// HOUSE_MANSIONS(116); is_daily:B, page:I, [room_id:I, mansion_value:I]
+
+		// Curios gifts
+		"[IIII]",						// CURIOS(117); [curio_id:I, count:I, max_count:I, price:I]
+		"BIIII",						// CURIOS_GIFT(118); status:B, sender_id:I, curio_id:I, price:I, target_id:I
+
+		"",							// (119); Removed
+
+		"B[IISI[I[I]]]",					// CHAT_HISTORY(120); chat_type:B, [message_id:I, player_id:I, message:S, time:I, reactions:[I[I]]]
+
+		// Collection
+		"BB,B",							// COLLECTIONS_ASSEMBLE(121); status:B, assemble_id:B, award_id:B
+		"IBB",							// COLLECTIONS_AWARD(122); target_id:I, award_id:B, reason:B
+		"BB",							// CHAIN(123); step: B, segment: B
+		"I[II]",						// (124); Removed
+
+		"B",							// HOUSE_SECTOR(125); sectorId:B
+
+		"[IB]",							// HOUSE_STOCK(126); [id:W, discount:B]
+		"[BI]",							// STATUS_GIFT_STATS(127); [row:B, stats:I]
+		"II[I]",						// HALLOWEEN_DATA (128); suits_count:W, suit_craft_finish:I, [item_count:I]
+		"B",							// PACK(129); show:B
+		"I",							// COLLECTIONS_POINTS(130); count:I
+		"I",							// SELF_RICH_UPDATE(131); new_value:I
+
+		"[BI]",							// CHRISTMAS_DECORATIONS(132); [BI]
+
+		// House packs
+		"[IB]",							// HOUSE_PACKS(133); [pack_id:I, pack_type:B]
+		"BIBIII",						// HOUSE_PACK_GIFT(134); status:B, player_id:I, type:B, price:I, target_id:I, room_id:I
+
+		"[II]",							// POSTING_REWARDS (135); [rewardId:I, data:I]
+
+		"II",							// HOUSE_ACTION(136); actor_id:I, action_id:I
+		"[BB]",							// HOUSE_SECTORS(137); [sector_id:B, type:B]
+
+		// Moderation
+		"",							// (138); Removed
+		"",							// (139); Removed
+		"",							// (140); Removed
+		"",							// (141); Removed
+		"",							// (142); Removed
+
+		"IS",							// SPECTATOR(143); id:L, auth_key:S
+		"BIS",							// AUTH(144); type:B, net_id:L, auth_key:S
+
+		"[B]",							// TRAINING(145); [type:B]
+
+		"S",							// XSOLLA_SIGNATURE(146); singature:S
+
+		"",							// (147); Removed
+
+		"",							// (148); Removed
+		"",							// (149); Removed
+
+		"BIB[BIB]",						// PASSION_PASS(150); level:B, points:I, is_paid:B, [action_type:B, value:I, awarded:B]
+		"BIIII",						// PETS_ADD(151); status:B, player_id:I, target_id:I, id:I, price:I
+		"BIIBBI",						// PETS_ACTION(152); status:B, pet_id:I, actor_id:I, action_id:B, animation:B, power:I
+		"IBII",							// PETS_MOVE(153); pet_id:I, sector:B, pos_x:W, pos_y:W
+		"IBB",							// PETS_WEARED(154); pet_id:I, place:B, type:B
+		"IIB",							// PETS_CLOTHING_ADD(155); player_id:I, target_id:I, type:B
+		"[BI]",							// PETS_CLOTHING_CONTENTS(156); [type:B, count:I]
+		"III",							// VIP_TRANSFER(157); player_id:I, traget_id:I, transfer:I
+		"I[II]",						// PETS_RATING(158); page:I, [player_id:I, value:I]
+		"",							// (159); Removed
+		"[I]",							// PETS_FORGOTTEN(160); [pet_id:I]
+		"I",							// PETS_REMOVE(161); pet_id:I
+		"IIBBI",						// PETS_ACTION_NOTIFY(162); pet_id:I, actor_id:I, act:B, animation:B, power:I
+		"[III]",						// OFFERS_INFO(163); [offer_id:I, seconds_left:I, stock:I]
+		"I",							// COINS_LADDER(164); last_coins_offer:I
+		"IIB",							// ITEM_TRANSFER(165); source_id:I, target_id:I, item_id:B
+		"BB,BII",						// (166); Removed
+		"",							// (167); Removed
+		"S",							// OK_SIGNATURE(168); singature:S
+		"",							// (169); Removed
+		"II",							// (170); Removed
+		"I",							// (171); Removed
+		"BI",							// PURCHCASE(172); type:B, count:I
+		"[BI]",							// TIMEOUTS(173); [type:B, timeout:I]
+		"BB",							// (174); Removed
+		"[I[II]]",						// COUNTER(175); [type:W, [data:L, count:L]]
+
+		"",							// (176); Removed
+		"",							// (177); Removed
+		"",							// (178); Removed
+		"",							// (179); Removed
+		"",							// (180); Removed
+
+		"II",							// HOUSE_VALUE(181); common_points:I, daily_points:I
+		"ISSIIBII",						// (182); Removed
+		"BBI[II]",						// RATING(183); is_daily:B, type:B, page:I, [player_id:I, value:I]
+		"I",							// (184); Removed
+		"IBI",							// (185); Removed
+
+		// Mafia
+		"III[I]",						// MAFIA_ROOM(186); room_id:I, table_id:W, owner_id:I, [player_id:I]
+		"I",							// MAFIA_JOIN(187); inner_id:I
+		"IB",							// MAFIA_LEAVE(188); inner_id:I, role:B
+		"I",							// MAFIA_LOCK(189); delay:I
+		"II",							// MAFIA_VOTE(190); source_id:I, target_id:I
+		"BI",							// MAFIA_STATE(191); state:B, delay:W
+		"[IB]",							// MAFIA_ROLES(192); [inner_id:I, role:B]
+		"[IB]",							// MAFIA_DIE(193); [inner_id:I, role:B]
+		"[I]",							// MAFIA_TRIAL(194); [player_id:I]
+		"B",							// MAFIA_RESULTS(195); is_mafioso_win:B
+		"II",							// MAFIA_TABLE(196); actor_id:I, table_id:W
+		"BB",							// MAFIA_BUY_ROLE(197); role:B, status:B
+		"BI[II]",						// (198); Removed
+
+		// Music gifts
+		"ISS",							// MUSIC_REQUEST(199); requesterId:I, url:S, song_name:S,
+		"I",							// ADMIRE_SERIES(200); max_series:I
+		"ISB",							// MUSIC_GIFT_PAUSE(201); requesterId:I, url:S, paused:B
+		"IS",							// MUSIC_GIFT_STOP(202); requesterId:I, url:S
+		"IS",							// MUSIC_SEARCH_REQUEST(203); requesterId:I, song_name:S
+		"SS",							// MUSIC_SEARCH_ANSWER(204); url:S, song_name:S
+
+		"B",							// MAFIA_PLAY(205); status:B
+
+		"III",							// REWARD_STATE(206); hearts:I, gifts:I, time:I
+
+		"[BB]",							// PUZZLE_SHOW(207); [index:B, puzzle_id:B]
+		"IB",							// PUZZLE_WIN(208); target_id:I, piece_index:B
+		"",							// (209); Removed
+
+		"",							// (210); Removed
+
+		"",							// (211); Removed
+		"IB",							// PLAYER_ROOM_TYPE(212); player_id:I, room_type:B
+
+		"IBBIB",						// PHOTOS_INFO(213); owner_id:I, photo_id:B, status:B, likes_count:I, is_like:B
+		"I,B",							// PHOTOS_SHOWS(214); shows:I, type:B
+
+		"IB",							// PHOTO_RATES_INFO(215); player_id:I, photo_id:B
+		"I[II]",						// RATING_VIEWS(216); page:I, [player_id:I, value:I]
+
+		"IBB",							// EMOTION(217); sender_id:I, emotion:B, room_type:I
+
+		"[II]",							// PLAYERS_KISSES(218); [player_id:I, kisses:I]
+		"I",							// PHOTOS_LEADER(219); player_id:I
+		"I",							// PHOTOS_DIFFERENCE(220); difference:I
+		"B",							// INVITER_STATE(221); state:B
+		"",							// (222); Removed
+
+		"[BI]",							// TREE_CATEGORIES_STATS(223); [category_id:B, stats:I]
+		"IBIB[BB]",						// TREE_DATA(224); player_id, level:B, points:I, fertilizer:B, [slot_id:B, decor_id:B]
+		"[BI]",							// TREE_ITEMS(225); [decor_id:B, count:I]
+		"BB",							// TREE_DECOR_MOVE(226); decor_id:B, slot_id:B
+		"IBI",							// TREE_LEVEL_UP(227); owner_id:I, level:B, helper_id:I
+		"I[II]",						// (228); Removed
+		"I",							// TREE_HELP_CONFIRM(229), player_id:I
+
+		"[IIB]",						// PLAYERS_VIEW(230); [player_id:I, time:I, is_unocked:B]
+		"IBI",							// DISCOUNT(231); average_order:I, discount:B, time:I
+		"I",							// UPDATE_INFO(232); player_id:I
+
+		"I[I]",							// RATING_ELITE(233); page:I, [player_id:I]
+		"[I]",							// SELFOWNED_ROOMS(234); [room_id:I]
+		"I",							// SELFOWNED_ROOM_NOTIFY(235); room_id:I
+
+		"BB[BI]",						// QUEST(236); stage:B, canSkip:B, [quest_id:B, count:I]
+		"[BI]",							// QUEST_AWARD(237); [award_type:B, award_count:I]
+
+		"[IBS]",						// MODERATION_LIST(238); [player_id:I, photo_id:B, photo_url:S]
+		"B",							// MAFIA_UNLOCKED(239); is_available:B
+		"",							// (240); Removed
+		"IIB",							// BOX_RESULT(241); count_bottles:I, count_vip:I, box_id:B
+		"BBB[B]",						// FORTUNE_WHEEL(242); state:B, current_sector:B, discount:B, [sector:B]
+		"IB",							// PHOTOS_LIKE_RATE(243); actor_id:I, photo_id:B
+		"",							// (244); Removed
+		"",							// SELF_POPULAR_UPDATE(245);
+
+		"[BI]",							// BALANCE_HOLIDAY(246); [type:B, value:I]
+		"III",							// HOLIDAY_ITEM_SEND(247); senderId:I, targetId:I, data:I
+
+		"BBBB",							// GACHA_INFO(248); furniture_set:B, decoration_set:B, pet:B, apartments:B
+		"[II]",							// OFFERS_BALANCE(249); [offer_type:I, count:I]
+
+		"I",							// SUBSCRIPTION_DATA(250); subscribe_expires:I
+		"",							// (251); Removed
+		"BBI",							// BOX_MUTABLE_INFO(252); offer_id:B, state:B, timer_reset:I
+		"I",							// BIRTHDAY_NOTIFY(253); senderId:I
+		"[BB[I]]",						// POPULAR_GIFTS(254); [receiver_age_index:B, receiver_sex:B, [gift_id:I]]
+
+		"IBB",							// IGNORED(255); player_id:I, type:B, ignored:B
+		"I[IBSIBII]",						// HISTORY_MESSAGES(256); target_id:I, message:[id:I, type:B, message:S, data:I, is_my:B, count:I, time:I]
+		"I[II]",						// EASTER_RATING(257); page:I, [player_id:I, points:I]
+
+		"",							// (258); Removed
+
+		"B[I]",							// CHEST_DATA(259); chest_type:B, [player_id:I]
+		"",							// (260); Removed
+		"",							// (261); Removed
+		"[I]",							// ROULETTE(262); [rewardId:I]
+		"IB",							// WELL(263); time:I, state:B
+
+		"I[BBBII]",						// BANS(264); target_id:I, [type:B, reason:B, repeated:B, moderator_id:I, duration:I]
+		"[BB]",							// Removed (265);
+
+		"ISBBI",						// MESSAGE_ACK(266); player_id:I, message:S, type:B, ack_num:B, message_id:I
+		"II",							// MESSAGE_REMOVE_ACK(267); target_id:I, message_id:I
+
+		"",							// REMOVED(268);
+		"II",							// PLAYER_LEVEL(269); level:I, score:I
+
+		"II",							// CERTIFICATE_GIFT(270); target_id:I, sender_id:I
+
+		",I",							// HOLIDAY_ITEM_APPEAR(271); player_id:I
+		"",							// (272); Removed
+		"",							// (273); Removed
+		"",							// (274); Removed
+		"",							// (275); Removed
+		"",							// (276); Removed
+		"",							// (277); Removed
+
+		"",							// (278); Removed
+		"",							// (279); Removed
+		"",							// (280); Removed
+
+		// New Year
+		"II[BI]",						// NEW_YEAR_DATA(281); energy:I, snowflakes:I, [decor_id:B, count:I]
+		"IB[BB]I",						// NEW_YEAR_TREE_INFO(282); owner_id:I, level:B, [slot_id:B, decor_id:B], levelup_time:I
+		"BB",							// NEW_YEAR_DECOR_MOVE(283); decor_id:B, slot_id:B
+		"B,BI",							// NEW_YEAR_TREE_LEVELUP(284); result:B, level:B, levelup_time:I
+		",I",							// NEW_YEAR_SNOWFLAKE(285); player_id:I
+		"I",							// NEW_YEAR_ENERGY_BALANCE(286); count:I
+		"[BI]",							// NEW_YEAR_GIFTS(287); [gift_type:B, sender_id:I]
+		"BI",							// NEW_YEAR_GIFT_SEND(288); result:B, target_id:I
+		"[BI]",							// NEW_YEAR_GIFT_OPEN(289); [item_type:B, count:I]
+		",I",							// NEW_YEAR_SNOWDRIFT(290); player_id:I
+		"[II]",							// NEW_YEAR_FIREWORKS_INFO(291); [firework_id:I, count:I]
+		"[BI]",							// NEW_YEAR_DECOR_CRAFTED(292); [item_id:B, count:I]
+		"I",							// NEW_YEAR_SNOWFLAKES_BALANCE(293); count:I
+		"[II]",							// NEW_YEAR_FIREWORKS_CRAFTED(294); [item_id:I, count:I]
+
+		"[IIII]",						// ADMIN_BUYINGS_INFO(295); [target_id:I, good_id:I, count:I, sum_price:I]
+		"[SSSSII]",						// VIDEO_INFO(296); video_id:S, title:S, url:S, channel:S, duration:W, view_count:I]
+
+		"ISIIS",						// VIDEO_ROOM(297); player_id:I, video_id:S, elapsed:I, duration:W, title:S
+		"[S][S]",						// VIDEO_LISTS(298); [video_history:S], [videos_liked:S]
+		"[ISIS]",						// VIDEO_QUEUE(299); [player_id:I, videoId:S, duration:W, title:S]
+
+		"IB",							// CHAT_OFFER(300); player_id:I, type:B
+		"I",							// WINK(301); player_id:I
+
+		"BI",							// SPECTATOR_JOIN_LEAVE(302); action:B, player_id:I
+		"I",							// TITLE_POINTS(303); points:I
+		"",							// CAPTCHA(304);
+		"BIS,II",						// CHAT_GIF(305); chat_type:B, player_id:I, message:S, owner_id:I, data:I,
+		"[S]",							// GIF_HISTORY(306); [gif_id:S]
+		"[II]",							// KISS_PRIORITY(307); [player_id:I, count:I]
+		"[III]",						// KICKS_KICKS(308); [target_id:I, actor_id:I, kick_left:I]
+		"II",							// KICK_SAVE(309); target_id:I, actor_id:I
+		"[BII]",						// BALANCE_ITEMS(310); [type:B, common:B, daily:B]
+		"BI[IIII]",						// TITLES(311); title:B, offset:I, [player_id:I, points:I, daily_points:I, time_update:I]
+		"[BBI]",						// TITLES_INFO(312); [title:B, level:B, size:I]
+		"[BB]",							// TITLES_AWARD(313); [awardType:B, count:B]
+		"I",							// FRAMES(314); frames_groups:I
+		"II",							// REWARD_GOT(315); owner_id:I, reward_id:I
+		"",							// (316); removed
+		"[SI]",							// POPULAR_VIDEOS(317); [video_id:S, rating:I]
+		"I[IBI]",						// ADMIN_REWARDS_INFO(318); target_id:I, [reward_id:I, count:B, time:I]
+		"B[B]",							// GIFT_BOXES(319); current_box_id:B, [opened_boxes:B]
+		"BI[II],I",						// BALLOONS(320); state:B, time_till_finish:I, [player_id:I, count:I]
+		"[II]",							// LIMITED_OFFERS(321); [offer_id:I, count_left:I]
+		"BI[II][BI[I]],BIB",					// CONTEST_WITH_ACTIONS(322); current_state:B, next_state_time:I, [player_id:I, score:I][team_id:B, score:I, [player_id:I]], winner_taem_id:B, player_id:I, ability_type:B
+		"IIB",							// CONTEST_ACTION(323); player_id:I, target_id:I, action_type:B
+		"I",							// LEAGUE_CURRENT_POINTS(324); current_points:I
+		"BI[II],I",						// CONTEST_TETRIS(325); state:B, time_till_finish:I, [player_id:I, points:I], winner:I
+		"IBB[IIB]"						// RACE_LEADERS(326); start_time:I, race_level: B, can_start: B, [player_id:I, points:I, place:B]
+	];
+
+	private readonly _type: ServerPacketType = 0;
+	private readonly _id: number = 0;
+
+	public bytesLength: number = 0;
+
+	public constructor(type: ServerPacketType, id: number, buffer: ByteArray)
+	{
+		super();
+
+		this.bytesLength = buffer.bytesAvailable;
+		Object["setPrototypeOf"](this, PacketServer.prototype);
+
+		this._type = type;
+		this._id = id;
+
+		const format: string = PacketServer.FORMATS[this._type];
+		try
+		{
+			PacketParser.readData(buffer, format, this, this._type);
+		}
+		catch (e)
+		{
+			console.error(`Failed to read server packet ${this._type} "${format}": ` + e);
+		}
+	}
+
+	public get type(): ServerPacketType
+	{
+		return this._type;
+	}
+
+	public get id(): number
+	{
+		return this._id;
+	}
+}

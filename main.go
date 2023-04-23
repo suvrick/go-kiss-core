@@ -5,6 +5,7 @@ import (
 
 	"github.com/suvrick/go-kiss-core/frame"
 	"github.com/suvrick/go-kiss-core/game"
+	"github.com/suvrick/go-kiss-core/types"
 )
 
 //103786258
@@ -46,6 +47,32 @@ func CreateGame() {
 		return
 	}
 
-	g.Send(4, data)
+	_ = data
+
+	g.Send(4, GetData())
+
+	g.Send(202, []interface{}{types.I(5)})
+
 	<-g.End()
+}
+
+// ['113594657', 32, 6,
+// '7a2b140e7b42935768c040a54ade4cfc',
+// 0,
+// 'c5fdbab656b5cd5551d4f3e13ee20e41',
+// 0, 0, 0, '0', ”]
+func GetData() []interface{} {
+	return []interface{}{
+		types.L(113594657),
+		types.B(32),
+		types.B(5),
+		types.S("7a2b140e7b42935768c040a54ade4cfc"),
+		// types.B(1),
+		// types.S(""),
+		// types.I(0),
+		// types.I(0),
+		// types.B(0),
+		// types.B(0),
+		// types.S(""),
+	}
 }

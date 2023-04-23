@@ -176,12 +176,24 @@ func (g *Game) loop() {
 
 		pack, err = packets.NewServerPacket(packets.ServerPacketType(packetID), g.r_buffer)
 		if err != nil {
-			fmt.Println(err.Error())
+			//fmt.Printf("[read] %s\n", err.Error())
 			continue
 		}
 
-		fmt.Printf("packetID: %d, data: %v, error: %v\n", packetID, pack, err)
+		scheme := packets.GetServerScheme(packets.ServerPacketType(packetID))
+		if scheme != nil {
+			fmt.Printf("[read] %s(%d), format: %#v, data: %v, error: %v\n", scheme.Name, scheme.ID, scheme.Format, pack, err)
+		}
+
+		g.use(scheme, pack)
 	}
 
 	fmt.Println("Close")
+}
+
+func (g *Game) use(s *packets.Scheme, p []interface{}) {
+	switch s.ID {
+	case 17:
+		g.Send(61, nil)
+	}
 }

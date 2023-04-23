@@ -36,7 +36,7 @@ func init() {
 
 func NewClientPacket(id ClientPacketType, data any, w io.Writer) error {
 
-	p := getClientScheme(id)
+	p := GetClientScheme(id)
 
 	err := WriteByte(w, types.B(id))
 	if err != nil {
@@ -176,7 +176,7 @@ func writeData(char rune, value any, w io.Writer) error {
 }
 
 func NewServerPacket(id ServerPacketType, r io.Reader) ([]any, error) {
-	p := getServerScheme(id)
+	p := GetServerScheme(id)
 	if p == nil {
 		return nil, fmt.Errorf("[NewServerPacket] not found server packet (%d)", id)
 	}
@@ -258,14 +258,14 @@ func readData(char rune, r io.Reader) (any, error) {
 		return ReadLong(r)
 	case 'S':
 		return ReadString(r)
-	//case 'A':
-	// TODO: imnplement for array ...
+	case 'A':
+		return ReadByteArray(r)
 	default:
 		return nil, fmt.Errorf("[readData]: unsupported code %v", char)
 	}
 }
 
-func getClientScheme(id ClientPacketType) *Scheme {
+func GetClientScheme(id ClientPacketType) *Scheme {
 	for _, p := range schemes {
 		if p.ID == int(id) && p.Type == 1 {
 			return &p
@@ -275,7 +275,7 @@ func getClientScheme(id ClientPacketType) *Scheme {
 	return nil
 }
 
-func getServerScheme(id ServerPacketType) *Scheme {
+func GetServerScheme(id ServerPacketType) *Scheme {
 	for _, p := range schemes {
 		if p.ID == int(id) && p.Type == 0 {
 			return &p
@@ -283,6 +283,20 @@ func getServerScheme(id ServerPacketType) *Scheme {
 	}
 
 	return nil
+}
+
+func ReadByteArray(r io.Reader) (types.A, error) {
+	value, err := leb128.DecodeU64(r)
+	if err != nil {
+		return nil, fmt.Errorf("[ReadByteArray] fail cast %T of types.A", value)
+	} else {
+		buffer := make([]byte, value)
+		_, err = r.Read(buffer)
+		if err != nil {
+			return nil, fmt.Errorf("[ReadByteArray] fail cast %T of types.A", value)
+		}
+		return types.A(buffer), nil
+	}
 }
 
 func ReadByte(r io.Reader) (types.B, error) {

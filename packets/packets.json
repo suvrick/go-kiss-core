@@ -13,6 +13,18 @@
     },
     {
         "type": 0,
+        "id": 7,
+        "name": "BALANCE",
+        "format": "I,B"
+    },
+    {
+        "type": 0,
+        "id": 10,
+        "name": "CONTEST_ITEMS",
+        "format": "B,B"
+    },
+    {
+        "type": 0,
         "id": 13,
         "name": "REWARDS",
         "format": "[II]"
@@ -21,12 +33,211 @@
         "type": 0,
         "id": 17,
         "name": "BONUS",
-        "format": "BB"
+        "format": "B"
     },
+    {
+        "type": 0,
+        "id": 20,
+        "name": "VIP",
+        "format": "I,B"
+    },
+    {
+        "type": 0,
+        "id": 22,
+        "name": "MOVE",
+        "format": "I,B"
+    },
+    {
+        "type": 0,
+        "id": 24,
+        "name": "BOTTLE_PLAY_DENIED",
+        "format": "B"
+    },
+    {
+        "type": 0,
+        "id": 25,
+        "name": "BOTTLE_ROOM",
+        "format": "III[I][I]"
+    },
+    {
+        "type": 0,
+        "id": 26,
+        "name": "BOTTLE_JOIN",
+        "format": "IB"
+    },
+    {
+        "type": 0,
+        "id": 27,
+        "name": "BOTTLE_LEAVE",
+        "format": "I"
+    },
+    {
+        "type": 0,
+        "id": 28,
+        "name": "BOTTLE_LEADER",
+        "format": "I"
+    },
+    {
+        "type": 0,
+        "id": 29,
+        "name": "BOTTLE_ROLL",
+        "format": "II,II"
+    },
+    {
+        "type": 0,
+        "id": 30,
+        "name": "BOTTLE_KISS",
+        "format": "IB"
+    },
+    {
+        "type": 0,
+        "id": 31,
+        "name": "BOTTLE_TABLE",
+        "format": "II"
+    },
+    {
+        "type": 0,
+        "id": 32,
+        "name": "BOTTLE_BOTTLE",
+        "format": "II"
+    },
+    {
+        "type": 0,
+        "id": 33,
+        "name": "BOMB_HURL",
+        "format": "IIBB"
+    },
+    {
+        "type": 0,
+        "id": 34,
+        "name": "BOMB_EXPLODE",
+        "format": "IB"
+    },
+    {
+        "type": 0,
+        "id": 35,
+        "name": "BOTTLE_ENTER",
+        "format": ""
+    },
+    {
+        "type": 0,
+        "id": 37,
+        "name": "CHAT_MESSAGE",
+        "format": "BIIS,II"
+    },
+    {
+        "type": 0,
+        "id": 38,
+        "name": "CHAT_WHISPER",
+        "format": "ISBIB"
+    },
+    {
+        "type": 0,
+        "id": 144,
+        "name": "AUTH",
+        "format": "BIS"
+    },
+    {
+        "type": 0,
+        "id": 206,
+        "name": "REWARD_STATE",
+        "format": "III"
+    },
+    {
+        "type": 0,
+        "id": 212,
+        "name": "PLAYER_ROOM_TYPE",
+        "format": "IB"
+    },
+    {
+        "type": 0,
+        "id": 218,
+        "name": "PLAYERS_KISSES",
+        "format": "[II]"
+    },
+    {
+        "type": 0,
+        "id": 230,
+        "name": "PLAYERS_VIEW",
+        "format": "[IIB]"
+    },
+    {
+        "type": 0,
+        "id": 232,
+        "name": "UPDATE_INFO",
+        "format": "I"
+    },
+    {
+        "type": 0,
+        "id": 304,
+        "name": "CAPTCHA",
+        "format": ""
+    },
+    {
+        "type": 0,
+        "id": 307,
+        "name": "KISS_PRIORITY",
+        "format": "[II]"
+    },
+    {
+        "type": 0,
+        "id": 308,
+        "name": "KICKS_KICKS",
+        "format": "[III]"
+    },
+    {
+        "type": 0,
+        "id": 309,
+        "name": "KICK_SAVE",
+        "format": "II"
+    },
+    {
+        "type": 0,
+        "id": 310,
+        "name": "BALANCE_ITEMS",
+        "format": "[BII]"
+    },
+    {
+        "type": 0,
+        "id": 315,
+        "name": "REWARD_GOT",
+        "format": "II"
+    },
+
     {
         "type": 1,
         "id": 4,
         "name": "LOGIN",
         "format": "LBBS,BSIIBBS"
+    },
+    {
+        "type": 1,
+        "id": 8,
+        "name": "REQUEST",
+        "format": "[I]I,I"
+    },
+    {
+        "type": 1,
+        "id": 11,
+        "name": "GAME_REWARDS_GET",
+        "format": "I,I"
+    },
+    {
+        "type": 1,
+        "id": 21,
+        "name": "MOVE",
+        "format": "IB"
+    },
+    {
+        "type": 1,
+        "id": 61,
+        "name": "RECEIVE_DAILY_BONUS",
+        "format": ""
+    },
+    {
+        "type": 1,
+        "id": 202,
+        "name": "BOTTLE_MOVE",
+        "format": "I"
     }
 ]
