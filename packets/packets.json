@@ -207,7 +207,33 @@
         "type": 0,
         "id": 502,
         "name": "INFO2",
-        "format": "[ISBSBS]"
+        "format": "[ILBSBIIISBSSBBIIIIBBIIII]",
+        "fields": [
+            "game_id",
+            "login_id",
+            "net_type",
+            "name",
+            "sex",
+            "tag",
+            "referrer",
+            "bday",
+            "photo_url",
+            "photo_index",
+            "profile",
+            "status",
+            "country_id",
+            "online",
+            "admirer_id",
+            "admirer_price",
+            "admirer_time_finish",
+            "views",
+            "is_vip",
+            "color",
+            "kisses",
+            "gifts",
+            "kisses_today",
+            "gifts_today"
+        ]
     },
     {
         "type": 1,
@@ -232,6 +258,60 @@
         "id": 21,
         "name": "MOVE",
         "format": "IB"
+    },
+    {
+        "type": 1,
+        "id": 26,
+        "name": "BOTTLE_PLAY",
+        "format": "B,B"
+    },
+    {
+        "type": 1,
+        "id": 27,
+        "name": "BOTTLE_LEAVE",
+        "format": ""
+    },
+    {
+        "type": 1,
+        "id": 28,
+        "name": "BOTTLE_ROLL",
+        "format": "I"
+    },
+    {
+        "type": 1,
+        "id": 29,
+        "name": "BOTTLE_KISS",
+        "format": "B"
+    },
+    {
+        "type": 1,
+        "id": 30,
+        "name": "BOTTLE_SAVE",
+        "format": "I"
+    },
+    {
+        "type": 1,
+        "id": 31,
+        "name": "BOTTLE_KICK",
+        "format": "I"
+    },
+    {
+        "type": 1,
+        "id": 32,
+        "name": "PASSION_PASS_RESET",
+        "format": ""
+    },
+    {
+        "type": 1,
+        "id": 33,
+        "name": "BOTTLE_WAITER_JOIN",
+        "format": ""
+    },
+    {
+        "type": 1,
+        "id": 34,
+        "name": "BOTTLE_WAITER_LEAVE",
+        "format": ""
     },
     {
         "type": 1,

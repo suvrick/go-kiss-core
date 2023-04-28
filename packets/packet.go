@@ -1,6 +1,7 @@
 package packets
 
 import (
+	"bytes"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -168,8 +169,6 @@ func writeData(char rune, value any, w io.Writer) error {
 		return WriteLong(w, value)
 	case 'S':
 		return WriteString(w, value)
-	//case 'A':
-	// TODO: imnplement for array ...
 	default:
 		return fmt.Errorf("[writeData]: unsupported code %v", char)
 	}
@@ -181,7 +180,15 @@ func NewServerPacket(id ServerPacketType, r io.Reader) ([]any, error) {
 		return nil, fmt.Errorf("[NewServerPacket] not found server packet (%d)", id)
 	}
 
-	return unmarshal([]rune(p.Format), r)
+	values, err := unmarshal([]rune(p.Format), r)
+
+	if p.Name == "INFO" && len(values) > 1 {
+		p2 := GetServerScheme(502)
+		r2 := bytes.NewReader(values[0].(types.A))
+		return unmarshal([]rune(p2.Format), r2)
+	}
+
+	return values, err
 }
 
 func unmarshal(formats []rune, r io.Reader) ([]any, error) {

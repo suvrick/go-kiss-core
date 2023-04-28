@@ -14,7 +14,7 @@
 	public admirer_id?: number; // PlayerInfoParser.ADMIRER_ID; [I;
 	public admirer_price?: number; // PlayerInfoParser.ADMIRER_PRICE; [I;
 	public admirer_time_finish?: number; // PlayerInfoParser.ADMIRER_LEFT; [I; it is timestamp
-	public views?: number; // PlayerInfoParser.VIEWS; [I;
+	public views?: number; // PlayerInfoParser.VIEWS; [I;*
 	public vip?: boolean; // PlayerInfoParser.IS_VIP; [B;
 	public color?: number; // PlayerInfoParser.COLOR; [B;
 	public kisses?: number; // PlayerInfoParser.KISSES; [II;

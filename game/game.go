@@ -197,17 +197,17 @@ const INFO_MASK = 908
 
 func (g *Game) use(s *packets.Scheme, p []interface{}) {
 	switch s.ID {
+	// case 5:
+	// 	if len(p) >= 2 && p[1].(types.I) == INFO_MASK {
+	// 		p2, err := packets.NewServerPacket(packets.ServerPacketType(502), bytes.NewBuffer(p[0].(types.A)))
+	// 		if err == nil {
+	// 			scheme := packets.GetServerScheme(packets.ServerPacketType(502))
+	// 			if scheme != nil {
+	// 				fmt.Printf("[read] %s(%d), format: %#v, data: %v, error: %v\n", scheme.Name, scheme.ID, scheme.Format, p2, err)
+	// 			}
+	// 		}
+	// 	}
 	case 17:
 		g.Send(61, nil)
-	case 5:
-		if p[1].(types.I) == INFO_MASK {
-			p2, err := packets.NewServerPacket(packets.ServerPacketType(502), bytes.NewBuffer(p[0].(types.A)))
-			if err == nil {
-				scheme := packets.GetServerScheme(packets.ServerPacketType(502))
-				if scheme != nil {
-					fmt.Printf("[read] %s(%d), format: %#v, data: %v, error: %v\n", scheme.Name, scheme.ID, scheme.Format, p2, err)
-				}
-			}
-		}
 	}
 }
