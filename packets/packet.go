@@ -7,15 +7,16 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/jcalabro/leb128"
+	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
 type Scheme struct {
-	ID     int    `json:"id"`
-	Type   int    `json:"type"`
-	Name   string `json:"name"`
-	Format string `json:"format"`
+	ID     int      `json:"id"`
+	Type   int      `json:"type"`
+	Name   string   `json:"name"`
+	Format string   `json:"format"`
+	Fields []string `json:"fields"`
 }
 
 type ServerPacketType int
@@ -185,7 +186,21 @@ func NewServerPacket(id ServerPacketType, r io.Reader) ([]any, error) {
 	if p.Name == "INFO" && len(values) > 1 {
 		p2 := GetServerScheme(502)
 		r2 := bytes.NewReader(values[0].(types.A))
-		return unmarshal([]rune(p2.Format), r2)
+		v2, e2 := unmarshal([]rune(p2.Format), r2)
+		if e2 != nil {
+			return nil, e2
+		}
+
+		m := make(map[string]interface{}, 0)
+
+		for i, v := range v2[0].([]any)[0].([]any) {
+			f := p2.Fields[i]
+			m[f] = v
+		}
+
+		fmt.Printf("%v\n", m)
+
+		return v2, nil
 	}
 
 	return values, err
@@ -309,7 +324,7 @@ func ReadByteArray(r io.Reader) (types.A, error) {
 }
 
 func ReadByte(r io.Reader) (types.B, error) {
-	value, err := leb128.DecodeU64(r)
+	value, err := leb128.ReadUByte(r)
 	if err != nil {
 		return 0, fmt.Errorf("[ReadByte] fail cast %T of types.B", value)
 	} else {
@@ -354,7 +369,7 @@ func WriteByte(w io.Writer, value any) error {
 	if v, ok := value.(types.B); !ok {
 		return fmt.Errorf("[WriteByte] fail cast %T to types.B", value)
 	} else {
-		_, err := w.Write(leb128.EncodeU64(uint64(v)))
+		_, err := w.Write(leb128.EncodeS64(int64(v)))
 		if err != nil {
 			return fmt.Errorf("[WriteByte] fail cast %T to types.B", value)
 		}
