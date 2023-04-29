@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/packets"
-	"github.com/suvrick/go-kiss-core/types"
 )
 
 const host = "wss://bottlews.itsrealgames.com"
@@ -51,11 +51,11 @@ func NewGame() *Game {
 	return &g
 }
 
-func (g *Game) Send(id packets.ClientPacketType, data any) error {
+func (g *Game) Send(id int, data map[string]interface{}) error {
 
 	g.s_buffer.Reset()
 
-	err := packets.NewClientPacket(id, data, g.s_buffer)
+	err := packets.NewClientPacket(g.s_buffer, id, data)
 	if err != nil {
 		fmt.Println(err.Error())
 		return err
@@ -110,15 +110,11 @@ func (g *Game) send() {
 
 	g.s_buffer.Reset()
 
-	packets.WriteLong(g.s_buffer, types.L(g.msgID))
-	b2 := make([]byte, len(g.s_buffer.Bytes()))
-	copy(b2, g.s_buffer.Bytes()) // msgID
+	b2, _ := leb128.WriteLong(g.msgID)
+	b4, _ := leb128.WriteLong(len(b1) + len(b2)) // len
 
-	g.s_buffer.Reset()
-
-	packets.WriteLong(g.s_buffer, types.L(len(b1)+len(b2))) // len
+	g.s_buffer.Write(b4)
 	g.s_buffer.Write(b2)
-
 	g.s_buffer.Write(b1)
 
 	log.Printf("[Send] data: %v\n", g.s_buffer.Bytes())
@@ -140,8 +136,8 @@ func (g *Game) loop() {
 	}()
 
 	var err error
-	var packetID types.L
-	var pack []any
+	var packetID int
+	var pack map[string]interface{}
 	var msg []byte
 
 	for g.socket != nil {
@@ -157,46 +153,46 @@ func (g *Game) loop() {
 		g.r_buffer.Write(msg)
 
 		// read length packet
-		_, err = packets.ReadLong(g.r_buffer)
+		_, err = leb128.ReadInt(g.r_buffer)
 		if err != nil {
 			//s.emitErrorHandler(err)
 			continue
 		}
 
 		//read massege id
-		_, err = packets.ReadLong(g.r_buffer)
+		_, err = leb128.ReadInt(g.r_buffer)
 		if err != nil {
 			//s.emitErrorHandler(err)
 			continue
 		}
 
-		packetID, err = packets.ReadLong(g.r_buffer)
+		packetID, err = leb128.ReadInt(g.r_buffer)
 		if err != nil {
 			//s.emitErrorHandler(err)
 			continue
 		}
 
-		pack, err = packets.NewServerPacket(packets.ServerPacketType(packetID), g.r_buffer)
+		pack, err = packets.NewServerPacket(g.r_buffer, packetID)
 		if err != nil {
-			//fmt.Printf("[read] %s\n", err.Error())
+			fmt.Printf("[read] %s\n", err.Error())
 			continue
 		}
 
-		scheme := packets.GetServerScheme(packets.ServerPacketType(packetID))
+		scheme := packets.FindScheme(0, packetID)
 		if scheme != nil {
-			fmt.Printf("[read] %s(%d), format: %#v, data: %v, error: %v\n", scheme.Name, scheme.ID, scheme.Format, pack, err)
+			fmt.Printf("[read] %s(%d), format: %#v, data: %v, error: %v\n", scheme.PacketName, scheme.PacketID, scheme.PacketFormat, pack, err)
 		}
 
-		g.use(scheme, pack)
+		// g.use(scheme, pack)
 	}
 
-	fmt.Println("Close")
+	fmt.Println("loop close")
 }
 
 const INFO_MASK = 908
 
 func (g *Game) use(s *packets.Scheme, p []interface{}) {
-	switch s.ID {
+	switch s.PacketID {
 	// case 5:
 	// 	if len(p) >= 2 && p[1].(types.I) == INFO_MASK {
 	// 		p2, err := packets.NewServerPacket(packets.ServerPacketType(502), bytes.NewBuffer(p[0].(types.A)))
