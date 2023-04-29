@@ -70,6 +70,130 @@ func init() {
 				},
 			},
 		},
+		{
+			PacketID:     4,
+			PacketType:   0,
+			PacketName:   "LOGIN",
+			PacketFormat: "B,IIII[B]IIIISBBIIBBS",
+			Fields: []Field{
+				{
+					Index:      0,
+					Name:       "status",
+					Char:       'B',
+					IsRequired: true,
+				},
+				{
+					Index:      1,
+					Name:       "game_id",
+					Char:       'I',
+					IsRequired: false,
+				},
+				{
+					Index:      2,
+					Name:       "balance",
+					Char:       'I',
+					IsRequired: false,
+				},
+				{
+					Index:      3,
+					Name:       "inviter_id",
+					Char:       'I',
+					IsRequired: false,
+				},
+				{
+					Index:      4,
+					Name:       "logout_time",
+					Char:       'I',
+					IsRequired: false,
+				},
+				{
+					Index:      5,
+					Name:       "flags",
+					Char:       'A',
+					IsRequired: false,
+					Children: []Field{
+						{
+							Index:      0,
+							Name:       "flag",
+							Char:       'B',
+							IsRequired: false,
+						},
+					},
+				},
+				{
+					Index:      6,
+					Name:       "games_count",
+					Char:       'I',
+					IsRequired: false,
+				},
+				{
+					Index:      7,
+					Name:       "kisses_daily_count",
+					Char:       'I',
+					IsRequired: false,
+				},
+				{
+					Index:      8,
+					Name:       "last_payment_time",
+					Char:       'I',
+					IsRequired: false,
+				},
+				{
+					Index:      9,
+					Name:       "subscribe_expires",
+					Char:       'I',
+					IsRequired: false,
+				},
+				{
+					Index:      10,
+					Name:       "params",
+					Char:       'S',
+					IsRequired: false,
+				},
+				{
+					Index:      11,
+					Name:       "sex_set",
+					Char:       'B',
+					IsRequired: false,
+				},
+				{
+					Index:      12,
+					Name:       "tutorial",
+					Char:       'B',
+					IsRequired: false,
+				},
+				{
+					Index:      13,
+					Name:       "tag",
+					Char:       'I',
+					IsRequired: false,
+				},
+				{
+					Index:      14,
+					Name:       "server_time",
+					Char:       'I',
+					IsRequired: false,
+				},
+				{
+					Index:      15,
+					Name:       "first_login",
+					Char:       'B',
+					IsRequired: false,
+				},
+				{
+					Index:      16,
+					Name:       "is_top_player",
+					Char:       'B',
+					IsRequired: false,
+				},
+				{
+					Index:      16,
+					Name:       "photos_hash",
+					Char:       'S',
+					IsRequired: false,
+				},
+			},
+		},
 	}
 }
 
@@ -87,6 +211,21 @@ func NewClientPacket(w io.Writer, packetID int, payload map[string]interface{}) 
 	if scheme == nil {
 		return fmt.Errorf("[NewClientPacket] client packet(%d) not found", packetID)
 	}
+
+	buf, err := leb128.WriteInt(packetID)
+	if err != nil {
+		return err
+	}
+
+	w.Write(buf) // packetID
+
+	buf, err = leb128.WriteByte(5)
+	if err != nil {
+		return err
+	}
+
+	w.Write(buf) // device
+
 	return marshal(w, scheme.Fields, payload)
 }
 
