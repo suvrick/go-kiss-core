@@ -3,6 +3,7 @@ package game
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -181,6 +182,8 @@ func (g *Game) loop() {
 		scheme := packets.FindScheme(0, packetID)
 		if scheme != nil {
 			fmt.Printf("[read] %s(%d), format: %#v, data: %v, error: %v\n", scheme.PacketName, scheme.PacketID, scheme.PacketFormat, pack, err)
+			p, _ := json.MarshalIndent(pack, "", " ")
+			fmt.Println(string(p))
 		}
 
 		// g.use(scheme, pack)

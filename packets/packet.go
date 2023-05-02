@@ -194,6 +194,52 @@ func init() {
 				},
 			},
 		},
+		{
+			PacketID:     5,
+			PacketType:   0,
+			PacketName:   "INFO",
+			PacketFormat: "ILBSBIIISBSSBBIIIIBBIIII",
+			Fields: []Field{
+				{
+					Index:      0,
+					Name:       "length",
+					Char:       'I',
+					IsRequired: true,
+				},
+				{
+					Index:      1,
+					Name:       "players",
+					Char:       'A',
+					IsRequired: true,
+					Children: []Field{
+						{
+							Index:      0,
+							Name:       "game_id",
+							Char:       'I',
+							IsRequired: true,
+						},
+						{
+							Index:      1,
+							Name:       "login_id",
+							Char:       'I',
+							IsRequired: true,
+						},
+						{
+							Index:      2,
+							Name:       "net_type",
+							Char:       'B',
+							IsRequired: true,
+						},
+						{
+							Index:      3,
+							Name:       "name",
+							Char:       'S',
+							IsRequired: true,
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -230,6 +276,11 @@ func NewClientPacket(w io.Writer, packetID int, payload map[string]interface{}) 
 }
 
 func NewServerPacket(r io.Reader, packetID int) (map[string]interface{}, error) {
+
+	if packetID == 5 {
+		fmt.Print("Debug")
+	}
+
 	scheme := FindScheme(0, packetID)
 	if scheme == nil {
 		return nil, fmt.Errorf("[NewServerPacket] server packet(%d) not found", packetID)
@@ -281,7 +332,7 @@ func unmarshal(r io.Reader, fields []Field) (map[string]interface{}, error) {
 		result[v.Name] = value
 	}
 
-	if isRequire {
+	if err != nil && isRequire {
 		return nil, err
 	}
 

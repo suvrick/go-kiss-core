@@ -34,7 +34,7 @@ func ReadByte(r io.Reader) (byte, error) {
 }
 
 func ReadInt(r io.Reader) (int, error) {
-	value, err := decodeU64(r, 4)
+	value, err := decodeU64(r, 8)
 	if err != nil {
 		return 0, ErrReadInt
 	}
