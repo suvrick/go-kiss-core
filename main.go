@@ -5,6 +5,7 @@ import (
 
 	"github.com/suvrick/go-kiss-core/frame"
 	"github.com/suvrick/go-kiss-core/game"
+	"github.com/suvrick/go-kiss-core/packets"
 )
 
 //103786258
@@ -32,23 +33,34 @@ func main() {
 }
 
 func CreateGame() {
-	data, err := frame.Parse3(urls[0])
+	data := frame.Parse(urls[0])
 
-	if err != nil {
-		fmt.Println(err.Error())
+	if strError, ok := data["error"]; ok {
+		fmt.Println(strError)
 		return
 	}
 
 	g := game.NewGame()
-	err = g.Connect(nil)
+	err := g.Connect(nil)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
+	g.AddAction(4, func(self *game.Game, packet map[string]interface{}) {
+
+		status, ok := packets.GetByte("status", packet)
+		if !ok {
+			fmt.Println("Fail get fiels \"status\"")
+			g.Close()
+		}
+
+		fmt.Printf("Get auth result: %d\n", status)
+	})
+
 	_ = data
 
-	g.Send(4, GetLoginPacket())
+	g.Send(4, data)
 
 	// g.Send(202, []interface{}{types.I(5)})
 
@@ -62,9 +74,9 @@ func CreateGame() {
 // 0, 0, 0, '0', ”]
 func GetLoginPacket() map[string]interface{} {
 	return map[string]interface{}{
-		"login_id": 105345504,
-		"net_type": 30,
-		"device":   5,
-		"auth_key": "7b0a077a088b9e5169bcfc0bf2ee9ae8",
+		"login_id":   105345504,
+		"frame_type": 30,
+		"device":     5,
+		"auth_key":   "7b0a077a088b9e5169bcfc0bf2ee9ae8",
 	}
 }

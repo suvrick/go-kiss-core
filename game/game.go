@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/packets"
+	"github.com/suvrick/go-kiss-core/schemes"
 )
 
 const host = "wss://bottlews.itsrealgames.com"
@@ -29,6 +30,8 @@ type Game struct {
 
 	cancel context.CancelFunc
 	ctx    context.Context
+
+	actions map[int]func(self *Game, packet map[string]interface{})
 }
 
 func NewGame() *Game {
@@ -36,6 +39,7 @@ func NewGame() *Game {
 		end:      make(chan struct{}),
 		s_buffer: bytes.NewBuffer(make([]byte, 1024)),
 		r_buffer: bytes.NewBuffer(make([]byte, 1024)),
+		actions:  make(map[int]func(self *Game, packet map[string]interface{}), 0),
 	}
 
 	g.ctx, g.cancel = context.WithCancel(context.Background())
@@ -179,34 +183,32 @@ func (g *Game) loop() {
 			continue
 		}
 
-		scheme := packets.FindScheme(0, packetID)
+		scheme := schemes.FindScheme(0, packetID)
 		if scheme != nil {
 			fmt.Printf("[read] %s(%d), format: %#v, data: %v, error: %v\n", scheme.PacketName, scheme.PacketID, scheme.PacketFormat, pack, err)
 			p, _ := json.MarshalIndent(pack, "", " ")
 			fmt.Println(string(p))
 		}
 
-		// g.use(scheme, pack)
+		g.use(packetID, pack)
 	}
 
 	fmt.Println("loop close")
 }
 
-const INFO_MASK = 908
+func (g *Game) use(packetID int, packet map[string]interface{}) {
 
-func (g *Game) use(s *packets.Scheme, p []interface{}) {
-	switch s.PacketID {
-	// case 5:
-	// 	if len(p) >= 2 && p[1].(types.I) == INFO_MASK {
-	// 		p2, err := packets.NewServerPacket(packets.ServerPacketType(502), bytes.NewBuffer(p[0].(types.A)))
-	// 		if err == nil {
-	// 			scheme := packets.GetServerScheme(packets.ServerPacketType(502))
-	// 			if scheme != nil {
-	// 				fmt.Printf("[read] %s(%d), format: %#v, data: %v, error: %v\n", scheme.Name, scheme.ID, scheme.Format, p2, err)
-	// 			}
-	// 		}
-	// 	}
-	case 17:
-		g.Send(61, nil)
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[Use] error do action for server packetID: %d, packet: %v\n", packetID, packet)
+		}
+	}()
+
+	if act, ok := g.actions[packetID]; ok {
+		act(g, packet)
 	}
+}
+
+func (g *Game) AddAction(packetID int, do func(self *Game, packet map[string]interface{})) {
+	g.actions[packetID] = do
 }

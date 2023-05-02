@@ -8,8 +8,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-
-	"github.com/suvrick/go-kiss-core/types"
 )
 
 const (
@@ -32,7 +30,7 @@ type Key struct {
 	OAuth     string `json:"oauth"`
 }
 
-var KEIS = []Key{
+var static_keis = []Key{
 	{
 		FrameType: 0,
 		LoginID:   "viewer_id",
@@ -83,56 +81,17 @@ var KEIS = []Key{
 	},
 }
 
-func Parse3(input string) ([]interface{}, error) {
+var keis []Key
 
-	result := make([]any, 0)
-	login := Parse2(input)
-
-	if login["error"] != nil {
-		return nil, fmt.Errorf("[Parse3] %v", login["error"])
-	}
-
-	// data := []interface{}{
-	// 	types.L(105345504),
-	// 	types.B(30),
-	// 	types.B(5),
-	// 	types.S("7b0a077a088b9e5169bcfc0bf2ee9ae8"),
-	// 	types.B(1),
-	// 	types.S("5d5b1908c2bae78eeb199db47fc327ac935ccfbd914a38"),
-	// 	types.I(0),
-	// 	types.I(0),
-	// 	types.B(0),
-	// 	types.S(""),
-	// 	types.B(0),
-	// 	types.S(""),
-	// 	types.B(0),
-	// 	types.S(""),
-	// }
-
-	result = append(result, types.L(login["login_id"].(uint64)))
-	result = append(result, types.B(login["frame_type"].(byte)))
-	result = append(result, types.B(login["device"].(byte)))
-	result = append(result, types.S(login["key"].(string)))
-	oauth := types.B(0)
-	if login["oauth"].(bool) {
-		oauth = types.B(1)
-	}
-	result = append(result, oauth)
-	result = append(result, types.S(login["access_token"].(string)))
-	result = append(result, types.I(0))
-	result = append(result, types.I(0))
-	result = append(result, types.B(0))
-	result = append(result, types.B(0))
-	result = append(result, types.S(""))
-
-	return result, nil
+func SetKeis(newKeis []Key) {
+	keis = newKeis
 }
 
-func Parse2(input string) map[string]interface{} {
-	return Parse(input, KEIS)
-}
+func Parse(input string) map[string]interface{} {
 
-func Parse(input string, keis []Key) map[string]interface{} {
+	if keis == nil {
+		keis = static_keis
+	}
 
 	result := make(map[string]interface{})
 	result["hash"] = getFrameHash(input)
@@ -181,7 +140,7 @@ func Parse(input string, keis []Key) map[string]interface{} {
 		result["device"] = byte(5)
 		result["frame_type"] = byte(keis[i].FrameType)
 		result["frame_type_name"] = getFrameTypeName(keis[i].FrameType)
-		result["key"] = q.Get(keis[i].Token)
+		result["auth_key"] = q.Get(keis[i].Token)
 		result["oauth"] = q.Has(keis[i].OAuth)
 		result["access_token"] = q.Get(keis[i].Token2)
 	} else {

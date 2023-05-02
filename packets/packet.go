@@ -7,253 +7,11 @@ import (
 	"sort"
 
 	"github.com/suvrick/go-kiss-core/leb128"
+	"github.com/suvrick/go-kiss-core/schemes"
 )
 
-type Field struct {
-	ID         int
-	Name       string
-	Index      int
-	Char       rune
-	IsRequired bool
-	Parent     *Field
-	Children   []Field
-}
-
-type Scheme struct {
-	PacketID     int     `json:"id"`
-	PacketType   int     `json:"type"`
-	PacketName   string  `json:"name"`
-	PacketFormat string  `json:"format"`
-	Fields       []Field `json:"fields"`
-}
-
-var schemes []Scheme
-
-// //go:embed packets.json
-// var f []byte
-
-// func init() {
-// 	json.Unmarshal(f, &schemes)
-// }
-
-func init() {
-	schemes = []Scheme{
-		{
-			PacketID:     4,
-			PacketType:   1,
-			PacketName:   "LOGIN",
-			PacketFormat: "LBBS,BSIIBBS",
-			Fields: []Field{
-				{
-					Index:      0,
-					Name:       "login_id",
-					Char:       'L',
-					IsRequired: true,
-				},
-				{
-					Index:      1,
-					Name:       "net_type",
-					Char:       'B',
-					IsRequired: true,
-				},
-				{
-					Index:      3,
-					Name:       "auth_key",
-					Char:       'S',
-					IsRequired: true,
-				},
-				{
-					Index:      2,
-					Name:       "device",
-					Char:       'B',
-					IsRequired: true,
-				},
-			},
-		},
-		{
-			PacketID:     4,
-			PacketType:   0,
-			PacketName:   "LOGIN",
-			PacketFormat: "B,IIII[B]IIIISBBIIBBS",
-			Fields: []Field{
-				{
-					Index:      0,
-					Name:       "status",
-					Char:       'B',
-					IsRequired: true,
-				},
-				{
-					Index:      1,
-					Name:       "game_id",
-					Char:       'I',
-					IsRequired: false,
-				},
-				{
-					Index:      2,
-					Name:       "balance",
-					Char:       'I',
-					IsRequired: false,
-				},
-				{
-					Index:      3,
-					Name:       "inviter_id",
-					Char:       'I',
-					IsRequired: false,
-				},
-				{
-					Index:      4,
-					Name:       "logout_time",
-					Char:       'I',
-					IsRequired: false,
-				},
-				{
-					Index:      5,
-					Name:       "flags",
-					Char:       'A',
-					IsRequired: false,
-					Children: []Field{
-						{
-							Index:      0,
-							Name:       "flag",
-							Char:       'B',
-							IsRequired: false,
-						},
-					},
-				},
-				{
-					Index:      6,
-					Name:       "games_count",
-					Char:       'I',
-					IsRequired: false,
-				},
-				{
-					Index:      7,
-					Name:       "kisses_daily_count",
-					Char:       'I',
-					IsRequired: false,
-				},
-				{
-					Index:      8,
-					Name:       "last_payment_time",
-					Char:       'I',
-					IsRequired: false,
-				},
-				{
-					Index:      9,
-					Name:       "subscribe_expires",
-					Char:       'I',
-					IsRequired: false,
-				},
-				{
-					Index:      10,
-					Name:       "params",
-					Char:       'S',
-					IsRequired: false,
-				},
-				{
-					Index:      11,
-					Name:       "sex_set",
-					Char:       'B',
-					IsRequired: false,
-				},
-				{
-					Index:      12,
-					Name:       "tutorial",
-					Char:       'B',
-					IsRequired: false,
-				},
-				{
-					Index:      13,
-					Name:       "tag",
-					Char:       'I',
-					IsRequired: false,
-				},
-				{
-					Index:      14,
-					Name:       "server_time",
-					Char:       'I',
-					IsRequired: false,
-				},
-				{
-					Index:      15,
-					Name:       "first_login",
-					Char:       'B',
-					IsRequired: false,
-				},
-				{
-					Index:      16,
-					Name:       "is_top_player",
-					Char:       'B',
-					IsRequired: false,
-				},
-				{
-					Index:      16,
-					Name:       "photos_hash",
-					Char:       'S',
-					IsRequired: false,
-				},
-			},
-		},
-		{
-			PacketID:     5,
-			PacketType:   0,
-			PacketName:   "INFO",
-			PacketFormat: "ILBSBIIISBSSBBIIIIBBIIII",
-			Fields: []Field{
-				{
-					Index:      0,
-					Name:       "length",
-					Char:       'I',
-					IsRequired: true,
-				},
-				{
-					Index:      1,
-					Name:       "players",
-					Char:       'A',
-					IsRequired: true,
-					Children: []Field{
-						{
-							Index:      0,
-							Name:       "game_id",
-							Char:       'I',
-							IsRequired: true,
-						},
-						{
-							Index:      1,
-							Name:       "login_id",
-							Char:       'I',
-							IsRequired: true,
-						},
-						{
-							Index:      2,
-							Name:       "net_type",
-							Char:       'B',
-							IsRequired: true,
-						},
-						{
-							Index:      3,
-							Name:       "name",
-							Char:       'S',
-							IsRequired: true,
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func FindScheme(packetType int, packetID int) *Scheme {
-	for _, v := range schemes {
-		if packetType == v.PacketType && packetID == v.PacketID {
-			return &v
-		}
-	}
-	return nil
-}
-
 func NewClientPacket(w io.Writer, packetID int, payload map[string]interface{}) error {
-	scheme := FindScheme(1, packetID)
+	scheme := schemes.FindScheme(1, packetID)
 	if scheme == nil {
 		return fmt.Errorf("[NewClientPacket] client packet(%d) not found", packetID)
 	}
@@ -277,11 +35,7 @@ func NewClientPacket(w io.Writer, packetID int, payload map[string]interface{}) 
 
 func NewServerPacket(r io.Reader, packetID int) (map[string]interface{}, error) {
 
-	if packetID == 5 {
-		fmt.Print("Debug")
-	}
-
-	scheme := FindScheme(0, packetID)
+	scheme := schemes.FindScheme(0, packetID)
 	if scheme == nil {
 		return nil, fmt.Errorf("[NewServerPacket] server packet(%d) not found", packetID)
 	}
@@ -289,7 +43,7 @@ func NewServerPacket(r io.Reader, packetID int) (map[string]interface{}, error) 
 	return unmarshal(r, scheme.Fields)
 }
 
-func unmarshal(r io.Reader, fields []Field) (map[string]interface{}, error) {
+func unmarshal(r io.Reader, fields []schemes.Field) (map[string]interface{}, error) {
 
 	var err error
 	var isRequire bool
@@ -364,7 +118,7 @@ func Read(r io.Reader, char rune) (interface{}, error) {
 	return value, nil
 }
 
-func marshal(w io.Writer, fields []Field, payload map[string]interface{}) error {
+func marshal(w io.Writer, fields []schemes.Field, payload map[string]interface{}) error {
 
 	var err error
 	var isRequire bool
@@ -435,4 +189,34 @@ func Write(w io.Writer, char rune, value interface{}) error {
 	w.Write(b)
 
 	return nil
+}
+
+func GetByte(fieldName string, packet map[string]interface{}) (byte, bool) {
+	val, ok := packet[fieldName].(byte)
+	return val, ok
+}
+
+func GetInt(fieldName string, packet map[string]interface{}) (int, bool) {
+	val, ok := packet[fieldName].(int)
+	return val, ok
+}
+
+func GetLong(fieldName string, packet map[string]interface{}) (uint64, bool) {
+	val, ok := packet[fieldName].(uint64)
+	return val, ok
+}
+
+func GetString(fieldName string, packet map[string]interface{}) (string, bool) {
+	val, ok := packet[fieldName].(string)
+	return val, ok
+}
+
+func GetMap(fieldName string, packet map[string]interface{}) (map[string]interface{}, bool) {
+	val, ok := packet[fieldName].(map[string]interface{})
+	return val, ok
+}
+
+func GetMapArray(fieldName string, packet map[string]interface{}) ([]map[string]interface{}, bool) {
+	val, ok := packet[fieldName].([]map[string]interface{})
+	return val, ok
 }
