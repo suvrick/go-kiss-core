@@ -33,7 +33,7 @@ func main() {
 }
 
 func CreateGame() {
-	data := frame.Parse(urls[0])
+	data := frame.Parse(urls[7])
 
 	if strError, ok := data["error"]; ok {
 		fmt.Println(strError)
@@ -47,18 +47,41 @@ func CreateGame() {
 		return
 	}
 
-	g.AddAction(4, func(self *game.Game, packet map[string]interface{}) {
+	g.AddListen(4, func(self *game.Game, packet map[string]interface{}) {
 
 		status, ok := packets.GetByte("status", packet)
 		if !ok {
 			fmt.Println("Fail get fiels \"status\"")
-			g.Close()
+			self.Close()
 		}
+
+		self.Send(61, nil)
 
 		fmt.Printf("Get auth result: %d\n", status)
 	})
 
-	_ = data
+	g.AddListen(13, func(self *game.Game, packet map[string]interface{}) {
+
+		rewards, ok := packets.GetMapArray("rewards", packet)
+		if !ok {
+			fmt.Println("Fail get fields \"rewards\"")
+			self.Close()
+		}
+
+		for _, v := range rewards {
+
+			reward_id, _ := packets.GetInt("id", v)
+
+			count, _ := packets.GetInt("count", v)
+
+			self.Send(11, map[string]interface{}{
+				"reward_id": reward_id,
+				"count":     count,
+			})
+		}
+
+		fmt.Printf("Get auth result: %v\n", rewards)
+	})
 
 	g.Send(4, data)
 

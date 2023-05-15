@@ -40,6 +40,11 @@ func NewServerPacket(r io.Reader, packetID int) (map[string]interface{}, error) 
 		return nil, fmt.Errorf("[NewServerPacket] server packet(%d) not found", packetID)
 	}
 
+	// if packetID == 13 {
+	// 	fmt.Print("")
+	// 	// TODO
+	// }
+
 	return unmarshal(r, scheme.Fields)
 }
 
@@ -69,7 +74,7 @@ func unmarshal(r io.Reader, fields []schemes.Field) (map[string]interface{}, err
 		}
 
 		if count, ok := value.(int); ok && v.Char == 'A' {
-			subSlice := make([]interface{}, 0)
+			subSlice := make([]map[string]interface{}, 0)
 			for i := 0; i < count; i++ {
 				subMap, err2 := unmarshal(r, v.Children)
 				if err2 != nil {

@@ -53,6 +53,12 @@ func NewGame() *Game {
 		},
 	}
 
+	go func() {
+		<-time.After(5 * time.Second)
+		g.cancel()
+		log.Println("call cancel")
+	}()
+
 	return &g
 }
 
@@ -209,6 +215,6 @@ func (g *Game) use(packetID int, packet map[string]interface{}) {
 	}
 }
 
-func (g *Game) AddAction(packetID int, do func(self *Game, packet map[string]interface{})) {
+func (g *Game) AddListen(packetID int, do func(self *Game, packet map[string]interface{})) {
 	g.actions[packetID] = do
 }

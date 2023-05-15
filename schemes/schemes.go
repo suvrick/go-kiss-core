@@ -62,6 +62,26 @@ func init() {
 			},
 		},
 		{
+			PacketID:     11,
+			PacketType:   1,
+			PacketName:   "GAME_REWARDS_GET",
+			PacketFormat: "I,I",
+			Fields: []Field{
+				{
+					Index:      0,
+					Name:       "reward_id",
+					Char:       'I',
+					IsRequired: true,
+				},
+				{
+					Index:      1,
+					Name:       "count",
+					Char:       'I',
+					IsRequired: false,
+				},
+			},
+		},
+		{
 			PacketID:     4,
 			PacketType:   0,
 			PacketName:   "LOGIN",
@@ -228,6 +248,68 @@ func init() {
 							IsRequired: true,
 						},
 					},
+				},
+			},
+		},
+		{
+			PacketID:     7,
+			PacketType:   0,
+			PacketName:   "BALANCE",
+			PacketFormat: "I,B",
+			Fields: []Field{
+				{
+					Index:      0,
+					Name:       "balance",
+					Char:       'I',
+					IsRequired: true,
+				},
+				{
+					Index:      1,
+					Name:       "reason",
+					Char:       'B',
+					IsRequired: false,
+				},
+			},
+		},
+		{
+			PacketID:     13,
+			PacketType:   0,
+			PacketName:   "REWARDS",
+			PacketFormat: "[II]",
+			Fields: []Field{
+				{
+					Index:      0,
+					Name:       "rewards",
+					Char:       'A',
+					IsRequired: false,
+					Children: []Field{
+						{
+							Index:      0,
+							Name:       "id",
+							Char:       'I',
+							IsRequired: true,
+						},
+						{
+							Index:      1,
+							Name:       "count",
+							Char:       'I',
+							IsRequired: true,
+						},
+					},
+				},
+			},
+		},
+		{
+			PacketID:     17,
+			PacketType:   0,
+			PacketName:   "BONUS",
+			PacketFormat: "B",
+			Fields: []Field{
+				{
+					Index:      0,
+					Name:       "daily_bonus_type",
+					Char:       'B',
+					IsRequired: true,
 				},
 			},
 		},
