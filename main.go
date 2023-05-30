@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/suvrick/go-kiss-core/frame"
 	"github.com/suvrick/go-kiss-core/game"
@@ -33,7 +34,7 @@ func main() {
 }
 
 func CreateGame() {
-	data := frame.Parse(urls[7])
+	data := frame.Parse(urls[0])
 
 	if strError, ok := data["error"]; ok {
 		fmt.Println(strError)
@@ -47,6 +48,7 @@ func CreateGame() {
 		return
 	}
 
+	// LOGIN
 	g.AddListen(4, func(self *game.Game, packet map[string]interface{}) {
 
 		status, ok := packets.GetByte("status", packet)
@@ -55,11 +57,24 @@ func CreateGame() {
 			self.Close()
 		}
 
+		game_id, ok := packets.GetInt("game_id", packet)
+		if !ok {
+			fmt.Println("Fail get fiels \"game_id\"")
+			self.Close()
+		}
+
+		self.GameID = game_id
+
 		self.Send(61, nil)
+
+		self.Send(26, map[string]interface{}{
+			"type": 0,
+		})
 
 		fmt.Printf("Get auth result: %d\n", status)
 	})
 
+	// REWARDS
 	g.AddListen(13, func(self *game.Game, packet map[string]interface{}) {
 
 		rewards, ok := packets.GetMapArray("rewards", packet)
@@ -83,6 +98,84 @@ func CreateGame() {
 		fmt.Printf("Get auth result: %v\n", rewards)
 	})
 
+	// BOTTLE_ROOM
+	g.AddListen(25, func(self *game.Game, packet map[string]interface{}) {
+
+		players, ok := packets.GetMapArray("players", packet)
+		if !ok {
+			fmt.Println("Fail get fields \"players\"")
+			self.Close()
+		}
+
+		// REQUEST
+		// ERROR!!!
+		// self.Send(8, map[string]interface{}{
+		// 	"players": players,
+		// 	"mask1":   math.MaxInt32,
+		// })
+	})
+
+	// BOTTLE_LEADER
+	g.AddListen(28, func(self *game.Game, packet map[string]interface{}) {
+
+		leader_id, ok := packets.GetInt("leader_id", packet)
+
+		if !ok {
+			fmt.Println("Fail get fields \"leader_id\"")
+			return
+		}
+
+		if leader_id == self.GameID {
+			go func() {
+				fmt.Printf("I am leader!\n")
+				<-time.After(time.Microsecond * 3)
+				self.Send(28, map[string]interface{}{
+					"speed": 0,
+				})
+			}()
+		}
+
+	})
+
+	// BOTTLE_ROLL
+	g.AddListen(29, func(self *game.Game, packet map[string]interface{}) {
+
+		leader_id, ok := packets.GetInt("leader_id", packet)
+
+		if !ok {
+			fmt.Println("Fail get fields \"leader_id\"")
+			return
+		}
+
+		rolled_id, ok := packets.GetInt("rolled_id", packet)
+
+		if !ok {
+			fmt.Println("Fail get fields \"rolled_id\"")
+			return
+		}
+
+		msg := ""
+
+		if leader_id == self.GameID {
+			msg = fmt.Sprintln("I am has kissed as leader")
+		}
+
+		if rolled_id == self.GameID {
+			msg = fmt.Sprintln("I am has kissed as rolled")
+		}
+
+		if len(msg) > 0 {
+			go func() {
+				fmt.Println(msg)
+				<-time.After(time.Microsecond * 3)
+				self.Send(29, map[string]interface{}{
+					"answer": 1,
+				})
+			}()
+		}
+	})
+
+	// LOGIN
 	g.Send(4, data)
 
 	// g.Send(202, []interface{}{types.I(5)})

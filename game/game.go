@@ -31,6 +31,8 @@ type Game struct {
 	cancel context.CancelFunc
 	ctx    context.Context
 
+	GameID int
+
 	actions map[int]func(self *Game, packet map[string]interface{})
 }
 
