@@ -107,6 +107,8 @@ func CreateGame() {
 			self.Close()
 		}
 
+		_ = players
+
 		// REQUEST
 		// ERROR!!!
 		// self.Send(8, map[string]interface{}{
