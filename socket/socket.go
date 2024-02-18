@@ -4,16 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/suvrick/go-kiss-core/interfaces"
 	"github.com/suvrick/go-kiss-core/leb128"
-	"github.com/suvrick/go-kiss-core/models"
 	"github.com/suvrick/go-kiss-core/packets/server"
 	"github.com/suvrick/go-kiss-core/types"
 )
@@ -36,10 +33,6 @@ type Socket struct {
 	proxy       *url.URL
 	done        chan struct{}
 	Role        byte
-	Hiro        *models.Hiro
-	Room        *models.Room
-	//openHandle  func(sender *Socket)
-	updateSelfHandle func(sender *Socket, self *models.Hiro)
 
 	openHandle  func(sender *Socket)
 	closeHandle func(sender *Socket, rule byte, caption string)
@@ -69,10 +62,6 @@ func NewSocket(config *SocketConfig) *Socket {
 		logger:     config.Logger,
 		done:       make(chan struct{}),
 		rule_close: 255,
-		Hiro: &models.Hiro{
-			Info: &models.Player{},
-		},
-		Room: &models.Room{},
 	}
 }
 
@@ -127,10 +116,6 @@ func (socket *Socket) Connection() error {
 func (socket *Socket) ConnectionWithProxy(proxy *url.URL) error {
 	socket.proxy = proxy
 	return socket.Connection()
-}
-
-func (socket *Socket) SetUpdateSelfHandler(handler func(sender *Socket, self *models.Hiro)) {
-	socket.updateSelfHandle = handler
 }
 
 func (socket *Socket) SetOpenHandler(handler func(sender *Socket)) {
@@ -225,10 +210,10 @@ func (socket *Socket) loop() {
 	}
 }
 
-func (socket *Socket) read(reader io.Reader) {
+func (socket *Socket) read(reader *bytes.Reader) {
 
 	//read packetLen
-	_, err := leb128.ReadUint(reader, 32)
+	_, err := leb128.ReadUInt64(reader)
 	if err != nil {
 		if socket.errorHandle != nil {
 			socket.errorHandle(socket, err)
@@ -237,7 +222,7 @@ func (socket *Socket) read(reader io.Reader) {
 	}
 
 	//read packetIndex
-	_, err = leb128.ReadUint(reader, 32)
+	_, err = leb128.ReadUInt64(reader)
 	if err != nil {
 		if socket.errorHandle != nil {
 			socket.errorHandle(socket, err)
@@ -246,7 +231,7 @@ func (socket *Socket) read(reader io.Reader) {
 	}
 
 	// read packetID
-	ID, err := leb128.ReadUint(reader, 32)
+	ID, err := leb128.ReadUInt64(reader)
 	if err != nil {
 		if socket.errorHandle != nil {
 			socket.errorHandle(socket, err)
@@ -265,17 +250,9 @@ func (socket *Socket) read(reader io.Reader) {
 	switch packetID {
 	case server.LOGIN:
 		packet = &server.Login{}
+		packet.(*server.Login).Unmarshal(reader)
 	case server.INFO:
-		len, err := leb128.ReadUint(reader, 16)
-		if err == nil {
-			msg := make([]byte, len)
-			reader.Read(msg)
-			mask, err := leb128.ReadInt(reader, 64)
-			if err == nil && types.I(mask) == server.INFOMASK {
-				reader = bytes.NewReader(msg)
-				packet = &server.Info{}
-			}
-		}
+		packet = &server.Info{}
 	case server.BALANCE:
 		packet = &server.Balance{}
 	case server.CONTEST_ITEMS:
@@ -313,9 +290,7 @@ func (socket *Socket) read(reader io.Reader) {
 	}
 
 	if packet != nil {
-
 		err = leb128.Unmarshal(reader, packet)
-
 		if err != nil {
 			if socket.errorHandle != nil {
 				socket.errorHandle(socket, err)

@@ -1,8 +1,9 @@
 package server
 
 import (
-	"github.com/suvrick/go-kiss-core/interfaces"
-	"github.com/suvrick/go-kiss-core/models"
+	"bytes"
+
+	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -10,13 +11,40 @@ const CHAT_WHISPER types.PacketServerType = 38
 
 // CHAT_WHISPER(38) "ISBIB"
 type ChatWhisper struct {
-	WriterID   types.I
-	Message    types.S
-	ByteField  types.B
-	IntField2  types.I
-	ByteField2 types.B
+	WriterID   uint64
+	Message    string
+	ByteField  byte
+	IntField2  uint64
+	ByteField2 byte
 }
 
-func (packet *ChatWhisper) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
-	return nil
+func (chatWhisper *ChatWhisper) Unmarshal(r *bytes.Reader) error {
+	var err error
+
+	chatWhisper.WriterID, err = leb128.ReadUInt64(r)
+	if err != nil {
+		return err
+	}
+
+	chatWhisper.Message, err = leb128.ReadString(r)
+	if err != nil {
+		return err
+	}
+
+	chatWhisper.ByteField, err = leb128.ReadByte(r)
+	if err != nil {
+		return err
+	}
+
+	chatWhisper.IntField2, err = leb128.ReadUInt64(r)
+	if err != nil {
+		return err
+	}
+
+	chatWhisper.ByteField2, err = leb128.ReadByte(r)
+	if err != nil {
+		return err
+	}
+
+	return err
 }

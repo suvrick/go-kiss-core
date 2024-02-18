@@ -1,18 +1,63 @@
 package client
 
-import "github.com/suvrick/go-kiss-core/types"
+import (
+	"github.com/suvrick/go-kiss-core/leb128"
+	"github.com/suvrick/go-kiss-core/types"
+)
 
 const BUY types.PacketClientType = 6
 
 // BONUS(6) "IIIIBI,B"
 type Buy struct {
-	BuyType    types.I
-	Coin       types.I
-	PlayerID   types.I
-	PrizeID    types.I
-	ByteFiald  types.B
-	Count      types.I
-	ByteFiald2 types.B `pack:"optional"`
+	BuyType    uint64
+	Coin       uint64
+	PlayerID   uint64
+	PrizeID    uint64
+	ByteFiald  byte
+	Count      uint64
+	ByteFiald2 *byte
+}
+
+func (buy *Buy) Marshal() ([]byte, error) {
+
+	data, err := leb128.WriteUInt64(nil, buy.BuyType)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteUInt64(data, buy.Coin)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteUInt64(data, buy.PlayerID)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteUInt64(data, buy.PrizeID)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteByte(data, buy.ByteFiald)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteUInt64(data, buy.Count)
+	if err != nil {
+		return nil, err
+	}
+
+	if buy.ByteFiald2 != nil {
+		data2, err := leb128.WriteByte(nil, (*buy.ByteFiald2))
+		if err == nil {
+			data = append(data, data2...)
+		}
+	}
+
+	return data, nil
 }
 
 /*

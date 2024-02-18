@@ -1,10 +1,6 @@
 package server
 
 import (
-	"log"
-
-	"github.com/suvrick/go-kiss-core/interfaces"
-	"github.com/suvrick/go-kiss-core/models"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -14,55 +10,55 @@ const INFO types.PacketServerType = 5
 type Info struct {
 	//ArrLen types.I
 	//ArrLen2 types.I
-	Players []PlayerInfo
+	// Players []PlayerInfo
 }
 
-const INFOMASK types.I = 328588
+// const INFOMASK types.I = 328588
 
-// ISBSBBIIBIBIIBBIII
-type PlayerInfo struct {
-	GameID types.I
-	//NetType  types.B
-	Name types.S
-	Sex  types.B
-	//Tag      types.I
-	//Referrer types.I
-	//Ddate    types.I
-	Avatar  models.Avatar
-	Profile types.S
-	Status  types.S
-	Vip     types.B
-	Kisses  models.Kiss
-}
+// // ISBSBBIIBIBIIBBIII
+// type PlayerInfo struct {
+// 	GameID types.I
+// 	//NetType  types.B
+// 	Name types.S
+// 	Sex  types.B
+// 	//Tag      types.I
+// 	//Referrer types.I
+// 	//Ddate    types.I
+// 	Avatar  models.Avatar
+// 	Profile types.S
+// 	Status  types.S
+// 	Vip     types.B
+// 	Kisses  models.Kiss
+// }
 
-func (packet *Info) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
+// func (packet *Info) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
 
-	player := models.Player{}
+// 	player := models.Player{}
 
-	if len(packet.Players) > 0 {
-		player.PlayerID = packet.Players[0].GameID
-		player.Name = packet.Players[0].Name
-		player.Avatar = packet.Players[0].Avatar.Avatar
-		player.Profile = packet.Players[0].Profile
-		player.Sex = packet.Players[0].Sex
-		player.Vip = packet.Players[0].Vip
-		player.Kissed = packet.Players[0].Kisses.Kissed
-		player.KissedDay = packet.Players[0].Kisses.KissedDay
-	}
+// 	if len(packet.Players) > 0 {
+// 		player.PlayerID = packet.Players[0].GameID
+// 		player.Name = packet.Players[0].Name
+// 		player.Avatar = packet.Players[0].Avatar.Avatar
+// 		player.Profile = packet.Players[0].Profile
+// 		player.Sex = packet.Players[0].Sex
+// 		player.Vip = packet.Players[0].Vip
+// 		player.Kissed = packet.Players[0].Kisses.Kissed
+// 		player.KissedDay = packet.Players[0].Kisses.KissedDay
+// 	}
 
-	for _, v := range room.Players {
-		if v.PlayerID == player.PlayerID {
-			room.Players[player.PlayerID] = &player
-		}
-	}
+// 	for _, v := range room.Players {
+// 		if v.PlayerID == player.PlayerID {
+// 			room.Players[player.PlayerID] = &player
+// 		}
+// 	}
 
-	if hiro.ID == player.PlayerID {
-		hiro.Info = &player
-		log.Printf("I`m %s, ID: %d\n", hiro.Info.Name, hiro.ID)
-	}
+// 	if hiro.ID == player.PlayerID {
+// 		hiro.Info = &player
+// 		log.Printf("I`m %s, ID: %d\n", hiro.Info.Name, hiro.ID)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 /*
 	public netId?: string;

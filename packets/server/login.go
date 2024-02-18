@@ -1,38 +1,38 @@
 package server
 
 import (
-	"github.com/suvrick/go-kiss-core/interfaces"
-	"github.com/suvrick/go-kiss-core/models"
-	"github.com/suvrick/go-kiss-core/packets/client"
+	"bytes"
+
+	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
 const LOGIN types.PacketServerType = 4
 
-// LOGIN(4) "B,II"
+// LOGIN(4)
 type Login struct {
-	Result  models.LoginResultType
-	GameID  types.I `pack:"optional"`
-	Balance types.I `pack:"optional"`
+	Result  byte
+	HiroID  uint64
+	Balance uint64
 }
 
-func (packet *Login) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
+func (login *Login) Unmarshal(r *bytes.Reader) error {
+	var err error
 
-	hiro.Result = packet.Result
-	hiro.ID = packet.GameID
-	hiro.Balance = packet.Balance
+	login.Result, err = leb128.ReadByte(r)
 
-	switch hiro.Result {
-	case 0:
-		game.Send(client.REQUEST, client.Request{
-			Players: []types.I{
-				hiro.ID,
-			},
-			Mask: 328588,
-		})
-	default:
-		game.Close()
+	if login.Result == 0 {
+
+		login.HiroID, err = leb128.ReadUInt64(r)
+		if err != nil {
+			return nil
+		}
+
+		login.Balance, err = leb128.ReadUInt64(r)
+		if err != nil {
+			return nil
+		}
 	}
 
-	return nil
+	return err
 }

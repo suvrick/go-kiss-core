@@ -1,9 +1,9 @@
 package server
 
 import (
-	"github.com/suvrick/go-kiss-core/interfaces"
-	"github.com/suvrick/go-kiss-core/models"
-	"github.com/suvrick/go-kiss-core/packets/client"
+	"bytes"
+
+	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -11,19 +11,22 @@ const BOTTLE_JOIN types.PacketServerType = 26
 
 // BOTTLE_JOIN(26) "IB"
 type BottleJoin struct {
-	PlayerID types.I
-	Position types.B
+	PlayerID uint64
+	Position byte
 }
 
-func (packet *BottleJoin) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
-	room.Players[packet.PlayerID] = &models.Player{
-		PlayerID: packet.PlayerID,
+func (bottleJoin *BottleJoin) Unmarshal(r *bytes.Reader) error {
+	var err error
+
+	bottleJoin.PlayerID, err = leb128.ReadUInt64(r)
+	if err != nil {
+		return err
 	}
 
-	game.Send(client.REQUEST, &client.Request{
-		Players: []types.I{packet.PlayerID},
-		Mask:    INFOMASK,
-	})
+	bottleJoin.Position, err = leb128.ReadByte(r)
+	if err != nil {
+		return err
+	}
 
-	return nil
+	return err
 }

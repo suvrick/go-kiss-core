@@ -1,11 +1,10 @@
 package server
 
 import (
-	"time"
+	"bytes"
 
-	"github.com/suvrick/go-kiss-core/interfaces"
+	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/models"
-	"github.com/suvrick/go-kiss-core/packets/client"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -13,21 +12,42 @@ const REWARDS types.PacketServerType = 13
 
 // REWARDS(13) "[BB]"
 type Rewards struct {
-	Rewards []models.Reward
+	Items []Reward
 }
 
-func (packet *Rewards) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
+type Reward struct {
+	RewardID byte
+	Count    byte
+}
 
-	for _, reward := range packet.getRewards() {
-		if reward.Count > 0 {
-			time.Sleep(time.Microsecond * 100)
-			game.Send(client.GAME_REWARDS_GET, &client.GameRewardsGet{
-				RewardID: reward.ID,
-			})
-		}
+func (rewards *Rewards) Unmarshal(r *bytes.Reader) error {
+	var err error
+	var len uint64
+
+	len, err = leb128.ReadUInt64(r)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	rewards.Items = make([]Reward, len)
+
+	for len > 0 {
+		var item = Reward{}
+
+		item.RewardID, err = leb128.ReadByte(r)
+		if err != nil {
+			return err
+		}
+
+		item.Count, err = leb128.ReadByte(r)
+		if err != nil {
+			return err
+		}
+
+		rewards.Items = append(rewards.Items, item)
+	}
+
+	return err
 }
 
 func (packet *Rewards) getRewards() (rewards []models.Reward) {

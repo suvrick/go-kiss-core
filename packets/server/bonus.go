@@ -1,9 +1,9 @@
 package server
 
 import (
-	"github.com/suvrick/go-kiss-core/interfaces"
-	"github.com/suvrick/go-kiss-core/models"
-	"github.com/suvrick/go-kiss-core/packets/client"
+	"bytes"
+
+	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -11,19 +11,22 @@ const BONUS types.PacketServerType = 17
 
 // BONUS(17) "BB"
 type Bonus struct {
-	CanCollect types.B
-	Day        types.B
+	CanCollect byte
+	Day        byte
 }
 
-func (packet *Bonus) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
+func (bonus *Bonus) Unmarshal(r *bytes.Reader) error {
+	var err error
 
-	hiro.CanCollect = packet.CanCollect
-
-	hiro.BonusDay = packet.Day
-
-	if hiro.CanCollect == 1 {
-		game.Send(client.BONUS, &client.Bonus{})
+	bonus.CanCollect, err = leb128.ReadByte(r)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	bonus.Day, err = leb128.ReadByte(r)
+	if err != nil {
+		return err
+	}
+
+	return err
 }

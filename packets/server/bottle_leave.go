@@ -1,8 +1,9 @@
 package server
 
 import (
-	"github.com/suvrick/go-kiss-core/interfaces"
-	"github.com/suvrick/go-kiss-core/models"
+	"bytes"
+
+	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -10,14 +11,11 @@ const BOTTLE_LEAVE types.PacketServerType = 27
 
 // BOTTLE_LEAVE(27) "I"
 type BottleLeave struct {
-	PlayerID types.I
+	PlayerID uint64
 }
 
-func (packet *BottleLeave) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
-
-	if room != nil && len(room.Players) > 0 {
-		delete(room.Players, packet.PlayerID)
-	}
-
-	return nil
+func (bottleLeave *BottleLeave) Unmarshal(r *bytes.Reader) error {
+	var err error
+	bottleLeave.PlayerID, err = leb128.ReadUInt64(r)
+	return err
 }

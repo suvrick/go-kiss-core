@@ -1,23 +1,88 @@
 package client
 
-import "github.com/suvrick/go-kiss-core/types"
+import (
+	"github.com/suvrick/go-kiss-core/leb128"
+	"github.com/suvrick/go-kiss-core/types"
+)
 
 const LOGIN types.PacketClientType = 4
 
 // LOGIN(4) "IBBS,BSIIBSBSBS"
 type Login struct {
-	ID           types.L
-	NetType      types.I
-	DeviceType   types.I
-	Key          types.S
-	OAuth        types.B `pack:"optional"`
-	AccessToken  types.S `pack:"optional"`
-	Referrer     types.I `pack:"optional"`
-	Tag          types.I `pack:"optional"`
-	FieldInt     types.B `pack:"optional"`
-	FieldString  types.S `pack:"optional"`
-	RoomLanguage types.B `pack:"optional"`
-	FieldString2 types.S `pack:"optional"`
-	Gender       types.B `pack:"optional"`
-	Captcha      types.S `pack:"optional"`
+	LoginID      string
+	NetType      byte
+	DeviceType   byte
+	Key          string
+	OAuth        byte
+	AccessToken  string
+	StringField  string
+	ByteField    byte
+	ByteField1   byte
+	ByteField2   byte
+	StringField2 string
+	StringField3 string
+}
+
+func (login *Login) Marshal() ([]byte, error) {
+	data, err := leb128.WriteBigNumber(nil, login.LoginID)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteByte(data, login.NetType)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteByte(data, login.DeviceType)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteString(data, login.Key)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteByte(data, login.OAuth)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteString(data, login.AccessToken)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteString(data, login.StringField)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteByte(data, login.ByteField)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteByte(data, login.ByteField1)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteByte(data, login.ByteField2)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteString(data, login.StringField2)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = leb128.WriteString(data, login.StringField3)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }

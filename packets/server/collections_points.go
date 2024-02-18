@@ -1,8 +1,9 @@
 package server
 
 import (
-	"github.com/suvrick/go-kiss-core/interfaces"
-	"github.com/suvrick/go-kiss-core/models"
+	"bytes"
+
+	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -10,10 +11,11 @@ const COLLECTIONS_POINTS types.PacketServerType = 130
 
 // COLLECTIONS_POINTS(130) "I"
 type CollectionsPoints struct {
-	Points types.I
+	Points uint64
 }
 
-func (packet *CollectionsPoints) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
-	hiro.CollectionPoint = packet.Points
-	return nil
+func (collectionsPoints *CollectionsPoints) Unmarshal(r *bytes.Reader) error {
+	var err error
+	collectionsPoints.Points, err = leb128.ReadUInt64(r)
+	return err
 }

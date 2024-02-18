@@ -1,12 +1,9 @@
 package server
 
 import (
-	"log"
-	"time"
+	"bytes"
 
-	"github.com/suvrick/go-kiss-core/interfaces"
-	"github.com/suvrick/go-kiss-core/models"
-	"github.com/suvrick/go-kiss-core/packets/client"
+	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -14,21 +11,11 @@ const BOTTLE_LEADER types.PacketServerType = 28
 
 // BOTTLE_LEADER(28) "I"
 type BottleLeader struct {
-	LeaderID types.I
+	LeaderID uint64
 }
 
-func (packet *BottleLeader) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
-	room.LeaderID = packet.LeaderID
-	if packet.LeaderID == hiro.ID {
-		go func() {
-			log.Println("I am leader!")
-			<-time.After(time.Second * time.Duration(5))
-			log.Println("I am rolled bottle!")
-			game.Send(client.BOTTLE_ROLL, &client.BottleRoll{
-				IntField: 0,
-			})
-		}()
-	}
-
-	return nil
+func (bottleLeader *BottleLeader) Unmarshal(r *bytes.Reader) error {
+	var err error
+	bottleLeader.LeaderID, err = leb128.ReadUInt64(r)
+	return err
 }

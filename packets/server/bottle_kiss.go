@@ -1,8 +1,9 @@
 package server
 
 import (
-	"github.com/suvrick/go-kiss-core/interfaces"
-	"github.com/suvrick/go-kiss-core/models"
+	"bytes"
+
+	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -10,25 +11,22 @@ const BOTTLE_KISS types.PacketServerType = 30
 
 // BOTTLE_KISS(30) "IB"
 type BottleKiss struct {
-	PlayerID types.I
-	Answer   models.KissAnswer
+	PlayerID uint64
+	Answer   byte
 }
 
-func (packet *BottleKiss) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
+func (bottleKiss *BottleKiss) Unmarshal(r *bytes.Reader) error {
+	var err error
 
-	if packet.PlayerID == room.LeaderID {
-		room.KissAnswerLeader = packet.Answer
-	} else if packet.PlayerID == room.RollerID {
-		room.KissAnswerRoller = packet.Answer
+	bottleKiss.PlayerID, err = leb128.ReadUInt64(r)
+	if err != nil {
+		return err
 	}
 
-	if currentPlayer, ok := room.Players[packet.PlayerID]; ok {
-		if packet.Answer == 1 {
-			currentPlayer.KissedRoom += 1
-			currentPlayer.KissedDay += 1
-			currentPlayer.Kissed += 1
-		}
+	bottleKiss.Answer, err = leb128.ReadByte(r)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return err
 }

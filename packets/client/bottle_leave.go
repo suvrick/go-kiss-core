@@ -7,3 +7,7 @@ const BOTTLE_LEAVE types.PacketClientType = 27
 // BOTTLE_LEAVE(27) ""
 type BottleLeave struct {
 }
+
+func (bottleLeave *BottleLeave) Marshal() ([]byte, error) {
+	return nil, nil
+}

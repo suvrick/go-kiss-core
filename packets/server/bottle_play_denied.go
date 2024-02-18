@@ -1,8 +1,9 @@
 package server
 
 import (
-	"github.com/suvrick/go-kiss-core/interfaces"
-	"github.com/suvrick/go-kiss-core/models"
+	"bytes"
+
+	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -10,9 +11,11 @@ const BOTTLE_PLAY_DENIED types.PacketServerType = 24
 
 // BOTTLE_PLAY_DENIED(24) "B"
 type BottlePlayDenied struct {
-	ByteField types.B
+	ByteField byte
 }
 
-func (packet *BottlePlayDenied) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
-	return nil
+func (bottlePlayDenied *BottlePlayDenied) Unmarshal(r *bytes.Reader) error {
+	var err error
+	bottlePlayDenied.ByteField, err = leb128.ReadByte(r)
+	return err
 }
