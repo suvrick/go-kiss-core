@@ -250,7 +250,7 @@ func (socket *Socket) read(reader *bytes.Reader) {
 	switch packetID {
 	case server.LOGIN:
 		packet = &server.Login{}
-		packet.(*server.Login).Unmarshal(reader)
+		// packet.(*server.Login).Unmarshal(reader)
 	case server.INFO:
 		packet = &server.Info{}
 	case server.BALANCE:
