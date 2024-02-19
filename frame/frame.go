@@ -8,7 +8,6 @@ import (
 	"errors"
 	"hash/fnv"
 	"net/url"
-	"strconv"
 	"strings"
 	"sync"
 )
@@ -67,22 +66,20 @@ func (f *Frame) Parse(input string) (FrameDTO, error) {
 
 		if q.Has(p.LoginID) && q.Has(p.Token) && q.Has(p.Token2) {
 
-			id_value := q.Get(p.LoginID)
-			id, err := strconv.ParseUint(id_value, 10, 64)
-			if err != nil {
-				return result, ErrQueryParametrMiss
-			}
+			id := q.Get(p.LoginID)
 
 			// TODO: костыль для фотостраны
 			if strings.Index(input, "fotostrana") > 0 {
 				p.FrameType = 30
 			}
 
-			result.Hash = getHex(input)
+			// result.Hash = getHex(input)
 			result.ID = id
 			result.NetType = p.FrameType
 			result.Key = q.Get(p.Token)
+			result.OAuth = 0
 			result.AccessToken = q.Get(p.Token2)
+			result.StringField = ""
 
 			return result, nil
 		}
@@ -103,27 +100,28 @@ func New() IFrameManager {
 }
 
 const (
-	vk uint16 = 0
-	mm uint16 = 1
-	ok uint16 = 4
-	fs uint16 = 30
-	gs uint16 = 41
-	sa uint16 = 32
-	nn uint16 = 255
+	vk byte = 0
+	mm byte = 1
+	ok byte = 4
+	fs byte = 30
+	gs byte = 41
+	sa byte = 32
+	nn byte = 255
 )
 
 type FrameDTO struct {
-	Hash        uint32
-	ID          uint64
-	NetType     uint16
+	ID          string
+	NetType     byte
 	Key         string
+	OAuth       byte
 	AccessToken string
+	StringField string
 }
 
 // Названия ключей для каждого типа соц.сети
 // config.json
 type t_words struct {
-	FrameType uint16 `json:"frame_type"`
+	FrameType byte   `json:"frame_type"`
 	LoginID   string `json:"id"`
 	Token     string `json:"token"`
 	Token2    string `json:"token2"`
@@ -141,7 +139,7 @@ GetFrameTypeName возращает строковое представлени�
 
 Если не удалось определить тип frame, то "nn"
 */
-func GetFrameTypeName(t uint16) string {
+func GetFrameTypeName(t byte) string {
 	switch t {
 	case vk:
 		return "vk"

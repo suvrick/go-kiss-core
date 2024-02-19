@@ -4,7 +4,6 @@ import (
 	"bytes"
 
 	"github.com/suvrick/go-kiss-core/leb128"
-	"github.com/suvrick/go-kiss-core/models"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -50,11 +49,11 @@ func (rewards *Rewards) Unmarshal(r *bytes.Reader) error {
 	return err
 }
 
-func (packet *Rewards) getRewards() (rewards []models.Reward) {
-	for _, v := range packet.Rewards {
-		if v.ID > 0 && v.Count > 0 {
-			rewards = append(rewards, v)
-		}
-	}
-	return
-}
+// func (packet *Rewards) getRewards() (rewards []Reward) {
+// 	for _, v := range rewards {
+// 		if v.RewardID > 0 && v.Count > 0 {
+// 			rewards = append(rewards, v)
+// 		}
+// 	}
+// 	return
+// }

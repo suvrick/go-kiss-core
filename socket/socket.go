@@ -15,6 +15,14 @@ import (
 	"github.com/suvrick/go-kiss-core/types"
 )
 
+type IClientPacket interface {
+	Marshal() ([]byte, error)
+}
+
+type IServerPacket interface {
+	Unmarshal(r *bytes.Reader) error
+}
+
 var (
 	ErrTimeoutTheGame           = errors.New("time in the game success")
 	ErrConnectionNot101         = errors.New("websocket connection fail")
@@ -25,14 +33,14 @@ var (
 
 // GameSock ...
 type Socket struct {
-	config      *SocketConfig
-	packetIndex uint64
-	rule_close  byte
-	client      *websocket.Conn
-	logger      *log.Logger
-	proxy       *url.URL
-	done        chan struct{}
-	Role        byte
+	config     *SocketConfig
+	messageID  uint64
+	rule_close byte
+	client     *websocket.Conn
+	logger     *log.Logger
+	proxy      *url.URL
+	done       chan struct{}
+	Role       byte
 
 	openHandle  func(sender *Socket)
 	closeHandle func(sender *Socket, rule byte, caption string)
@@ -141,7 +149,13 @@ func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) 
 		return
 	}
 
-	pack, err := leb128.Marshal(packet)
+	pckt, ok := packet.(IClientPacket)
+
+	if !ok {
+		return
+	}
+
+	pack, err := pckt.Marshal()
 	if err != nil {
 		if socket.errorHandle != nil {
 			socket.errorHandle(socket, err)
@@ -149,14 +163,22 @@ func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) 
 		return
 	}
 
-	data := make([]byte, 0)
-	data = leb128.AppendInt(data, int64(socket.packetIndex)) // messageID
-	data = leb128.AppendUint(data, uint64(packetID))         // packetID
-	data = leb128.AppendUint(data, uint64(5))                //device
+	// messageID
+	data, err := leb128.WriteUInt64(nil, uint64(socket.messageID))
+
+	socket.messageID++
+
+	// packetID
+	data, err = leb128.WriteUInt64(data, uint64(packetID))
+
+	//device
+	data, err = leb128.WriteByte(data, 5)
+
 	data = append(data, pack...)
 
-	data_len := make([]byte, 0)
-	data_len = leb128.AppendInt(data_len, int64(len(data))) // packet len
+	// packet len
+	data_len, err := leb128.WriteUInt64(nil, uint64(len(data)))
+
 	data_len = append(data_len, data...)
 
 	err = socket.client.WriteMessage(websocket.BinaryMessage, data_len)
@@ -166,8 +188,6 @@ func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) 
 			socket.errorHandle(socket, err)
 		}
 	}
-
-	socket.packetIndex++
 }
 
 func (socket *Socket) Close() {
@@ -250,7 +270,6 @@ func (socket *Socket) read(reader *bytes.Reader) {
 	switch packetID {
 	case server.LOGIN:
 		packet = &server.Login{}
-		// packet.(*server.Login).Unmarshal(reader)
 	case server.INFO:
 		packet = &server.Info{}
 	case server.BALANCE:
@@ -290,18 +309,8 @@ func (socket *Socket) read(reader *bytes.Reader) {
 	}
 
 	if packet != nil {
-		err = leb128.Unmarshal(reader, packet)
-		if err != nil {
-			if socket.errorHandle != nil {
-				socket.errorHandle(socket, err)
-			}
-			return
-		}
-
-		socket.Log(fmt.Sprintf("[read] %#v", packet))
-
-		if pack, ok := packet.(interfaces.IServerPacket); ok {
-			err = pack.Use(socket.Hiro, socket.Room, socket)
+		if pack, ok := packet.(IServerPacket); ok {
+			err = pack.Unmarshal(reader)
 			if err != nil {
 				if socket.errorHandle != nil {
 					socket.errorHandle(socket, err)
@@ -309,6 +318,8 @@ func (socket *Socket) read(reader *bytes.Reader) {
 				return
 			}
 		}
+
+		socket.Log(fmt.Sprintf("[read] %#v", packet))
 	}
 }
 
@@ -335,11 +346,5 @@ func (socket *Socket) timeoutToGame() {
 	socket.setClosedRule(ERROR_TIMEOUT_CLOSE)
 	if socket.errorHandle != nil {
 		socket.errorHandle(socket, ErrTimeoutTheGame)
-	}
-}
-
-func (socket *Socket) UpdateSelfEmit() {
-	if socket.updateSelfHandle != nil {
-		socket.updateSelfHandle(socket, socket.Hiro)
 	}
 }

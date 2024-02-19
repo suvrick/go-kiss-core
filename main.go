@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/url"
@@ -9,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/suvrick/go-kiss-core/frame"
-	"github.com/suvrick/go-kiss-core/models"
 	"github.com/suvrick/go-kiss-core/packets/client"
 	"github.com/suvrick/go-kiss-core/socket"
 	"github.com/suvrick/go-kiss-core/types"
@@ -93,7 +91,6 @@ func main() {
 		g.SetOpenHandler(openHandle)
 		g.SetCloseHandler(closeHandle)
 		g.SetErrorHandler(errorHandle)
-		g.SetUpdateSelfHandler(updateSelfHandler)
 
 		games = append(games, g)
 		//prx := getProxy(proxies[i])
@@ -127,15 +124,6 @@ func errorHandle(sender *socket.Socket, err error) {
 	}
 }
 
-func updateSelfHandler(sender *socket.Socket, self *models.Hiro) {
-	_, err := json.Marshal(self)
-	if err != nil {
-		fmt.Printf("[update self]: %v,\n", err)
-	}
-
-	//fmt.Println(string(bytes))
-}
-
 func getLoginPacket(url string) *client.Login {
 
 	if frameManager == nil {
@@ -149,12 +137,13 @@ func getLoginPacket(url string) *client.Login {
 	}
 
 	return &client.Login{
-		ID:          types.L(frameDTO.ID),
-		NetType:     types.I(frameDTO.NetType),
+		LoginID:     frameDTO.ID,
+		NetType:     frameDTO.NetType,
 		DeviceType:  5,
-		Key:         types.S(frameDTO.Key),
-		OAuth:       1,
-		AccessToken: types.S(frameDTO.AccessToken),
+		Key:         frameDTO.Key,
+		OAuth:       0,
+		AccessToken: frameDTO.AccessToken,
+		StringField: frameDTO.StringField,
 	}
 }
 
