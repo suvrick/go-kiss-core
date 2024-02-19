@@ -100,7 +100,7 @@ func main() {
 
 		g.Send(client.LOGIN, login)
 
-		g.Send(client.BOTTLE_PLAY, client.BottlePlay{
+		g.Send(client.BOTTLE_PLAY, &client.BottlePlay{
 			RoomID: 0,
 		})
 	}

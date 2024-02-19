@@ -18,7 +18,7 @@ type SocketConfig struct {
 func GetDefaultSocketConfig() *SocketConfig {
 	return &SocketConfig{
 		Host:           "wss://bottlews.itsrealgames.com",
-		ConnectTimeout: time.Second * 30,
+		ConnectTimeout: time.Second * 300,
 		Head: http.Header{
 			"Origin": {
 				"https://inspin.me",

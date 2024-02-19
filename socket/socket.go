@@ -181,6 +181,8 @@ func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) 
 
 	data_len = append(data_len, data...)
 
+	socket.Log(fmt.Sprintf("[send (%d)] bytes: %#v", packetID, data_len))
+
 	err = socket.client.WriteMessage(websocket.BinaryMessage, data_len)
 	if err != nil {
 		socket.setClosedRule(ERROR_SEND_CLOSE)

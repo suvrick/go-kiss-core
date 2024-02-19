@@ -19,12 +19,18 @@ func ReadByte(r *bytes.Reader) (byte, error) {
 
 func ReadInt64(r *bytes.Reader) (int64, error) {
 	result, err := decodeSigned(r)
-	return result.Int64(), err
+	if err != nil {
+		return 0, err
+	}
+	return result.Int64(), nil
 }
 
 func ReadUInt64(r *bytes.Reader) (uint64, error) {
 	result, err := decodeUnsigned(r)
-	return result.Uint64(), err
+	if err != nil {
+		return 0, err
+	}
+	return result.Uint64(), nil
 }
 
 func ReadString(r *bytes.Reader) (string, error) {
@@ -39,7 +45,10 @@ func ReadString(r *bytes.Reader) (string, error) {
 
 func ReadBigNumber(r *bytes.Reader) (string, error) {
 	big, err := decodeUnsigned(r)
-	return big.String(), err
+	if err != nil {
+		return "", err
+	}
+	return big.String(), nil
 }
 
 func WriteByte(b []byte, v byte) ([]byte, error) {

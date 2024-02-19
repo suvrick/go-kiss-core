@@ -7,7 +7,7 @@ import (
 
 const BOTTLE_PLAY types.PacketClientType = 26
 
-// BOTTLE_PLAY(26) "B,B"
+// BOTTLE_PLAY(26) "B"
 type BottlePlay struct {
 	RoomID byte
 	// LangID *byte

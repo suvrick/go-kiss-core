@@ -9,24 +9,14 @@ import (
 
 const BONUS types.PacketServerType = 17
 
-// BONUS(17) "BB"
+// BONUS(17) "B"
 type Bonus struct {
-	CanCollect byte
-	Day        byte
+	// CanCollect byte
+	Day byte
 }
 
 func (bonus *Bonus) Unmarshal(r *bytes.Reader) error {
 	var err error
-
-	bonus.CanCollect, err = leb128.ReadByte(r)
-	if err != nil {
-		return err
-	}
-
 	bonus.Day, err = leb128.ReadByte(r)
-	if err != nil {
-		return err
-	}
-
 	return err
 }
