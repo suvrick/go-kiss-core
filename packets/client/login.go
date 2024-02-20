@@ -23,6 +23,10 @@ type Login struct {
 	StringField3 string
 }
 
+func (login Login) String() string {
+	return "LOGIN(4)"
+}
+
 func (login *Login) Marshal() ([]byte, error) {
 	data, err := leb128.WriteBigNumber(nil, login.LoginID)
 	if err != nil {

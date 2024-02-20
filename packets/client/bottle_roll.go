@@ -12,6 +12,10 @@ type BottleRoll struct {
 	IntField byte
 }
 
+func (bottleRoll BottleRoll) String() string {
+	return "BOTTLE_ROLL(28)"
+}
+
 func (bottleRoll *BottleRoll) Marshal() ([]byte, error) {
 	return leb128.WriteByte(nil, bottleRoll.IntField)
 }

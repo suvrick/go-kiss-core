@@ -12,6 +12,10 @@ type BottleSave struct {
 	PlayerID uint64
 }
 
+func (bottleSave BottleSave) String() string {
+	return "BOTTLE_SAVE(30)"
+}
+
 func (bottleSave *BottleSave) Marshal() ([]byte, error) {
 	return leb128.WriteUInt64(nil, bottleSave.PlayerID)
 }

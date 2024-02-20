@@ -12,6 +12,10 @@ type BottleKick struct {
 	IntField uint64
 }
 
+func (bottleKick BottleKick) String() string {
+	return "BOTTLE_KICK(31)"
+}
+
 func (bottleKick *BottleKick) Marshal() ([]byte, error) {
 	return leb128.WriteUInt64(nil, bottleKick.IntField)
 }

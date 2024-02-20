@@ -12,6 +12,10 @@ type BottleKiss struct {
 	Answer byte
 }
 
+func (bottleKiss BottleKiss) String() string {
+	return "BOTTLE_KISS(29)"
+}
+
 func (bottleKiss *BottleKiss) Marshal() ([]byte, error) {
 	return leb128.WriteByte(nil, bottleKiss.Answer)
 }

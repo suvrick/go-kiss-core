@@ -13,6 +13,10 @@ type Move struct {
 	ByteField *byte
 }
 
+func (move Move) String() string {
+	return "MOVE(21)"
+}
+
 func (move *Move) Marshal() ([]byte, error) {
 
 	data, err := leb128.WriteUInt64(nil, move.PlayerID)

@@ -7,7 +7,7 @@ import (
 
 const BUY types.PacketClientType = 6
 
-// BONUS(6) "IIIIBI,B"
+// BUY(6) "IIIIBI,B"
 type Buy struct {
 	BuyType    uint64
 	Coin       uint64
@@ -16,6 +16,10 @@ type Buy struct {
 	ByteFiald  byte
 	Count      uint64
 	ByteFiald2 *byte
+}
+
+func (buy Buy) String() string {
+	return "BUY(6)"
 }
 
 func (buy *Buy) Marshal() ([]byte, error) {

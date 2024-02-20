@@ -13,6 +13,10 @@ type Request struct {
 	Mask    int64
 }
 
+func (request Request) String() string {
+	return "REQUEST(8)"
+}
+
 func (request *Request) Marshal() ([]byte, error) {
 
 	data, err := leb128.WriteUInt64(nil, uint64(len(request.Players)))

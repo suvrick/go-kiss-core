@@ -141,8 +141,6 @@ func (socket *Socket) SetErrorHandler(handler func(sender *Socket, err error)) {
 
 func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) {
 
-	socket.Log(fmt.Sprintf("[send] %#v", packet))
-
 	if socket.client == nil {
 		if socket.errorHandle != nil {
 			socket.errorHandle(socket, ErrConnectionFail)
@@ -194,7 +192,7 @@ func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) 
 
 	data_len = append(data_len, data...)
 
-	socket.Log(fmt.Sprintf("[send (%d)] bytes: %#v", packetID, data_len))
+	socket.Log(fmt.Sprintf("[send] %s -> %#v", packet, packet))
 
 	err = socket.client.WriteMessage(websocket.BinaryMessage, data_len)
 	if err != nil {

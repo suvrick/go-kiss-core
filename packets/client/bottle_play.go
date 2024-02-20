@@ -13,6 +13,10 @@ type BottlePlay struct {
 	// LangID *byte
 }
 
+func (bottlePlay BottlePlay) String() string {
+	return "BOTTLE_PLAY(26)"
+}
+
 func (bottlePlay *BottlePlay) Marshal() ([]byte, error) {
 	return leb128.WriteByte(nil, bottlePlay.RoomID)
 }
