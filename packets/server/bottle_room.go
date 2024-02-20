@@ -18,6 +18,10 @@ type BottleRoom struct {
 	Positions []uint64
 }
 
+func (p BottleRoom) String() string {
+	return "BOTTLE_ROOM(25)"
+}
+
 func (bottleRoom *BottleRoom) Unmarshal(r *bytes.Reader) error {
 	var err error
 

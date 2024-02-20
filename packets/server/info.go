@@ -13,6 +13,10 @@ type Info struct {
 	// Players []PlayerInfo
 }
 
+func (p Info) String() string {
+	return "INFO(5)"
+}
+
 // const INFOMASK types.I = 328588
 
 // // ISBSBBIIBIBIIBBIII

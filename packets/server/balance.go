@@ -14,6 +14,10 @@ type Balance struct {
 	Coins uint64
 }
 
+func (p Balance) String() string {
+	return "BALANCE(7)"
+}
+
 func (balance *Balance) Unmarshal(r *bytes.Reader) error {
 	coins, err := leb128.ReadUInt64(r)
 	if err == nil {

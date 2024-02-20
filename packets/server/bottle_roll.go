@@ -17,6 +17,10 @@ type BottleRoll struct {
 	IntField2 *uint64
 }
 
+func (p BottleRoll) String() string {
+	return "BOTTLE_ROLL(29)"
+}
+
 func (bottleRoll *BottleRoll) Unmarshal(r *bytes.Reader) error {
 	var err error
 

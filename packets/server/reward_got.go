@@ -15,6 +15,10 @@ type RewardGot struct {
 	RewardID uint64
 }
 
+func (p RewardGot) String() string {
+	return "REWARD_GOT(315)"
+}
+
 func (rewardGot *RewardGot) Unmarshal(r *bytes.Reader) error {
 	var err error
 

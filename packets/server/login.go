@@ -16,6 +16,10 @@ type Login struct {
 	Balance uint64
 }
 
+func (p Login) String() string {
+	return "LOGIN(4)"
+}
+
 func (login *Login) Unmarshal(r *bytes.Reader) error {
 	var err error
 

@@ -15,6 +15,10 @@ type Bonus struct {
 	Day byte
 }
 
+func (p Bonus) String() string {
+	return "BONUS(17)"
+}
+
 func (bonus *Bonus) Unmarshal(r *bytes.Reader) error {
 	var err error
 	bonus.Day, err = leb128.ReadByte(r)

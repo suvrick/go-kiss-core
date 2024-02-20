@@ -14,6 +14,10 @@ type CollectionsPoints struct {
 	Points uint64
 }
 
+func (p CollectionsPoints) String() string {
+	return "COLLECTIONS_POINTS(130)"
+}
+
 func (collectionsPoints *CollectionsPoints) Unmarshal(r *bytes.Reader) error {
 	var err error
 	collectionsPoints.Points, err = leb128.ReadUInt64(r)

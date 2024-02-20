@@ -10,13 +10,12 @@ import (
 	"github.com/suvrick/go-kiss-core/frame"
 	"github.com/suvrick/go-kiss-core/packets/client"
 	"github.com/suvrick/go-kiss-core/socket"
-	"github.com/suvrick/go-kiss-core/types"
 )
 
 // 103786258
 // sessionKey=5d09db98a83f25ff3885114f725c651022ee76138454ff
 // dc93c8e0c365ca792cf1198ab71c73e7
-const Tototo93 types.I = 22132982
+const Tototo93 uint64 = 22132982
 
 var urls = []string{
 	"https://bottle2.itsrealgames.com/mobile/build/v1593/?social_api=mm&type=mm&record_first_session=1&6=&is_app_user=1&session_key=f53f650cd57b6bc75da0b65af0d0c028&vid=13402962412699287699&oid=13402962412699287699&app_id=543574&authentication_key=e1de7d6b1b9a18e124331d1a8e7a6709&session_expire=1623248257&ext_perm=notifications%2Cemails%2Cpayments&sig=d38fca257b4651d5fc2bbc3e2531842f&window_id=CometName_74be9f9e99659ab7f65e85f2a31d3d3b&referer_type=left_menu&version=1593",
@@ -61,7 +60,7 @@ var frameManager frame.IFrameManager
 
 var games []*socket.Socket
 
-var ids = []types.I{
+var ids = []uint64{
 	43591658, // Ж
 	43591678, // Ж
 	43591362, // Ж

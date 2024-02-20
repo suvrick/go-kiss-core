@@ -14,6 +14,10 @@ type BottleLeave struct {
 	PlayerID uint64
 }
 
+func (p BottleLeave) String() string {
+	return "BOTTLE_LEAVE(27)"
+}
+
 func (bottleLeave *BottleLeave) Unmarshal(r *bytes.Reader) error {
 	var err error
 	bottleLeave.PlayerID, err = leb128.ReadUInt64(r)

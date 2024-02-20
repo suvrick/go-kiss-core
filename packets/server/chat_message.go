@@ -19,6 +19,10 @@ type ChatMessage struct {
 	//IntField4 types.I `pack:"optional"`
 }
 
+func (p ChatMessage) String() string {
+	return "CHAT_MESSAGE(37)"
+}
+
 func (chatMessage *ChatMessage) Unmarshal(r *bytes.Reader) error {
 	var err error
 

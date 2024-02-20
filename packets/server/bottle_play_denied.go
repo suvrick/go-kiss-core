@@ -14,6 +14,10 @@ type BottlePlayDenied struct {
 	ByteField byte
 }
 
+func (p BottlePlayDenied) String() string {
+	return "BOTTLE_PLAY_DENIED(24)"
+}
+
 func (bottlePlayDenied *BottlePlayDenied) Unmarshal(r *bytes.Reader) error {
 	var err error
 	bottlePlayDenied.ByteField, err = leb128.ReadByte(r)

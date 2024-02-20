@@ -15,6 +15,10 @@ type BottleKiss struct {
 	Answer   byte
 }
 
+func (p BottleKiss) String() string {
+	return "BOTTLE_KISS(30)"
+}
+
 func (bottleKiss *BottleKiss) Unmarshal(r *bytes.Reader) error {
 	var err error
 

@@ -15,6 +15,10 @@ type ContestItems struct {
 	ByteField2 *byte
 }
 
+func (p ContestItems) String() string {
+	return "CONTEST_ITEMS(10)"
+}
+
 func (contestItems *ContestItems) Unmarshal(r *bytes.Reader) error {
 	var err error
 

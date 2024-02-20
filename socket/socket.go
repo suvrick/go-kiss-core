@@ -41,6 +41,7 @@ type Socket struct {
 	proxy      *url.URL
 	done       chan struct{}
 	Role       byte
+	HiroID     uint64
 
 	openHandle  func(sender *Socket)
 	closeHandle func(sender *Socket, rule byte, caption string)
@@ -165,19 +166,31 @@ func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) 
 
 	// messageID
 	data, err := leb128.WriteUInt64(nil, uint64(socket.messageID))
+	if err != nil {
+		return
+	}
 
 	socket.messageID++
 
 	// packetID
 	data, err = leb128.WriteUInt64(data, uint64(packetID))
+	if err != nil {
+		return
+	}
 
 	//device
 	data, err = leb128.WriteByte(data, 5)
+	if err != nil {
+		return
+	}
 
 	data = append(data, pack...)
 
 	// packet len
 	data_len, err := leb128.WriteUInt64(nil, uint64(len(data)))
+	if err != nil {
+		return
+	}
 
 	data_len = append(data_len, data...)
 
@@ -243,7 +256,7 @@ func (socket *Socket) read(reader *bytes.Reader) {
 		return
 	}
 
-	//read packetIndex
+	//read messageID
 	_, err = leb128.ReadUInt64(reader)
 	if err != nil {
 		if socket.errorHandle != nil {
@@ -321,7 +334,7 @@ func (socket *Socket) read(reader *bytes.Reader) {
 			}
 		}
 
-		socket.Log(fmt.Sprintf("[read] %#v", packet))
+		socket.Log(fmt.Sprintf("[read] %s -> %#v", packet, packet))
 	}
 }
 

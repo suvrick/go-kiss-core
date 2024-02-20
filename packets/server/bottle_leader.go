@@ -9,9 +9,13 @@ import (
 
 const BOTTLE_LEADER types.PacketServerType = 28
 
-// BOTTLE_LEADER(28) "I"
+// "I"
 type BottleLeader struct {
 	LeaderID uint64
+}
+
+func (p BottleLeader) String() string {
+	return "BOTTLE_LEADER(28)"
 }
 
 func (bottleLeader *BottleLeader) Unmarshal(r *bytes.Reader) error {

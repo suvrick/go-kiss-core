@@ -19,6 +19,10 @@ type Reward struct {
 	Count    byte
 }
 
+func (p Rewards) String() string {
+	return "REWARDS(13)"
+}
+
 func (rewards *Rewards) Unmarshal(r *bytes.Reader) error {
 	var err error
 	var len uint64

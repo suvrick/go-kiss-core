@@ -18,6 +18,10 @@ type ChatWhisper struct {
 	ByteField2 byte
 }
 
+func (p ChatWhisper) String() string {
+	return "CHAT_WHISPER(38)"
+}
+
 func (chatWhisper *ChatWhisper) Unmarshal(r *bytes.Reader) error {
 	var err error
 

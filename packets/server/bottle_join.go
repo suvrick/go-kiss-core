@@ -15,6 +15,10 @@ type BottleJoin struct {
 	Position byte
 }
 
+func (p BottleJoin) String() string {
+	return "BOTTLE_JOIN(26)"
+}
+
 func (bottleJoin *BottleJoin) Unmarshal(r *bytes.Reader) error {
 	var err error
 

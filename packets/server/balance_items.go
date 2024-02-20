@@ -20,6 +20,10 @@ type BalanceItem struct {
 	Count2 uint64
 }
 
+func (p BalanceItems) String() string {
+	return "BALANCE_ITEMS(310)"
+}
+
 func (balanceItems *BalanceItems) Unmarshal(r *bytes.Reader) error {
 
 	len, err := leb128.ReadUInt64(r)
