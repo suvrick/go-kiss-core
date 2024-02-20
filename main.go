@@ -9,7 +9,9 @@ import (
 
 	"github.com/suvrick/go-kiss-core/frame"
 	"github.com/suvrick/go-kiss-core/packets/client"
+	"github.com/suvrick/go-kiss-core/packets/server"
 	"github.com/suvrick/go-kiss-core/socket"
+	"github.com/suvrick/go-kiss-core/types"
 )
 
 // 103786258
@@ -90,6 +92,7 @@ func main() {
 		g.SetOpenHandler(openHandle)
 		g.SetCloseHandler(closeHandle)
 		g.SetErrorHandler(errorHandle)
+		g.SetRecvHandler(recvHandler)
 
 		games = append(games, g)
 		//prx := getProxy(proxies[i])
@@ -98,10 +101,6 @@ func main() {
 		}
 
 		g.Send(client.LOGIN, login)
-
-		g.Send(client.BOTTLE_PLAY, &client.BottlePlay{
-			RoomID: 0,
-		})
 	}
 
 	wg.Wait()
@@ -120,6 +119,31 @@ func errorHandle(sender *socket.Socket, err error) {
 	if err != nil {
 		fmt.Printf("Error: %v\n", err.Error())
 		sender.Close()
+	}
+}
+
+func recvHandler(sender *socket.Socket, packetID types.PacketServerType, packet any) {
+	switch packetID {
+	case server.LOGIN:
+		login, ok := packet.(*server.Login)
+		if ok {
+			switch login.Result {
+			case 0:
+				sender.HiroID = login.HiroID
+				sender.Send(client.BOTTLE_PLAY, &client.BottlePlay{
+					RoomID: 0,
+				})
+			default:
+				sender.Close()
+			}
+		}
+	case server.BONUS:
+		bonus, ok := packet.(*server.Bonus)
+		if ok {
+			if bonus.Day > 0 {
+				sender.Send(client.BONUS, &client.Bonus{})
+			}
+		}
 	}
 }
 

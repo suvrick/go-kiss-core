@@ -1,6 +1,8 @@
 package server
 
 import (
+	"bytes"
+
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -15,6 +17,10 @@ type Info struct {
 
 func (p Info) String() string {
 	return "INFO(5)"
+}
+
+func (info *Info) Unmarshal(r *bytes.Reader) error {
+	return nil
 }
 
 // const INFOMASK types.I = 328588

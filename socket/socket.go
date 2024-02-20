@@ -45,8 +45,8 @@ type Socket struct {
 
 	openHandle  func(sender *Socket)
 	closeHandle func(sender *Socket, rule byte, caption string)
-	readHandle  func(sender *Socket, packetID types.PacketServerType, packet interface{})
 	errorHandle func(sender *Socket, err error)
+	recvHandle  func(sender *Socket, packetID types.PacketServerType, packet any)
 }
 
 const (
@@ -137,6 +137,10 @@ func (socket *Socket) SetCloseHandler(handler func(sender *Socket, rule byte, ms
 
 func (socket *Socket) SetErrorHandler(handler func(sender *Socket, err error)) {
 	socket.errorHandle = handler
+}
+
+func (socket *Socket) SetRecvHandler(handler func(sender *Socket, packetID types.PacketServerType, packet any)) {
+	socket.recvHandle = handler
 }
 
 func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) {
@@ -276,7 +280,7 @@ func (socket *Socket) read(reader *bytes.Reader) {
 	// 	fmt.Printf("%#v\n", reader)
 	// }
 
-	var packet interface{}
+	var packet IServerPacket
 
 	packetID := types.PacketServerType(ID)
 
@@ -322,14 +326,16 @@ func (socket *Socket) read(reader *bytes.Reader) {
 	}
 
 	if packet != nil {
-		if pack, ok := packet.(IServerPacket); ok {
-			err = pack.Unmarshal(reader)
-			if err != nil {
-				if socket.errorHandle != nil {
-					socket.errorHandle(socket, err)
-				}
-				return
+		err = packet.Unmarshal(reader)
+		if err != nil {
+			if socket.errorHandle != nil {
+				socket.errorHandle(socket, err)
 			}
+			return
+		}
+
+		if socket.recvHandle != nil {
+			socket.recvHandle(socket, packetID, packet)
 		}
 
 		socket.Log(fmt.Sprintf("[read] %s -> %#v", packet, packet))
