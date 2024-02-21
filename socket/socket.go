@@ -328,9 +328,10 @@ func (socket *Socket) read(reader *bytes.Reader) {
 	if packet != nil {
 		err = packet.Unmarshal(reader)
 		if err != nil {
-			if socket.errorHandle != nil {
-				socket.errorHandle(socket, err)
-			}
+			socket.Log(fmt.Sprintf("[read] %s -> %#v", packet, err))
+			// if socket.errorHandle != nil {
+			// 	socket.errorHandle(socket, err)
+			// }
 			return
 		}
 

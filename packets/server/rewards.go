@@ -15,13 +15,21 @@ type Rewards struct {
 }
 
 type Reward struct {
-	RewardID byte
+	RewardID uint64
 	Count    byte
 }
 
 func (p Rewards) String() string {
 	return "REWARDS(13)"
 }
+
+/*
+Read packet REWARDS with data [[[252,1]]]
+GAME_REWARDS_GET type 11 id 425 data: [252,1]
+Read packet RACE_LEADERS with data [0,0,1,[[40305073,0,0]]]
+Read packet REWARDS with data [[]]
+Read packet BALANCE with data [80]
+*/
 
 func (rewards *Rewards) Unmarshal(r *bytes.Reader) error {
 	var err error
@@ -35,19 +43,18 @@ func (rewards *Rewards) Unmarshal(r *bytes.Reader) error {
 	rewards.Items = make([]Reward, len)
 
 	for len > 0 {
-		var item = Reward{}
 
-		item.RewardID, err = leb128.ReadByte(r)
+		rewards.Items[len-1].RewardID, err = leb128.ReadUInt64(r)
 		if err != nil {
 			return err
 		}
 
-		item.Count, err = leb128.ReadByte(r)
+		rewards.Items[len-1].Count, err = leb128.ReadByte(r)
 		if err != nil {
 			return err
 		}
 
-		rewards.Items = append(rewards.Items, item)
+		len--
 	}
 
 	return err

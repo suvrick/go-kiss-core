@@ -41,32 +41,34 @@ func (bottleRoom *BottleRoom) Unmarshal(r *bytes.Reader) error {
 	}
 
 	var len uint64
+
+	// fill Players
 	len, err = leb128.ReadUInt64(r)
 	if err != nil {
 		return err
 	}
+
 	bottleRoom.Players = make([]uint64, len)
-	var t uint64
 	for len > 0 {
-		t, err = leb128.ReadUInt64(r)
+		bottleRoom.Players[len-1], err = leb128.ReadUInt64(r)
 		if err != nil {
 			return err
 		}
-		bottleRoom.Players = append(bottleRoom.Players, t)
 		len--
 	}
 
+	// fill Positions
 	len, err = leb128.ReadUInt64(r)
 	if err != nil {
 		return err
 	}
+
 	bottleRoom.Positions = make([]uint64, len)
 	for len > 0 {
-		t, err = leb128.ReadUInt64(r)
+		bottleRoom.Positions[len-1], err = leb128.ReadUInt64(r)
 		if err != nil {
 			return err
 		}
-		bottleRoom.Positions = append(bottleRoom.Positions, t)
 		len--
 	}
 

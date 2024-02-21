@@ -35,23 +35,21 @@ func (balanceItems *BalanceItems) Unmarshal(r *bytes.Reader) error {
 
 	for len > 0 {
 		var err error
-		item := BalanceItem{}
-		item.Type, err = leb128.ReadByte(r)
+
+		balanceItems.Items[len-1].Type, err = leb128.ReadByte(r)
 		if err != nil {
 			return err
 		}
 
-		item.Count1, err = leb128.ReadUInt64(r)
+		balanceItems.Items[len-1].Count1, err = leb128.ReadUInt64(r)
 		if err != nil {
 			return err
 		}
 
-		item.Count2, err = leb128.ReadUInt64(r)
+		balanceItems.Items[len-1].Count2, err = leb128.ReadUInt64(r)
 		if err != nil {
 			return err
 		}
-
-		balanceItems.Items = append(balanceItems.Items, item)
 
 		len--
 	}
