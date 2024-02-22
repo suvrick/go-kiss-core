@@ -32,10 +32,5 @@ func (bottleKiss *BottleKiss) Unmarshal(r *bytes.Reader) error {
 		return err
 	}
 
-	bottleKiss.Answer, err = leb128.ReadByte(r)
-	if err != nil {
-		return err
-	}
-
 	return err
 }

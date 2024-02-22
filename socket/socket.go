@@ -155,6 +155,7 @@ func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) 
 	pckt, ok := packet.(IClientPacket)
 
 	if !ok {
+		socket.Log(fmt.Sprintf("[error] %s -> %v", packet, fmt.Errorf("not impliment ICleintPacket")))
 		return
 	}
 
@@ -167,8 +168,9 @@ func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) 
 	}
 
 	// messageID
-	data, err := leb128.WriteUInt64(nil, uint64(socket.messageID))
+	data, err := leb128.WriteUInt64(nil, socket.messageID)
 	if err != nil {
+		socket.Log(fmt.Sprintf("[error] %s -> %v", packet, err))
 		return
 	}
 
@@ -177,12 +179,14 @@ func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) 
 	// packetID
 	data, err = leb128.WriteUInt64(data, uint64(packetID))
 	if err != nil {
+		socket.Log(fmt.Sprintf("[error] %s -> %v", packet, err))
 		return
 	}
 
 	//device
 	data, err = leb128.WriteByte(data, 5)
 	if err != nil {
+		socket.Log(fmt.Sprintf("[error] %s -> %v", packet, err))
 		return
 	}
 
@@ -191,12 +195,13 @@ func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) 
 	// packet len
 	data_len, err := leb128.WriteUInt64(nil, uint64(len(data)))
 	if err != nil {
+		socket.Log(fmt.Sprintf("[error] %s -> %v", packet, err))
 		return
 	}
 
 	data_len = append(data_len, data...)
 
-	socket.Log(fmt.Sprintf("[send] %s -> %#v", packet, packet))
+	socket.Log(fmt.Sprintf("[send] %s -> %#v, %v", packet, packet, data_len))
 
 	err = socket.client.WriteMessage(websocket.BinaryMessage, data_len)
 	if err != nil {

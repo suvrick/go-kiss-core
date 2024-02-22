@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/suvrick/go-kiss-core/frame"
 	"github.com/suvrick/go-kiss-core/packets/client"
@@ -130,9 +131,13 @@ func recvHandler(sender *socket.Socket, packetID types.PacketServerType, packet 
 			switch login.Result {
 			case 0:
 				sender.HiroID = login.HiroID
+				sender.Send(client.TOGGLE_TAPE, &client.ToggleType{})
 				sender.Send(client.BOTTLE_PLAY, &client.BottlePlay{
 					RoomID: 0,
 				})
+				// sender.Send(client.MOVE, &client.Move{
+				// 	PlayerID: Tototo93,
+				// })
 			default:
 				sender.Close()
 			}
@@ -142,6 +147,40 @@ func recvHandler(sender *socket.Socket, packetID types.PacketServerType, packet 
 		if ok {
 			if bonus.Day > 0 {
 				sender.Send(client.BONUS, &client.Bonus{})
+			}
+		}
+	case server.BOTTLE_LEADER:
+		bottleLeader, ok := packet.(*server.BottleLeader)
+		if ok {
+			if bottleLeader.LeaderID == sender.HiroID {
+				sender.Log(fmt.Sprintf("[use] %s -> i am roll bottle %d", bottleLeader, bottleLeader.LeaderID))
+				go func() {
+					<-time.After(time.Second * 7)
+					sender.Send(client.BOTTLE_ROLL, &client.BottleRoll{})
+				}()
+			}
+		}
+	case server.BOTTLE_ROLL:
+		bottleRoll, ok := packet.(*server.BottleRoll)
+		if ok {
+
+			needSendKiss := false
+
+			if bottleRoll.LeaderID == sender.HiroID {
+				sender.Log(fmt.Sprintf("[use] %s -> i am kiss as leader %d", bottleRoll, bottleRoll.LeaderID))
+				needSendKiss = true
+			} else if bottleRoll.RollerID == sender.HiroID {
+				sender.Log(fmt.Sprintf("[use] %s -> i am kiss as roller %d", bottleRoll, bottleRoll.RollerID))
+				needSendKiss = true
+			}
+
+			if needSendKiss {
+				go func() {
+					<-time.After(time.Second * 6)
+					sender.Send(client.BOTTLE_KISS, &client.BottleKiss{
+						Answer: 1,
+					})
+				}()
 			}
 		}
 	}
