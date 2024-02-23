@@ -138,6 +138,20 @@ func recvHandler(sender *socket.Socket, packetID types.PacketServerType, packet 
 				// sender.Send(client.MOVE, &client.Move{
 				// 	PlayerID: Tototo93,
 				// })
+
+				// go func() {
+				// 	<-time.After(time.Second * 5)
+				// 	buy := client.Buy{
+				// 		BuyType:    2,
+				// 		Coin:       260,
+				// 		PlayerID:   Tototo93,
+				// 		PrizeID:    10321,
+				// 		ByteFiald:  0,
+				// 		Count:      1,
+				// 		ByteFiald2: 6,
+				// 	}
+				// 	sender.Send(client.BUY, &buy)
+				// }()
 			default:
 				sender.Close()
 			}
@@ -181,6 +195,16 @@ func recvHandler(sender *socket.Socket, packetID types.PacketServerType, packet 
 						Answer: 1,
 					})
 				}()
+			}
+		}
+	case server.REWARDS:
+		rewards, ok := packet.(*server.Rewards)
+		if ok {
+			for _, reward := range rewards.Items {
+				sender.Send(client.GAME_REWARDS_GET, &client.GameRewardsGet{
+					RewardID: reward.RewardID,
+				})
+				break
 			}
 		}
 	}

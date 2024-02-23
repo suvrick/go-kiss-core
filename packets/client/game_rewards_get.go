@@ -9,7 +9,7 @@ const GAME_REWARDS_GET types.PacketClientType = 11
 
 // GAME_REWARDS_GET(11)
 type GameRewardsGet struct {
-	RewardID byte
+	RewardID uint64
 }
 
 func (gameRewardsGet GameRewardsGet) String() string {
@@ -17,5 +17,5 @@ func (gameRewardsGet GameRewardsGet) String() string {
 }
 
 func (gameRewardsGet *GameRewardsGet) Marshal() ([]byte, error) {
-	return leb128.WriteByte(nil, gameRewardsGet.RewardID)
+	return leb128.WriteUInt64(nil, gameRewardsGet.RewardID)
 }

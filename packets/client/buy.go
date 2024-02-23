@@ -15,7 +15,7 @@ type Buy struct {
 	PrizeID    uint64
 	ByteFiald  byte
 	Count      uint64
-	ByteFiald2 *byte
+	ByteFiald2 byte
 }
 
 func (buy Buy) String() string {
@@ -54,11 +54,9 @@ func (buy *Buy) Marshal() ([]byte, error) {
 		return nil, err
 	}
 
-	if buy.ByteFiald2 != nil {
-		data2, err := leb128.WriteByte(nil, (*buy.ByteFiald2))
-		if err == nil {
-			data = append(data, data2...)
-		}
+	data, err = leb128.WriteByte(data, buy.ByteFiald2)
+	if err != nil {
+		return nil, err
 	}
 
 	return data, nil
