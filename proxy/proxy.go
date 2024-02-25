@@ -1,9 +1,6 @@
 package proxy
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 )
@@ -21,58 +18,54 @@ type Proxy struct {
 
 func GetNetProxy(session string) func(*http.Request) (*url.URL, error) {
 
-	client := &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyURL(&url.URL{
-				Scheme: "http",
-				Host:   host,
-				User:   url.UserPassword(user_id, password),
-			}),
-		},
-	}
+	// client := &http.Client{
+	// 	Transport: &http.Transport{
+	// 		Proxy: http.ProxyURL(&url.URL{
+	// 			Scheme: "http",
+	// 			Host:   host,
+	// 			User:   url.UserPassword(user_id, password),
+	// 		}),
+	// 	},
+	// }
 
-	// 55.106
-	//
-	resp, err := client.Get(resource)
-	if err != nil {
-		return nil
-	}
+	// // 55.106
+	// //
+	// resp, err := client.Get(resource)
+	// if err != nil {
+	// 	return nil
+	// }
 
-	defer resp.Body.Close()
+	// defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil
-	}
+	// body, err := io.ReadAll(resp.Body)
+	// if err != nil {
+	// 	return nil
+	// }
 
-	p := Proxy{}
+	// p := Proxy{}
 
-	err = json.Unmarshal(body, &p)
-	if err != nil {
-		return nil
-	}
+	// err = json.Unmarshal(body, &p)
+	// if err != nil {
+	// 	return nil
+	// }
 
-	// brd.superproxy.io:22225:brd-customer-hl_07f044e7-zone-static-ip-178.171.116.192:hcx7fnqnph27
-	// brd.superproxy.io:22225:brd-customer-hl_07f044e7-zone-static-ip-178.171.116.193:hcx7fnqnph27
-	// brd.superproxy.io:22225:brd-customer-hl_07f044e7-zone-static-ip-178.171.116.195:hcx7fnqnph27
+	// newUser := fmt.Sprintf("%s-ip-%s", user_id, p.Ip)
 
-	newUser := fmt.Sprintf("%s-ip-%s", user_id, p.Ip)
+	// switch session {
+	// case "one":
+	// 	newUser = "brd-customer-hl_07f044e7-zone-static"
+	// case "two":
+	// 	newUser = "brd-customer-hl_07f044e7-zone-static"
+	// case "tree":
+	// 	newUser = "brd-customer-hl_07f044e7-zone-static"
+	// }
 
-	switch session {
-	case "one":
-		newUser = "brd-customer-hl_07f044e7-zone-static-ip-178.171.116.192"
-	case "two":
-		newUser = "brd-customer-hl_07f044e7-zone-static-ip-178.171.116.193"
-	case "tree":
-		newUser = "brd-customer-hl_07f044e7-zone-static-ip-178.171.116.195"
-	}
-
-	fmt.Printf("generate proxy: %s\n", newUser)
+	// fmt.Printf("generate proxy: %s\n", newUser)
 
 	u := url.URL{
 		Scheme: "http",
 		Host:   host,
-		User:   url.UserPassword(newUser, password),
+		User:   url.UserPassword(user_id, password),
 	}
 
 	return http.ProxyURL(&u)

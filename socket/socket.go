@@ -123,6 +123,7 @@ func (socket *Socket) Connection() error {
 	socket.client = client
 
 	socket.Logf("proxy set remote addr %s", socket.client.RemoteAddr())
+	socket.Logf("proxy set local addr %s", socket.client.LocalAddr())
 
 	// brd.superproxy.io:22225:brd-customer-hl_07f044e7-zone-static-ip-158.46.166.29:hcx7fnqnph27 +
 	// brd.superproxy.io:22225:brd-customer-hl_07f044e7-zone-static-ip-103.241.53.114:hcx7fnqnph27
