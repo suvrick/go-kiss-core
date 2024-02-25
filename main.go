@@ -1,10 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"net/url"
-	"strings"
 	"sync"
 	"time"
 
@@ -34,29 +31,16 @@ var urls = []string{
 }
 
 var urls2 = []string{
-	"view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=105345504&viewerId=105345504&isAppUser=1&isAppWidgetUser=0&sessionKey=5d5b1908c2bae78eeb199db47fc327ac935ccfbd914a38&authKey=7b0a077a088b9e5169bcfc0bf2ee9ae8&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1573540656&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?182&width=1000&height=690&sprites_version=96&useApiType=fs&",
-	// "view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=105345662&viewerId=105345662&isAppUser=1&isAppWidgetUser=0&sessionKey=5d896fb2ee4b69d7e910436a2f14b1ae33fd14ca433b78&authKey=5f93655e93d0a3ab6195dbf0656bab60&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1573541066&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?182&width=1000&height=690&sprites_version=96&useApiType=fs&",
-	// "view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=105342583&viewerId=105342583&isAppUser=1&isAppWidgetUser=0&sessionKey=5df0a1002a5468b420eba13cddc23a79d6f994f83a92c9&authKey=fd02dd9d0285983e8a65f07a729a1193&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1573532617&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?182&width=1000&height=690&sprites_version=96&useApiType=fs&",
+	//"view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=105345504&viewerId=105345504&isAppUser=1&isAppWidgetUser=0&sessionKey=5d5b1908c2bae78eeb199db47fc327ac935ccfbd914a38&authKey=7b0a077a088b9e5169bcfc0bf2ee9ae8&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1573540656&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?182&width=1000&height=690&sprites_version=96&useApiType=fs&",
+	//"view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=105345662&viewerId=105345662&isAppUser=1&isAppWidgetUser=0&sessionKey=5d896fb2ee4b69d7e910436a2f14b1ae33fd14ca433b78&authKey=5f93655e93d0a3ab6195dbf0656bab60&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1573541066&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?182&width=1000&height=690&sprites_version=96&useApiType=fs&",
+	//"view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=105342583&viewerId=105342583&isAppUser=1&isAppWidgetUser=0&sessionKey=5df0a1002a5468b420eba13cddc23a79d6f994f83a92c9&authKey=fd02dd9d0285983e8a65f07a729a1193&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1573532617&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?182&width=1000&height=690&sprites_version=96&useApiType=fs&",
 	// "view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=105342679&viewerId=105342679&isAppUser=1&isAppWidgetUser=0&sessionKey=5df2dbb3a1f8a8a701168d94755bcd98def3344a38ef49&authKey=a0dd2586c35a53319b3c53e04f2fd94d&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1573532922&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?182&width=1000&height=690&sprites_version=96&useApiType=fs&",
 	// "view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=105342780&viewerId=105342780&isAppUser=1&isAppWidgetUser=0&sessionKey=5ded15002b6e8b4b03bb6be83436f838ed37b7c9272338&authKey=550ea3065c2c38c25e2bf8f50c893f1b&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1573533240&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?182&width=1000&height=690&sprites_version=96&useApiType=fs&",
 	// "view-source:https://bottle2.itsrealgames.com/www/fs.html?5&apiUrl=https%3A%2F%2Fapi.fotostrana.ru%2Fapifs.php&apiId=bottle&userId=105342864&viewerId=105342864&isAppUser=1&isAppWidgetUser=0&sessionKey=5d927abcb6d37d6a6aebe74e19e0a1b4e463c067584dd6&authKey=f79bd404e48fbd57a5a71d02b3ea9bb8&apiSettings=743&silentBilling=1&lang=ru&forceInstall=1&from=app.popup&from_id=app.popup&hasNotifications=0&_v=1&isOfferWallEnabled=0&appManage=0&connId=1573533546&ourIp=0&lc_name=&fs_api=https://st.fotocdn.net/swf/api/__v1344942768.fs_api.swf&log=0&swfobject=https://st.fotocdn.net/js/__v1368780425_1_4.swfobject2.js&fsapi=https://st.fotocdn.net/app/app/js/__v1540476017_1_4.fsapi.js&xdm_e=https://fotostrana.ru&xdm_c=default0&xdm_p=1#api=fs&packageName=bottlePackage&config=config_release.xml&protocol=https:&locale=RU&international=false&locale_url=../resources/locale/EN_All.lp?182&width=1000&height=690&sprites_version=96&useApiType=fs&",
 }
 
 var proxies = []string{
-	"zproxy.lum-superproxy.io:22225:lum-customer-c_07f044e7-zone-static-ip-181.215.0.194:hcx7fnqnph27",
-	"zproxy.lum-superproxy.io:22225:lum-customer-c_07f044e7-zone-static-ip-181.215.0.223:hcx7fnqnph27",
-	"zproxy.lum-superproxy.io:22225:lum-customer-c_07f044e7-zone-static-ip-181.215.2.193:hcx7fnqnph27",
-	"zproxy.lum-superproxy.io:22225:lum-customer-c_07f044e7-zone-static-ip-181.215.2.196:hcx7fnqnph27",
-	"zproxy.lum-superproxy.io:22225:lum-customer-c_07f044e7-zone-static-ip-181.215.2.208:hcx7fnqnph27",
-	"zproxy.lum-superproxy.io:22225:lum-customer-c_07f044e7-zone-static-ip-181.215.2.212:hcx7fnqnph27",
-	"zproxy.lum-superproxy.io:22225:lum-customer-c_07f044e7-zone-static-ip-181.215.2.218:hcx7fnqnph27",
-	"zproxy.lum-superproxy.io:22225:lum-customer-c_07f044e7-zone-static-ip-181.214.2.194:hcx7fnqnph27",
-	"zproxy.lum-superproxy.io:22225:lum-customer-c_07f044e7-zone-static-ip-181.214.2.195:hcx7fnqnph27",
-	"zproxy.lum-superproxy.io:22225:lum-customer-c_07f044e7-zone-static-ip-181.214.2.199:hcx7fnqnph27",
-	"zproxy.lum-superproxy.io:22225:lum-customer-c_07f044e7-zone-static-ip-181.214.2.215:hcx7fnqnph27",
-	"zproxy.lum-superproxy.io:22225:lum-customer-c_07f044e7-zone-static-ip-181.214.2.227:hcx7fnqnph27",
-	"zproxy.lum-superproxy.io:22225:lum-customer-c_07f044e7-zone-static-ip-181.214.2.240:hcx7fnqnph27",
-	"zproxy.lum-superproxy.io:22225:lum-customer-c_07f044e7-zone-static-ip-181.214.2.252:hcx7fnqnph27",
+	"brd.superproxy.io:22225:brd-customer-hl_07f044e7-zone-static-ip-178.171.38.41:hcx7fnqnph27",
 }
 
 var frameManager frame.IFrameManager
@@ -80,24 +64,38 @@ func main() {
 
 	wg = sync.WaitGroup{}
 
-	for _, url := range urls2 {
+	for i, url := range urls[1:2] {
 
 		wg.Add(1)
+
+		<-time.After(time.Second * 2)
 
 		login := getLoginPacket(url)
 
 		config := socket.GetDefaultSocketConfig()
+
 		//config.TimeInTheGame = 5
 
 		g := socket.NewSocket(config)
+
+		switch i {
+		case 0:
+			g.Name = "one"
+		case 1:
+			g.Name = "two"
+		case 2:
+			g.Name = "tree"
+		}
+
 		g.SetOpenHandler(openHandle)
 		g.SetCloseHandler(closeHandle)
 		g.SetErrorHandler(errorHandle)
 		g.SetRecvHandler(recvHandler)
 
 		games = append(games, g)
-		//prx := getProxy(proxies[i])
-		if err := g.ConnectionWithProxy(nil); err != nil {
+
+		if err := g.Connection(); err != nil {
+			// Error: Auth Failed (code: ip_forbidden)
 			log.Fatalln(err.Error())
 		}
 
@@ -108,17 +106,17 @@ func main() {
 }
 
 func openHandle(sender *socket.Socket) {
-	fmt.Println("Open connection")
+	sender.Log("Open connection")
 }
 
 func closeHandle(sender *socket.Socket, rule byte, msg string) {
-	fmt.Printf("Close connection. Rule: %v, %s\n", rule, msg)
+	sender.Logf("Close connection. Rule: %v, %s\n", rule, msg)
 	wg.Done()
 }
 
 func errorHandle(sender *socket.Socket, err error) {
 	if err != nil {
-		fmt.Printf("Error: %v\n", err.Error())
+		sender.Logf("Error: %v\n", err.Error())
 		sender.Close()
 	}
 }
@@ -135,9 +133,9 @@ func recvHandler(sender *socket.Socket, packetID types.PacketServerType, packet 
 				sender.Send(client.BOTTLE_PLAY, &client.BottlePlay{
 					RoomID: 0,
 				})
-				// sender.Send(client.MOVE, &client.Move{
-				// 	PlayerID: Tototo93,
-				// })
+				sender.Send(client.MOVE, &client.Move{
+					PlayerID: Tototo93,
+				})
 
 				// go func() {
 				// 	<-time.After(time.Second * 5)
@@ -167,7 +165,7 @@ func recvHandler(sender *socket.Socket, packetID types.PacketServerType, packet 
 		bottleLeader, ok := packet.(*server.BottleLeader)
 		if ok {
 			if bottleLeader.LeaderID == sender.HiroID {
-				sender.Log(fmt.Sprintf("[use] %s -> i am roll bottle %d", bottleLeader, bottleLeader.LeaderID))
+				sender.Logf("[use] %s -> i am roll bottle %d", bottleLeader, bottleLeader.LeaderID)
 				go func() {
 					<-time.After(time.Second * 7)
 					sender.Send(client.BOTTLE_ROLL, &client.BottleRoll{})
@@ -181,10 +179,10 @@ func recvHandler(sender *socket.Socket, packetID types.PacketServerType, packet 
 			needSendKiss := false
 
 			if bottleRoll.LeaderID == sender.HiroID {
-				sender.Log(fmt.Sprintf("[use] %s -> i am kiss as leader %d", bottleRoll, bottleRoll.LeaderID))
+				sender.Logf("[use] %s -> i am kiss as leader %d", bottleRoll, bottleRoll.LeaderID)
 				needSendKiss = true
 			} else if bottleRoll.RollerID == sender.HiroID {
-				sender.Log(fmt.Sprintf("[use] %s -> i am kiss as roller %d", bottleRoll, bottleRoll.RollerID))
+				sender.Logf("[use] %s -> i am kiss as roller %d", bottleRoll, bottleRoll.RollerID)
 				needSendKiss = true
 			}
 
@@ -207,7 +205,21 @@ func recvHandler(sender *socket.Socket, packetID types.PacketServerType, packet 
 				break
 			}
 		}
+	case server.COLLECTIONS_POINTS:
+		points, ok := packet.(*server.CollectionsPoints)
+		if ok {
+			sender.Logf("[use] %s -> collections points %d", points, points.Points)
+		}
+	case server.BOTTLE_JOIN:
+		join, ok := packet.(*server.BottleJoin)
+		if ok {
+			sender.Send(client.REQUEST, &client.Request{
+				Players: []uint64{join.PlayerID},
+				Mask:    262143,
+			})
+		}
 	}
+
 }
 
 func getLoginPacket(url string) *client.Login {
@@ -222,23 +234,18 @@ func getLoginPacket(url string) *client.Login {
 		return nil
 	}
 
+	auth := byte(0)
+	if len(frameDTO.AccessToken) > 0 {
+		auth = byte(1)
+	}
+
 	return &client.Login{
 		LoginID:     frameDTO.ID,
 		NetType:     frameDTO.NetType,
 		DeviceType:  5,
 		Key:         frameDTO.Key,
-		OAuth:       0,
+		OAuth:       auth,
 		AccessToken: frameDTO.AccessToken,
 		StringField: frameDTO.StringField,
-	}
-}
-
-func getProxy(proxy_url string) *url.URL {
-	arr := strings.Split(proxy_url, ":")
-
-	return &url.URL{
-		Scheme: "http",
-		Host:   fmt.Sprintf("%s:%s", arr[0], arr[1]),
-		User:   url.UserPassword(arr[2], arr[3]),
 	}
 }

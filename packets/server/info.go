@@ -2,7 +2,9 @@ package server
 
 import (
 	"bytes"
+	"math/big"
 
+	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -12,7 +14,7 @@ const INFO types.PacketServerType = 5
 type Info struct {
 	//ArrLen types.I
 	//ArrLen2 types.I
-	// Players []PlayerInfo
+	Players map[uint64]PlayerInfo
 }
 
 func (p Info) String() string {
@@ -20,55 +22,373 @@ func (p Info) String() string {
 }
 
 func (info *Info) Unmarshal(r *bytes.Reader) error {
+
+	info.Players = map[uint64]PlayerInfo{}
+
+	len, err := leb128.ReadUInt64(r)
+	if err != nil {
+		return err
+	}
+
+	buf := make([]byte, len)
+	_, err = r.Read(buf)
+	if err != nil {
+		return err
+	}
+
+	mask, err := leb128.ReadInt64(r)
+	if err != nil {
+		return err
+	}
+
+	_ = mask
+
+	rp := bytes.NewReader(buf)
+
+	playerCount, err := leb128.ReadUInt64(rp)
+	if err != nil {
+		return err
+	}
+
+	_ = playerCount
+
+	playerID, err := leb128.ReadUInt64(rp)
+	if err != nil {
+		return err
+	}
+
+	player := PlayerInfo{}
+
+	use := needParse(mask)
+
+	if use() {
+		player.NetID, err = leb128.ReadBigNumber(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.NetType, err = leb128.ReadByte(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.Sex, err = leb128.ReadByte(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.CountryId, err = leb128.ReadByte(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.Online, err = leb128.ReadByte(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.Vip, err = leb128.ReadByte(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.Color, err = leb128.ReadByte(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.Device, err = leb128.ReadByte(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.AvatarId, err = leb128.ReadByte(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.Rights, err = leb128.ReadByte(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.FrameId, err = leb128.ReadByte(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.Deleted, err = leb128.ReadByte(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.Tag, err = leb128.ReadUInt64(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.BDate, err = leb128.ReadUInt64(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.Name, err = leb128.ReadString(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.Avatar, err = leb128.ReadString(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.Profile, err = leb128.ReadString(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.Status, err = leb128.ReadString(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.AdmirerId, err = leb128.ReadUInt64(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.AdmirerPrice, err = leb128.ReadUInt64(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.AdmirerTimeFinish, err = leb128.ReadUInt64(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.AdmireRewardTimestamp, err = leb128.ReadUInt64(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.Kisses, err = leb128.ReadUInt64(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.KissesDaily, err = leb128.ReadUInt64(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.Gifts, err = leb128.ReadUInt64(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.GiftsDaily, err = leb128.ReadUInt64(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.WeddingId, err = leb128.ReadByte(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		player.ClubId, err = leb128.ReadByte(rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	if use() {
+		achievementCount, err := leb128.ReadUInt64(rp)
+		if err != nil {
+			return nil
+		}
+
+		player.Achievements = make([]Achievement, 0)
+
+		for achievementCount > 0 {
+
+			achievement := Achievement{}
+
+			achievement.AchievementID, err = leb128.ReadUInt64(rp)
+			if err != nil {
+				return err
+			}
+
+			achievement.NumberField1, err = leb128.ReadUInt64(rp)
+			if err != nil {
+				return err
+			}
+
+			achievement.NumberField2, err = leb128.ReadUInt64(rp)
+			if err != nil {
+				return err
+			}
+
+			player.Achievements = append(player.Achievements, achievement)
+
+			achievementCount--
+		}
+	}
+
+	if use() {
+		collectionCount, err := leb128.ReadUInt64(rp)
+		if err != nil {
+			return nil
+		}
+
+		player.Collections = make([]Collection, 0)
+
+		for collectionCount > 0 {
+
+			collection := Collection{}
+
+			collection.ElementID, err = leb128.ReadUInt64(rp)
+			if err != nil {
+				return err
+			}
+
+			collection.Count, err = leb128.ReadUInt64(rp)
+			if err != nil {
+				return err
+			}
+
+			player.Collections = append(player.Collections, collection)
+
+			collectionCount--
+		}
+	}
+
+	info.Players[playerID] = player
+
 	return nil
+}
+
+func needParse(mask int64) func() bool {
+	bits := big.NewInt(mask)
+	l := bits.BitLen()
+	i := -1
+	return func() bool {
+		i++
+
+		if i > l-1 {
+			return false
+		}
+
+		return bits.Bit(i) == 1
+	}
 }
 
 // const INFOMASK types.I = 328588
 
 // // ISBSBBIIBIBIIBBIII
-// type PlayerInfo struct {
-// 	GameID types.I
-// 	//NetType  types.B
-// 	Name types.S
-// 	Sex  types.B
-// 	//Tag      types.I
-// 	//Referrer types.I
-// 	//Ddate    types.I
-// 	Avatar  models.Avatar
-// 	Profile types.S
-// 	Status  types.S
-// 	Vip     types.B
-// 	Kisses  models.Kiss
-// }
+type PlayerInfo struct {
+	NetID     string
+	NetType   byte
+	Sex       byte
+	CountryId byte
+	Online    byte
+	Vip       byte
+	Color     byte
+	Device    byte
+	AvatarId  byte
+	Rights    byte
+	FrameId   byte
+	Deleted   byte
 
-// func (packet *Info) Use(hiro *models.Hiro, room *models.Room, game interfaces.IGame) error {
+	Tag   uint64
+	BDate uint64
 
-// 	player := models.Player{}
+	Name    string
+	Avatar  string
+	Profile string
+	Status  string
 
-// 	if len(packet.Players) > 0 {
-// 		player.PlayerID = packet.Players[0].GameID
-// 		player.Name = packet.Players[0].Name
-// 		player.Avatar = packet.Players[0].Avatar.Avatar
-// 		player.Profile = packet.Players[0].Profile
-// 		player.Sex = packet.Players[0].Sex
-// 		player.Vip = packet.Players[0].Vip
-// 		player.Kissed = packet.Players[0].Kisses.Kissed
-// 		player.KissedDay = packet.Players[0].Kisses.KissedDay
-// 	}
+	AdmirerId             uint64
+	AdmirerPrice          uint64
+	AdmirerTimeFinish     uint64
+	AdmireRewardTimestamp uint64
 
-// 	for _, v := range room.Players {
-// 		if v.PlayerID == player.PlayerID {
-// 			room.Players[player.PlayerID] = &player
-// 		}
-// 	}
+	Kisses      uint64
+	KissesDaily uint64
+	Gifts       uint64
+	GiftsDaily  uint64
 
-// 	if hiro.ID == player.PlayerID {
-// 		hiro.Info = &player
-// 		log.Printf("I`m %s, ID: %d\n", hiro.Info.Name, hiro.ID)
-// 	}
+	WeddingId byte
+	ClubId    byte
 
-// 	return nil
-// }
+	Achievements []Achievement
+	Collections  []Collection
+}
+
+type Achievement struct {
+	AchievementID uint64
+	NumberField1  uint64
+	NumberField2  uint64
+}
+type Collection struct {
+	ElementID uint64
+	Count     uint64
+}
 
 /*
 	public netId?: string;
@@ -132,4 +452,27 @@ func (info *Info) Unmarshal(r *bytes.Reader) error {
 	public leaguePoints?: number;
 
 	public lastComplaintDate?: number;
+*/
+
+/*
+/.defineField("IBBBUUBBBBBU", [ "netId", "netType", "sex", "countryId", "online", "vip", "color", "device", "avatarId", "rights", "frameId", "deleted" ])
+.defineField("I", "tag")
+.defineField("I", "bdate")
+.defineField("S", "name")
+.defineField("S", "avatar")
+.defineField("S", "profile")
+.defineField("S", "status")
+.defineField("IIII", [ "admirerId", "admirerPrice", "admirerTimeFinish", "admireRewardTimestamp" ])
+.defineField("IIII", [ "kisses", "kissesDaily", "gifts", "giftsDaily" ])
+.defineField("II", [ "weddingId", "clubId" ])
+.defineField("[III]", "achievements")
+.defineField("[BI]", [ "collections" ])
+.defineField("II", [ "registerTime", "logoutTime" ])
+.defineField("[S][B]II", [ "photos", "photosStatuses", "totalCountLikesDaily", "totalCountLikes" ])
+.defineField("IIIII", [ "bridalsPlace", "wedlocksPlace", "popularPlace", "forbesPlace", "viewsPlace" ])
+.defineField("BI", [ "abilityType", "abilityExpire" ])
+.defineField("UI", [ "vipTrialUsed", "subscribePastDays" ])
+.defineField("BIII", [ "league", "leagueCommonPoints", "leagueGroupId", "leaguePoints" ])
+.defineField("I", "lastComplaintDate")
+.defineField("I", "cascadeItems");
 */

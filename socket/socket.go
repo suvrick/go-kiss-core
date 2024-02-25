@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"log"
-	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/packets/server"
+	"github.com/suvrick/go-kiss-core/proxy"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -42,6 +43,7 @@ type Socket struct {
 	done       chan struct{}
 	Role       byte
 	HiroID     uint64
+	Name       string
 
 	openHandle  func(sender *Socket)
 	closeHandle func(sender *Socket, rule byte, caption string)
@@ -66,16 +68,28 @@ var closed_rules = map[byte]string{
 }
 
 func NewSocket(config *SocketConfig) *Socket {
-	return &Socket{
+	sock := &Socket{
 		config:     config,
 		logger:     config.Logger,
 		done:       make(chan struct{}),
 		rule_close: 255,
 	}
+
+	sock.logger.SetPrefix(fmt.Sprintf("[%s] ", sock.getUID()))
+
+	return sock
 }
 
 func (s *Socket) Log(msg string) {
 	s.logger.Println(msg)
+}
+
+func (s *Socket) Logf(msg string, param ...any) {
+	s.logger.Printf(msg, param...)
+}
+
+func (s *Socket) getUID() string {
+	return fmt.Sprintf("%p", s)
 }
 
 func (socket *Socket) Connection() error {
@@ -84,9 +98,17 @@ func (socket *Socket) Connection() error {
 		HandshakeTimeout: (socket.config.ConnectTimeout),
 	}
 
-	if socket.proxy != nil {
-		dialer.Proxy = http.ProxyURL(socket.proxy)
+	// uid := socket.getUID()
+	p := proxy.GetNetProxy(socket.Name)
+	if p == nil {
+		socket.setClosedRule(ERROR_CONNECT_CLOSE)
+		if socket.errorHandle != nil {
+			socket.errorHandle(socket, fmt.Errorf("get proxy fialed"))
+			return ErrConnectionFail
+		}
 	}
+
+	dialer.Proxy = p
 
 	client, resp, err := dialer.Dial(socket.config.Host, socket.config.Head)
 
@@ -100,6 +122,10 @@ func (socket *Socket) Connection() error {
 
 	socket.client = client
 
+	socket.Logf("proxy set remote addr %s", socket.client.RemoteAddr())
+
+	// brd.superproxy.io:22225:brd-customer-hl_07f044e7-zone-static-ip-158.46.166.29:hcx7fnqnph27 +
+	// brd.superproxy.io:22225:brd-customer-hl_07f044e7-zone-static-ip-103.241.53.114:hcx7fnqnph27
 	if resp != nil {
 		if resp.StatusCode != 101 {
 			socket.setClosedRule(ERROR_CONNECT_CLOSE)
@@ -155,7 +181,7 @@ func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) 
 	pckt, ok := packet.(IClientPacket)
 
 	if !ok {
-		socket.Log(fmt.Sprintf("[error] %s -> %v", packet, fmt.Errorf("not impliment ICleintPacket")))
+		socket.Logf("[error] %s -> %v", packet, fmt.Errorf("not impliment ICleintPacket"))
 		return
 	}
 
@@ -170,7 +196,7 @@ func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) 
 	// messageID
 	data, err := leb128.WriteUInt64(nil, socket.messageID)
 	if err != nil {
-		socket.Log(fmt.Sprintf("[error] %s -> %v", packet, err))
+		socket.Logf("[error] %s -> %v", packet, err)
 		return
 	}
 
@@ -179,14 +205,14 @@ func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) 
 	// packetID
 	data, err = leb128.WriteUInt64(data, uint64(packetID))
 	if err != nil {
-		socket.Log(fmt.Sprintf("[error] %s -> %v", packet, err))
+		socket.Logf("[error] %s -> %v", packet, err)
 		return
 	}
 
 	//device
 	data, err = leb128.WriteByte(data, 5)
 	if err != nil {
-		socket.Log(fmt.Sprintf("[error] %s -> %v", packet, err))
+		socket.Logf("[error] %s -> %v", packet, err)
 		return
 	}
 
@@ -195,13 +221,13 @@ func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) 
 	// packet len
 	data_len, err := leb128.WriteUInt64(nil, uint64(len(data)))
 	if err != nil {
-		socket.Log(fmt.Sprintf("[error] %s -> %v", packet, err))
+		socket.Logf("[error] %s -> %v", packet, err)
 		return
 	}
 
 	data_len = append(data_len, data...)
 
-	socket.Log(fmt.Sprintf("[send] %s -> %#v, %v", packet, packet, data_len))
+	socket.Logf("%s[send] %s -> %#v", string("\033[33m"), packet, packet)
 
 	err = socket.client.WriteMessage(websocket.BinaryMessage, data_len)
 	if err != nil {
@@ -333,7 +359,7 @@ func (socket *Socket) read(reader *bytes.Reader) {
 	if packet != nil {
 		err = packet.Unmarshal(reader)
 		if err != nil {
-			socket.Log(fmt.Sprintf("[read] %s -> %#v", packet, err))
+			socket.Logf("[read] %s -> %#v", packet, err)
 			// if socket.errorHandle != nil {
 			// 	socket.errorHandle(socket, err)
 			// }
@@ -344,8 +370,20 @@ func (socket *Socket) read(reader *bytes.Reader) {
 			socket.recvHandle(socket, packetID, packet)
 		}
 
-		socket.Log(fmt.Sprintf("[read] %s -> %#v", packet, packet))
+		socket.Logf("%s[read] %s -> %#v", string("\033[34m"), packet, packet)
 	}
+}
+
+func getHex(s string) uint32 {
+
+	hex := fnv.New32a()
+
+	_, err := hex.Write([]byte(s))
+	if err != nil {
+		return 0
+	}
+
+	return hex.Sum32()
 }
 
 func (socket *Socket) close_connection() {
