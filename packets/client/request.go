@@ -1,16 +1,30 @@
 package client
 
 import (
+	"sync"
+
 	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
 const REQUEST types.PacketClientType = 8
 
+var poolRequest = sync.Pool{
+	New: func() interface{} { return Request{} },
+}
+
 // REQUEST (8) ""
 type Request struct {
 	Players []uint64
 	Mask    int64
+}
+
+func NewRequest() *Request {
+	return poolRequest.Get().(*Request)
+}
+
+func (request *Request) Down() {
+	poolRequest.Put(request)
 }
 
 func (request Request) String() string {

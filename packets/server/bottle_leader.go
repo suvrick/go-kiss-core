@@ -2,12 +2,26 @@ package server
 
 import (
 	"bytes"
+	"sync"
 
 	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
 const BOTTLE_LEADER types.PacketServerType = 28
+
+var poolBottleLeader = sync.Pool{
+	New: func() any { return BottleLeader{} },
+}
+
+func NewBottleLeader() *BottleLeader {
+	instance := poolBottleLeader.Get().(BottleLeader)
+	return &instance
+}
+
+func (p *BottleLeader) Reset() {
+	poolBottleLeader.Put(p)
+}
 
 // "I"
 type BottleLeader struct {

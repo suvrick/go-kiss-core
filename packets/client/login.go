@@ -20,7 +20,7 @@ type Login struct {
 	ByteField1   byte
 	ByteField2   byte
 	StringField2 string
-	StringField3 string
+	Captcha      string
 }
 
 func (login Login) String() string {
@@ -83,7 +83,7 @@ func (login *Login) Marshal() ([]byte, error) {
 		return nil, err
 	}
 
-	data, err = leb128.WriteString(data, login.StringField3)
+	data, err = leb128.WriteString(data, login.Captcha)
 	if err != nil {
 		return nil, err
 	}

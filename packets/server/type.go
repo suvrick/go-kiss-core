@@ -1,5 +1,9 @@
 package server
 
+type IPooling interface {
+	Reset()
+}
+
 /*
 	NULL = 0,
 	HELLO = 1,

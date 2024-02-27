@@ -12,7 +12,6 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/packets/server"
-	"github.com/suvrick/go-kiss-core/proxy"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -99,16 +98,16 @@ func (socket *Socket) Connection() error {
 	}
 
 	// uid := socket.getUID()
-	p := proxy.GetNetProxy(socket.Name)
-	if p == nil {
-		socket.setClosedRule(ERROR_CONNECT_CLOSE)
-		if socket.errorHandle != nil {
-			socket.errorHandle(socket, fmt.Errorf("get proxy fialed"))
-			return ErrConnectionFail
-		}
-	}
+	// p := proxy.GetNetProxy(socket.Name)
+	// if p == nil {
+	// 	socket.setClosedRule(ERROR_CONNECT_CLOSE)
+	// 	if socket.errorHandle != nil {
+	// 		socket.errorHandle(socket, fmt.Errorf("get proxy fialed"))
+	// 		return ErrConnectionFail
+	// 	}
+	// }
 
-	dialer.Proxy = p
+	// dialer.Proxy = p
 
 	client, resp, err := dialer.Dial(socket.config.Host, socket.config.Head)
 
@@ -344,7 +343,7 @@ func (socket *Socket) read(reader *bytes.Reader) {
 	case server.BOTTLE_LEAVE:
 		packet = &server.BottleLeave{}
 	case server.BOTTLE_LEADER:
-		packet = &server.BottleLeader{}
+		packet = server.NewBottleLeader()
 	case server.BOTTLE_ROLL:
 		packet = &server.BottleRoll{}
 	case server.BOTTLE_KISS:
