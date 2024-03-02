@@ -11,12 +11,11 @@ import (
 const BOTTLE_LEADER types.PacketServerType = 28
 
 var poolBottleLeader = sync.Pool{
-	New: func() any { return BottleLeader{} },
+	New: func() any { return &BottleLeader{} },
 }
 
 func NewBottleLeader() *BottleLeader {
-	instance := poolBottleLeader.Get().(BottleLeader)
-	return &instance
+	return poolBottleLeader.Get().(*BottleLeader)
 }
 
 func (p *BottleLeader) Reset() {

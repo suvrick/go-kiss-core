@@ -227,7 +227,7 @@ func (socket *Socket) Send(packetID types.PacketClientType, packet interface{}) 
 
 	data_len = append(data_len, data...)
 
-	socket.Logf("%s[send] %s -> %#v", string("\033[33m"), packet, packet)
+	socket.Logf("[send] %s -> %#v", packet, packet)
 
 	err = socket.client.WriteMessage(websocket.BinaryMessage, data_len)
 	if err != nil {
@@ -366,11 +366,11 @@ func (socket *Socket) read(reader *bytes.Reader) {
 			return
 		}
 
+		socket.Logf("[read] %s -> %#v", packet, packet)
+
 		if socket.recvHandle != nil {
 			socket.recvHandle(socket, packetID, packet)
 		}
-
-		socket.Logf("%s[read] %s -> %#v", string("\033[34m"), packet, packet)
 	}
 }
 
