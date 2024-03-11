@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/suvrick/go-kiss-core/leb128"
 	"github.com/suvrick/go-kiss-core/packets/server"
+	"github.com/suvrick/go-kiss-core/proxy"
 	"github.com/suvrick/go-kiss-core/types"
 )
 
@@ -107,7 +108,13 @@ func (socket *Socket) Connection() error {
 	// 	}
 	// }
 
-	// dialer.Proxy = p
+	uid := socket.getUID()
+
+	dialer.Proxy = proxy.GetNetProxy2(uid)
+
+	userAgent := proxy.GetUserAgent(uid)
+
+	socket.config.Head.Set("User-Agent", userAgent)
 
 	client, resp, err := dialer.Dial(socket.config.Host, socket.config.Head)
 
@@ -124,8 +131,6 @@ func (socket *Socket) Connection() error {
 	socket.Logf("proxy set remote addr %s", socket.client.RemoteAddr())
 	socket.Logf("proxy set local addr %s", socket.client.LocalAddr())
 
-	// brd.superproxy.io:22225:brd-customer-hl_07f044e7-zone-static-ip-158.46.166.29:hcx7fnqnph27 +
-	// brd.superproxy.io:22225:brd-customer-hl_07f044e7-zone-static-ip-103.241.53.114:hcx7fnqnph27
 	if resp != nil {
 		if resp.StatusCode != 101 {
 			socket.setClosedRule(ERROR_CONNECT_CLOSE)
